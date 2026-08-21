@@ -14,6 +14,7 @@ source_docs:
 - docs/loop/evidence/REQ-20260821-001-product-audit-matrix.json
 
 verdict: FAIL
+defect_class: looks-done-but-wrong
 
 findings:
 - severity: blocker

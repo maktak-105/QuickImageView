@@ -23,6 +23,15 @@ changed_files:
 - docs/loop/evidence/REQ-20260821-001-product-inv-missing.json
 - docs/loop/evidence/REQ-20260821-001-product-ui-explorer-required.json
 - docs/loop/evidence/REQ-20260821-001-product-scope.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-audit-complete.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-original.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-explorer.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-ui.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-missing.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-ui-explorer-required.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-scope.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-build.json
+- docs/loop/evidence/REQ-20260821-001-product-iter-1-ctest.json
 - docs/loop/lanes/implementation/evidence/REQ-20260821-001-product-build.json
 - docs/loop/lanes/implementation/evidence/REQ-20260821-001-product-ctest.json
 - docs/loop/lanes/implementation/current.md
@@ -31,31 +40,31 @@ changed_files:
 verification:
 - command: powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -Invariant OriginalProtection
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-inv-original.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-original.json
 - command: powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -Invariant ExplorerLaunchEvidence
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-inv-explorer.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-explorer.json
 - command: powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -Invariant UiInteractionEvidence
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-inv-ui.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-ui.json
 - command: powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -Invariant MissingEvidence
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-inv-missing.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-inv-missing.json
 - command: powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -RequireCompleteMatrix
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-audit-complete.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-audit-complete.json
 - command: cmake -S . -B build -G "MinGW Makefiles"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; cmake --build build --clean-first
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-build.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-build.json
 - command: ctest --test-dir build --output-on-failure
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-ctest.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-ctest.json
 - command: powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -RequireEvidenceFor UiE2E,ExplorerE2E
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-ui-explorer-required.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-ui-explorer-required.json
 - command: git diff --name-only -- core scripts CMakeLists.txt README.md
   exit_code: 0
-  evidence: docs/loop/evidence/REQ-20260821-001-product-scope.json
+  evidence: docs/loop/evidence/REQ-20260821-001-product-iter-1-scope.json
 matrix:
 | Item | Status | Evidence |
 | --- | --- | --- |
