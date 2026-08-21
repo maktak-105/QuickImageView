@@ -1,0 +1,9 @@
+{
+  "request_id": "REQ-20260821-001-product",
+  "checkpoint": "001 現状監査",
+  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -Invariant ExplorerLaunchEvidence",
+  "exit_code": 0,
+  "ran_at": "2026-08-21T08:27:48Z",
+  "result": "PASS_BLOCKED_CLASSIFICATION",
+  "evidence_path": "docs/loop/evidence/REQ-20260821-001-product-inv-explorer.json"
+}
