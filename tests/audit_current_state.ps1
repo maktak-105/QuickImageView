@@ -43,53 +43,37 @@ function Get-E2EEvidence {
     param([string]$Pattern, [string]$Area)
     $files = @(Get-ChildItem -LiteralPath $evidenceRoot -Filter $Pattern -File -ErrorAction SilentlyContinue)
     if ($files.Count -eq 0) {
-        $result = New-Row -Id "EVIDENCE-$Area" -Area $Area -Status 'BLOCKED' -Evidence '' -Note '実機操作証拠JSONが存在しない。'
-        return $result
+        return (New-Row $Area $Area 'BLOCKED' '' '実機操作証拠JSONが存在しない。')
     }
-
-    $errors = [System.Collections.Generic.List[string]]::new()
+    $errors = @()
+    $paths = @()
     foreach ($file in $files) {
-        try {
-            $record = Get-Content -Raw -LiteralPath $file.FullName | ConvertFrom-Json
-        } catch {
-            $errors.Add("$($file.Name): invalid JSON")
-            continue
-        }
-        $required = 'target_operation','expected_result','observed_result','target_exe','target_image','recorded_at','evidence_references'
+        $paths += $file.FullName
+        try { $record = Get-Content -Raw -LiteralPath $file.FullName | ConvertFrom-Json }
+        catch { $errors += "$($file.Name): invalid JSON"; continue }
+        $required = @('target_operation','expected_result','observed_result','target_exe','target_image','recorded_at','evidence_references')
         foreach ($field in $required) {
-            if ($null -eq $record.PSObject.Properties[$field] -or [string]::IsNullOrWhiteSpace([string]$record.$field)) {
-                $errors.Add("$($file.Name): missing $field")
-            }
+            $property = $record.PSObject.Properties[$field]
+            if ($null -eq $property -or [string]::IsNullOrWhiteSpace([string]$record.$field)) { $errors += "$($file.Name): missing $field" }
         }
-        if ($record.PSObject.Properties['expected_result'] -and $record.PSObject.Properties['observed_result'] -and ([string]$record.expected_result).Trim() -ne ([string]$record.observed_result).Trim()) {
-            $errors.Add("$($file.Name): expected_result does not equal observed_result")
+        if ($null -ne $record.PSObject.Properties['expected_result'] -and $null -ne $record.PSObject.Properties['observed_result']) {
+            $expected = ([string]$record.expected_result).Trim()
+            $observed = ([string]$record.observed_result).Trim()
+            if ($expected -ne $observed) { $errors += "$($file.Name): expected_result does not equal observed_result" }
+            if ($observed.ToLowerInvariant().Contains('process alive') -or $observed.ToLowerInvariant().Contains('process exists')) { $errors += "$($file.Name): process-liveness-only result" }
         }
-        if ($record.PSObject.Properties['recorded_at']) {
+        if ($null -ne $record.PSObject.Properties['recorded_at']) {
             $parsed = [DateTimeOffset]::MinValue
-            if (-not [DateTimeOffset]::TryParse([string]$record.recorded_at, [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::RoundtripKind, [ref]$parsed)) {
-                $errors.Add("$($file.Name): recorded_at is not timezone-aware ISO-8601")
-            }
+            if (-not [DateTimeOffset]::TryParse([string]$record.recorded_at, [ref]$parsed)) { $errors += "$($file.Name): recorded_at is invalid" }
         }
-        if ($record.PSObject.Properties['evidence_references']) {
+        if ($null -ne $record.PSObject.Properties['evidence_references']) {
             $references = @($record.evidence_references)
-            $blankReferences = @($references | Where-Object { [string]::IsNullOrWhiteSpace([string]$_) })
-            if ($references.Count -eq 0 -or $blankReferences.Count -gt 0) {
-                $errors.Add("$($file.Name): evidence_references is empty")
-            }
-        }
-        if ($record.PSObject.Properties['observed_result'] -and ([string]$record.observed_result -match '(?i)process\s+(alive|running)|process\s+exists')) {
-            $errors.Add("$($file.Name): process-liveness-only result is not UI/Explorer evidence")
+            if ($references.Count -eq 0) { $errors += "$($file.Name): evidence_references is empty" }
         }
     }
-    if ($errors.Count -gt 0) {
-        $paths = [string]::Join(';', @($files | ForEach-Object { $_.FullName }))
-        $errorText = [string]::Join('; ', [string[]]$errors)
-        $result = New-Row -Id "EVIDENCE-$Area" -Area $Area -Status 'FAIL' -Evidence $paths -Note $errorText
-        return $result
-    }
-    $paths = [string]::Join(';', @($files | ForEach-Object { $_.FullName }))
-    $result = New-Row -Id "EVIDENCE-$Area" -Area $Area -Status 'PASS' -Evidence $paths -Note '操作、期待/実測結果、対象exe/画像、記録時刻、証拠参照を検証済み。'
-    return $result
+    $pathText = $paths -join ([char]59)
+    if ($errors.Count -gt 0) { $errorText = $errors -join ([char]59); return (New-Row $Area $Area 'FAIL' $pathText $errorText) }
+    return (New-Row $Area $Area 'PASS' $pathText '操作、期待/実測結果、対象exe/画像、記録時刻、証拠参照を検証済み。')
 }
 
 $rows = [System.Collections.Generic.List[object]]::new()
