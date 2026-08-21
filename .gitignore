@@ -1,0 +1,5 @@
+build/
+dist/binary/
+*.user
+*.suo
+*.log
