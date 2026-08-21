@@ -5,16 +5,16 @@ the next actor can continue from repo files plus the latest message alone.
 
 ## Current State
 
-- REQ-20260821-001-productの1周目は未完了。reviewがblockerを検出した。UI/Explorer証拠JSONの存在だけでPASSへ到達できるため、内容スキーマ・対象exe/画像・操作結果・記録時刻・証拠参照を検証する修正をiter-2で実施する。
+- REQ-20260821-001-productのiter-2 IMPLEMENTATION_DONEを確認した。証拠JSONの必須スキーマ/内容一致、不正fixture赤化テスト、全VERIFY、completion gateはPASS。UI/Explorer実機証拠なしはBLOCKEDのまま。
 
 ## Next Action
 
-- [ ] implementationがiter-2のFIX_REQUESTを実装し、不正なUI/Explorer証拠JSONを投入した検証が非0になることを証明する。
+- [ ] reviewがiter-2の修正と証拠を独立レビューする。
 
 ## Active Request
 
 - request_id: REQ-20260821-001-product
-- owner_lane: implementation
+- owner_lane: review
 - iteration: 2
 
 ## Blockers
@@ -34,7 +34,7 @@ the next actor can continue from repo files plus the latest message alone.
 
 ## Done When
 
-- [ ] iter-2のIMPLEMENTATION_DONEを受領後、reviewへ再レビューを依頼する。
+- [ ] REVIEW_DONEを受領し、review verdictに基づいて受入可否を判定する。
 
 ## Memory Protocol
 
