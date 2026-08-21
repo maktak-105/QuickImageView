@@ -1,0 +1,1 @@
+{"request_id":"REQ-20260821-001-product","iteration":2,"checkpoint":"001 現状監査 iter-2","command":"ctest --test-dir build --output-on-failure","exit_code":0,"ran_at":"2026-08-21T08:43:18Z","result":"PASS"}

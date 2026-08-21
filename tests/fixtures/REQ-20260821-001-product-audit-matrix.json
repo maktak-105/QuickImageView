@@ -1,10 +1,10 @@
 {
     "request_id":  "REQ-20260821-001-product",
     "checkpoint":  "001 迴ｾ迥ｶ逶｣譟ｻ",
-    "generated_at":  "2026-08-21T08:49:42.0241870Z",
+    "generated_at":  "2026-08-21T08:49:23.3757123Z",
     "command":  "powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -RequireCompleteMatrix",
     "exit_code":  0,
-    "ran_at":  "2026-08-21T08:49:42.0291860Z",
+    "ran_at":  "2026-08-21T08:49:23.3780804Z",
     "source_docs":  [
                         "plans/qa-audit-001.md",
                         "plans/requirements-matrix.md",
@@ -29,9 +29,9 @@
                  {
                      "id":  "UiE2E",
                      "area":  "UiE2E",
-                     "status":  "BLOCKED",
+                     "status":  "FAIL",
                      "evidence":  "",
-                     "note":  "BLOCKED: no evidence JSON found"
+                     "note":  "FAIL: ui-e2e-invalid.json: expected/observed mismatch; FAIL: ui-e2e-invalid.json: process-liveness-only"
                  },
                  {
                      "id":  "INV-4",
@@ -64,15 +64,15 @@
                  {
                      "id":  "VERIFY-BUILD",
                      "area":  "CMake configure/build",
-                     "status":  "PASS",
-                     "evidence":  "docs/loop/evidence/REQ-20260821-001-product-build.json",
+                     "status":  "BLOCKED",
+                     "evidence":  "",
                      "note":  "Status is based on the recorded process exit code."
                  },
                  {
                      "id":  "VERIFY-CTEST",
                      "area":  "CTest self-test",
-                     "status":  "PASS",
-                     "evidence":  "docs/loop/evidence/REQ-20260821-001-product-ctest.json",
+                     "status":  "BLOCKED",
+                     "evidence":  "",
                      "note":  "Status is based on the recorded process exit code."
                  }
              ],

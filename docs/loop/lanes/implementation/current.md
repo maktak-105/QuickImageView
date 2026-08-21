@@ -2,21 +2,22 @@
 
 current_request_id: REQ-20260821-001-product
 status: IMPLEMENTATION_DONE
-iteration: 1
-last_updated: 2026-08-21T08:28:30Z
-heartbeat: 2026-08-21T08:28:30Z
+iteration: 2
+last_updated: 2026-08-21T08:46:00Z
+heartbeat: 2026-08-21T08:46:00Z
 model_observed:
 
 ## Current Checkpoint
 
-- tests/audit_current_state.ps1 を追加し、現状監査マトリクスを生成した。
+- tests/audit_current_state.ps1 にUI/Explorer証拠JSONスキーマ検証を追加した。
+- validate_e2e_evidence.ps1 と不正証拠赤化テストを追加した。
 - core/native/main.cpp は変更していない。
-- CMake/CTest は終了コード0。UI/Explorer実機証拠は無く、監査行列でBLOCKED。
+- CMake/CTest/completion gate は終了コード0。UI/Explorer実機証拠は無く、監査行列でBLOCKED。
 
 ## Next Action
 
-- Reviewレーンの独立レビューを待つ。
+- productからの再レビューを待つ。
 
 ## Blockers
 
-- UI画像表示・ズーム/パン/右クリックおよびExplorer右クリック起動の実機証拠が未提供。
+- UI画像表示・ズーム/パン/右クリックおよびExplorer右クリック起動の実機証拠が未提供（正しくBLOCKED）。

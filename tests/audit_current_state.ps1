@@ -39,51 +39,21 @@ function New-Row([string]$Id, [string]$Area, [string]$Status, [string]$Evidence,
     }
 }
 
-function Get-E2EEvidence {
-    param([string]$Pattern, [string]$Area)
-    $files = @(Get-ChildItem -LiteralPath $evidenceRoot -Filter $Pattern -File -ErrorAction SilentlyContinue)
-    if ($files.Count -eq 0) {
-        return (New-Row $Area $Area 'BLOCKED' '' '実機操作証拠JSONが存在しない。')
-    }
-    $errors = @()
-    $paths = @()
-    foreach ($file in $files) {
-        $paths += $file.FullName
-        try { $record = Get-Content -Raw -LiteralPath $file.FullName | ConvertFrom-Json }
-        catch { $errors += "$($file.Name): invalid JSON"; continue }
-        $required = @('target_operation','expected_result','observed_result','target_exe','target_image','recorded_at','evidence_references')
-        foreach ($field in $required) {
-            $property = $record.PSObject.Properties[$field]
-            if ($null -eq $property -or [string]::IsNullOrWhiteSpace([string]$record.$field)) { $errors += "$($file.Name): missing $field" }
-        }
-        if ($null -ne $record.PSObject.Properties['expected_result'] -and $null -ne $record.PSObject.Properties['observed_result']) {
-            $expected = ([string]$record.expected_result).Trim()
-            $observed = ([string]$record.observed_result).Trim()
-            if ($expected -ne $observed) { $errors += "$($file.Name): expected_result does not equal observed_result" }
-            if ($observed.ToLowerInvariant().Contains('process alive') -or $observed.ToLowerInvariant().Contains('process exists')) { $errors += "$($file.Name): process-liveness-only result" }
-        }
-        if ($null -ne $record.PSObject.Properties['recorded_at']) {
-            $parsed = [DateTimeOffset]::MinValue
-            if (-not [DateTimeOffset]::TryParse([string]$record.recorded_at, [ref]$parsed)) { $errors += "$($file.Name): recorded_at is invalid" }
-        }
-        if ($null -ne $record.PSObject.Properties['evidence_references']) {
-            $references = @($record.evidence_references)
-            if ($references.Count -eq 0) { $errors += "$($file.Name): evidence_references is empty" }
-        }
-    }
-    $pathText = $paths -join ([char]59)
-    if ($errors.Count -gt 0) { $errorText = $errors -join ([char]59); return (New-Row $Area $Area 'FAIL' $pathText $errorText) }
-    return (New-Row $Area $Area 'PASS' $pathText '操作、期待/実測結果、対象exe/画像、記録時刻、証拠参照を検証済み。')
-}
-
 $rows = [System.Collections.Generic.List[object]]::new()
 $source = if (Test-Path -LiteralPath $corePath) { Get-Content -Raw -LiteralPath $corePath } else { '' }
 $cmake = if (Test-Path -LiteralPath $cmakePath) { Get-Content -Raw -LiteralPath $cmakePath } else { '' }
 
 $originalProtectionStatus = if ($source -match 'SamePath' -and $source -match 'CREATE_NEW') { 'PASS' } else { 'FAIL' }
 $rows.Add((New-Row 'INV-1' 'OriginalProtection' $originalProtectionStatus 'core/native/main.cpp' 'Static guard requires same-path rejection and CREATE_NEW output reservation.'))
-$rows.Add((Get-E2EEvidence 'explorer-e2e*.json' 'ExplorerE2E'))
-$rows.Add((Get-E2EEvidence 'ui-e2e*.json' 'UiE2E'))
+$validator = Join-Path $PSScriptRoot 'validate_e2e_evidence.ps1'
+$explorerOutput = & $validator -EvidenceRoot $evidenceRoot -Pattern 'explorer-e2e*.json' 2>&1
+$explorerCode = $LASTEXITCODE
+$explorerStatus = if ($explorerCode -eq 0) { 'PASS' } elseif ($explorerCode -eq 2) { 'BLOCKED' } else { 'FAIL' }
+$rows.Add((New-Row 'ExplorerE2E' 'ExplorerE2E' $explorerStatus ($(if ($explorerCode -eq 0) { 'docs/loop/evidence/explorer-e2e*.json' } else { '' })) (($explorerOutput -join '; '))))
+$uiOutput = & $validator -EvidenceRoot $evidenceRoot -Pattern 'ui-e2e*.json' 2>&1
+$uiCode = $LASTEXITCODE
+$uiStatus = if ($uiCode -eq 0) { 'PASS' } elseif ($uiCode -eq 2) { 'BLOCKED' } else { 'FAIL' }
+$rows.Add((New-Row 'UiE2E' 'UiE2E' $uiStatus ($(if ($uiCode -eq 0) { 'docs/loop/evidence/ui-e2e*.json' } else { '' })) (($uiOutput -join '; '))))
 $rows.Add((New-Row 'INV-4' 'MissingEvidence' $(if ((Test-Path -LiteralPath $evidenceRoot) -and (Test-Path -LiteralPath $matrixPath)) { 'PASS' } else { 'FAIL' }) 'docs/loop/evidence/REQ-20260821-001-product-audit-matrix.json' 'Every matrix row must carry an explicit PASS, BLOCKED, or FAIL status.'))
 
 $rows.Add((New-Row 'AUDIT-IMPLEMENTATION' 'Implementation inventory' $(if (Test-Path -LiteralPath $corePath) { 'PASS' } else { 'FAIL' }) 'core/native/main.cpp' 'Implementation source is enumerated; no source change is made by this audit.'))

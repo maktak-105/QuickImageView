@@ -1,0 +1,9 @@
+{
+  "target_operation": "Open image and zoom",
+  "expected_result": "Image is displayed and zoom changes",
+  "observed_result": "process alive",
+  "target_exe": "build/QuickImageView.exe",
+  "target_image": "fixture.png",
+  "recorded_at": "2026-08-21T08:00:00Z",
+  "evidence_references": ["fixture.mp4"]
+}
