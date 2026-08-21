@@ -5,17 +5,17 @@ the next actor can continue from repo files plus the latest message alone.
 
 ## Current State
 
-- 現状監査要求 REQ-20260821-001-product のIMPLEMENTATION_DONEと証拠JSONを確認した。CMake/CTest/監査はPASS、UI/Explorer実機証拠欠落はBLOCKED、core/**等の禁止対象は未変更。
+- REQ-20260821-001-productの1周目は未完了。reviewがblockerを検出した。UI/Explorer証拠JSONの存在だけでPASSへ到達できるため、内容スキーマ・対象exe/画像・操作結果・記録時刻・証拠参照を検証する修正をiter-2で実施する。
 
 ## Next Action
 
-- [ ] reviewが監査マトリクス、証拠、scope creep、looks-done-but-wrong、ease-of-misuseを独立レビューする。
+- [ ] implementationがiter-2のFIX_REQUESTを実装し、不正なUI/Explorer証拠JSONを投入した検証が非0になることを証明する。
 
 ## Active Request
 
 - request_id: REQ-20260821-001-product
-- owner_lane: review
-- iteration: 1
+- owner_lane: implementation
+- iteration: 2
 
 ## Blockers
 
@@ -34,7 +34,7 @@ the next actor can continue from repo files plus the latest message alone.
 
 ## Done When
 
-- [ ] reviewのREVIEW_DONEを受領し、PASSならUI/Explorer BLOCKEDを保持したまま受入可否を判定する。
+- [ ] iter-2のIMPLEMENTATION_DONEを受領後、reviewへ再レビューを依頼する。
 
 ## Memory Protocol
 
