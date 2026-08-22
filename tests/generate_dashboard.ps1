@@ -9,16 +9,32 @@ if (-not $OutputPath) { $OutputPath = Join-Path $repo 'docs\loop\dashboard.html'
 $goal = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'docs\loop\goal.json') | ConvertFrom-Json
 $checklist = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'docs\loop\checklist.json') | ConvertFrom-Json
 $invariants = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'docs\loop\invariants.json') | ConvertFrom-Json
+$state = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'docs\loop\state.json') | ConvertFrom-Json
 
 function Encode([object]$Value) { [System.Net.WebUtility]::HtmlEncode([string]$Value) }
+ $checkMap = @{}
+foreach ($check in @($state.checks)) { $checkMap[[string]$check.id] = [string]$check.status }
+function Get-ItemStatus([object]$Item) {
+    if ($Item.status -eq 'excluded') { return 'EXCLUDED' }
+    foreach ($fact in @($state.unverified_requirements.PSObject.Properties)) {
+        if (@($fact.Value) -contains [string]$Item.id) { return 'UNVERIFIED' }
+    }
+    $linked = @($Item.test_ids | ForEach-Object { if ($checkMap.ContainsKey([string]$_)) { $checkMap[[string]$_] } else { 'UNCHECKED' } })
+    if ($linked.Count -eq 0 -or $linked -contains 'UNCHECKED') { return 'UNCHECKED' }
+    if ($linked -contains 'FAIL') { return 'FAIL' }
+    if (($linked | Where-Object { $_ -ne 'PASS' }).Count -gt 0) { return 'UNCHECKED' }
+    return 'PASS'
+}
 $generated = Get-Date -Format 'yyyy-MM-dd HH:mm:ss zzz'
 $checklistRows = foreach ($item in @($checklist.items)) {
-    $status = if ($item.status -eq 'excluded') { 'EXCLUDED' } else { 'PENDING' }
-    $class = if ($status -eq 'EXCLUDED') { 'excluded' } else { 'pending' }
+    $status = Get-ItemStatus $item
+    $class = if ($status -eq 'EXCLUDED') { 'excluded' } elseif ($status -eq 'PASS') { 'pass' } elseif ($status -eq 'FAIL') { 'fail' } else { 'pending' }
     "<tr class='$class'><td><code>$(Encode $item.id)</code></td><td><span class='badge $class'>$(Encode $status)</span></td><td>$(Encode $item.description)</td><td>$(Encode ($item.test_ids -join ', '))</td></tr>"
 }
 $invariantRows = foreach ($item in @($invariants.invariants)) {
-    "<tr class='pending'><td><code>$(Encode $item.id)</code></td><td><span class='badge pending'>PENDING</span></td><td>$(Encode $item.description)</td></tr>"
+    $status = if ($checkMap.ContainsKey('invariant_' + $item.id)) { $checkMap['invariant_' + $item.id] } else { 'UNCHECKED' }
+    $class = if ($status -eq 'PASS') { 'pass' } elseif ($status -eq 'FAIL') { 'fail' } else { 'pending' }
+    "<tr class='$class'><td><code>$(Encode $item.id)</code></td><td><span class='badge $class'>$(Encode $status)</span></td><td>$(Encode $item.description)</td></tr>"
 }
 $requiredCount = @($checklist.items | Where-Object status -eq 'required').Count
 $excludedCount = @($checklist.items | Where-Object status -eq 'excluded').Count
@@ -37,7 +53,7 @@ h1 { margin:0 0 8px; } h2 { margin-top:30px; }
 .muted { color:#9aa8b8; } .summary { display:flex; gap:12px; flex-wrap:wrap; margin:20px 0; }
 .card { background:#18212c; border:1px solid #2c3b4c; border-radius:10px; padding:16px 20px; min-width:180px; }
 .card strong { display:block; font-size:28px; margin-top:4px; }
-.pending { color:#f6cf72; } .excluded { color:#9aa8b8; }
+.pass { color:#78e0a0; } .pending { color:#f6cf72; } .fail { color:#ff8d8d; } .excluded { color:#9aa8b8; }
 .badge { display:inline-block; border-radius:999px; padding:3px 9px; font-size:12px; font-weight:700; background:#283544; }
 table { width:100%; border-collapse:collapse; background:#151d27; border:1px solid #2c3b4c; }
 th,td { text-align:left; padding:10px 12px; border-bottom:1px solid #273341; vertical-align:top; }
@@ -49,12 +65,14 @@ code { color:#b9d7ff; } .note { border-left:4px solid #f6cf72; padding:10px 14px
 <h1>QuickImageView &#38283;&#30330;&#12480;&#12483;&#12471;&#12517;&#12508;&#12540;&#12489;</h1>
 <div class="muted">&#29983;&#25104;&#26085;&#26178;: $(Encode $generated) / &#29694;&#22312;&#12398;&#20184;&#27096;&#12539;&#12481;&#12455;&#12483;&#12463;&#12522;&#12473;&#12488;&#29366;&#24907;（&#26908;&#26597;&#26410;&#23455;&#34892;）</div>
 <div class="summary">
-  <div class="card">&#31649;&#29702;&#12466;&#12540;&#12488;<strong class="pending">&#26410;&#23455;&#34892;</strong></div>
+  <div class="card">&#31649;&#29702;&#12466;&#12540;&#12488;<strong class="$(if ($state.status -eq 'PASS') { 'pass' } else { 'pending' })">$(Encode $state.status)</strong></div>
   <div class="card">&#24517;&#38920;&#38917;&#30446;<strong class="pending">$requiredCount</strong></div>
   <div class="card">&#23550;&#35937;&#22806;<strong class="excluded">$excludedCount</strong></div>
   <div class="card">&#12468;&#12540;&#12523;&#21463;&#20837;&#38917;&#30446;<strong class="pending">$(@($goal.acceptance).Count)</strong></div>
 </div>
-<div class="note"><strong>&#27880;&#24847;:</strong> &#12371;&#12398;&#12506;&#12540;&#12472;&#12398;&#29983;&#25104;&#12391;&#12399;&#12450;&#12503;&#12522;&#12418;&#12486;&#12473;&#12488;&#12418;&#36215;&#21205;&#12375;&#12414;&#12379;&#12435;&#12290;&#23455;&#27231;&#26908;&#26597;&#12399; <code>tests/manage_loop.ps1</code> &#12434;&#26126;&#31034;&#30340;&#12395;&#23455;&#34892;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;</div>
+<div class="note"><strong>&#27880;&#24847;:</strong> &#12371;&#12398;&#12506;&#12540;&#12472;&#12398;&#29983;&#25104;&#12391;&#12399;&#12450;&#12503;&#12522;&#12418;&#12486;&#12473;&#12488;&#12418;&#36215;&#21205;&#12375;&#12414;&#12379;&#12435;&#12290;&#34920;&#31034;&#12375;&#12390;&#12356;&#12427;&#29366;&#24907;&#12399;&#26368;&#26032;&#12398; <code>state.json</code> &#12391;&#12377;&#12290;&#23455;&#27231;&#26908;&#26597;&#12399; <code>tests/manage_loop.ps1</code> &#12434;&#26126;&#31034;&#30340;&#12395;&#23455;&#34892;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;</div>
+<h2>&#26410;&#26908;&#35388;&#20107;&#23455;</h2>
+<table><thead><tr><th>ID</th><th>&#29366;&#24907;</th><th>&#20869;&#23481;</th></tr></thead><tbody>$(foreach ($fact in @($state.unverified)) { "<tr class='pending'><td><code>$(Encode $fact.id)</code></td><td><span class='badge pending'>$(Encode $fact.status)</span></td><td>$(Encode $fact.detail)</td></tr>" })</tbody></table>
 <h2>&#32173;&#25345;&#22865;&#32004;</h2>
 <table><thead><tr><th>ID</th><th>&#29366;&#24907;</th><th>&#22865;&#32004;</th></tr></thead><tbody>$($invariantRows -join ([Environment]::NewLine))</tbody></table>
 <h2>&#12481;&#12455;&#12483;&#12463;&#12522;&#12473;&#12488;</h2>

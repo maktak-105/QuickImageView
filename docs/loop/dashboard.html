@@ -11,7 +11,7 @@ h1 { margin:0 0 8px; } h2 { margin-top:30px; }
 .muted { color:#9aa8b8; } .summary { display:flex; gap:12px; flex-wrap:wrap; margin:20px 0; }
 .card { background:#18212c; border:1px solid #2c3b4c; border-radius:10px; padding:16px 20px; min-width:180px; }
 .card strong { display:block; font-size:28px; margin-top:4px; }
-.pending { color:#f6cf72; } .excluded { color:#9aa8b8; }
+.pass { color:#78e0a0; } .pending { color:#f6cf72; } .fail { color:#ff8d8d; } .excluded { color:#9aa8b8; }
 .badge { display:inline-block; border-radius:999px; padding:3px 9px; font-size:12px; font-weight:700; background:#283544; }
 table { width:100%; border-collapse:collapse; background:#151d27; border:1px solid #2c3b4c; }
 th,td { text-align:left; padding:10px 12px; border-bottom:1px solid #273341; vertical-align:top; }
@@ -21,53 +21,55 @@ code { color:#b9d7ff; } .note { border-left:4px solid #f6cf72; padding:10px 14px
 </head>
 <body>
 <h1>QuickImageView &#38283;&#30330;&#12480;&#12483;&#12471;&#12517;&#12508;&#12540;&#12489;</h1>
-<div class="muted">&#29983;&#25104;&#26085;&#26178;: 2026-08-22 18:28:20 +09:00 / &#29694;&#22312;&#12398;&#20184;&#27096;&#12539;&#12481;&#12455;&#12483;&#12463;&#12522;&#12473;&#12488;&#29366;&#24907;・・#26908;&#26597;&#26410;&#23455;&#34892;・・/div>
+<div class="muted">&#29983;&#25104;&#26085;&#26178;: 2026-08-22 19:51:36 +09:00 / &#29694;&#22312;&#12398;&#20184;&#27096;&#12539;&#12481;&#12455;&#12483;&#12463;&#12522;&#12473;&#12488;&#29366;&#24907;・・#26908;&#26597;&#26410;&#23455;&#34892;・・/div>
 <div class="summary">
-  <div class="card">&#31649;&#29702;&#12466;&#12540;&#12488;<strong class="pending">&#26410;&#23455;&#34892;</strong></div>
+  <div class="card">&#31649;&#29702;&#12466;&#12540;&#12488;<strong class="pending">FAIL</strong></div>
   <div class="card">&#24517;&#38920;&#38917;&#30446;<strong class="pending">30</strong></div>
   <div class="card">&#23550;&#35937;&#22806;<strong class="excluded">5</strong></div>
   <div class="card">&#12468;&#12540;&#12523;&#21463;&#20837;&#38917;&#30446;<strong class="pending">25</strong></div>
 </div>
-<div class="note"><strong>&#27880;&#24847;:</strong> &#12371;&#12398;&#12506;&#12540;&#12472;&#12398;&#29983;&#25104;&#12391;&#12399;&#12450;&#12503;&#12522;&#12418;&#12486;&#12473;&#12488;&#12418;&#36215;&#21205;&#12375;&#12414;&#12379;&#12435;&#12290;&#23455;&#27231;&#26908;&#26597;&#12399; <code>tests/manage_loop.ps1</code> &#12434;&#26126;&#31034;&#30340;&#12395;&#23455;&#34892;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;</div>
+<div class="note"><strong>&#27880;&#24847;:</strong> &#12371;&#12398;&#12506;&#12540;&#12472;&#12398;&#29983;&#25104;&#12391;&#12399;&#12450;&#12503;&#12522;&#12418;&#12486;&#12473;&#12488;&#12418;&#36215;&#21205;&#12375;&#12414;&#12379;&#12435;&#12290;&#34920;&#31034;&#12375;&#12390;&#12356;&#12427;&#29366;&#24907;&#12399;&#26368;&#26032;&#12398; <code>state.json</code> &#12391;&#12377;&#12290;&#23455;&#27231;&#26908;&#26597;&#12399; <code>tests/manage_loop.ps1</code> &#12434;&#26126;&#31034;&#30340;&#12395;&#23455;&#34892;&#12375;&#12390;&#12367;&#12384;&#12373;&#12356;&#12290;</div>
+<h2>&#26410;&#26908;&#35388;&#20107;&#23455;</h2>
+<table><thead><tr><th>ID</th><th>&#29366;&#24907;</th><th>&#20869;&#23481;</th></tr></thead><tbody><tr class='pending'><td><code>metadata_real_exif</code></td><td><span class='badge pending'>UNVERIFIED</span></td><td>metadata_dynamic は実EXIF表示操作ではなく、ソースプローブ中心の検査</td></tr> <tr class='pending'><td><code>resize_visual_dimensions</code></td><td><span class='badge pending'>UNVERIFIED</span></td><td>ui_dynamic はリサイズ後の実画像寸法を画面または出力で比較していない</td></tr></tbody></table>
 <h2>&#32173;&#25345;&#22865;&#32004;</h2>
-<table><thead><tr><th>ID</th><th>&#29366;&#24907;</th><th>&#22865;&#32004;</th></tr></thead><tbody><tr class='pending'><td><code>file_info_display</code></td><td><span class='badge pending'>PENDING</span></td><td>画像ファイル名、寸法、形式、ファイルサイズを表示し続ける</td></tr>
-<tr class='pending'><td><code>exif_display</code></td><td><span class='badge pending'>PENDING</span></td><td>代表的なEXIF情報を読み取り、画面に表示し続ける</td></tr>
-<tr class='pending'><td><code>source_preservation</code></td><td><span class='badge pending'>PENDING</span></td><td>原本を変更・削除・上書きしない</td></tr>
-<tr class='pending'><td><code>context_menu_safety</code></td><td><span class='badge pending'>PENDING</span></td><td>Explorer登録はQIV専用キーだけを扱い、アンインストールで他の登録を削除しない</td></tr></tbody></table>
+<table><thead><tr><th>ID</th><th>&#29366;&#24907;</th><th>&#22865;&#32004;</th></tr></thead><tbody><tr class='pending'><td><code>file_info_display</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>画像ファイル名、寸法、形式、ファイルサイズを表示し続ける</td></tr>
+<tr class='pending'><td><code>exif_display</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>代表的なEXIF情報を読み取り、画面に表示し続ける</td></tr>
+<tr class='pending'><td><code>source_preservation</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>原本を変更・削除・上書きしない</td></tr>
+<tr class='pending'><td><code>context_menu_safety</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>Explorer登録はQIV専用キーだけを扱い、アンインストールで他の登録を削除しない</td></tr></tbody></table>
 <h2>&#12481;&#12455;&#12483;&#12463;&#12522;&#12473;&#12488;</h2>
-<table><thead><tr><th>ID</th><th>&#29366;&#24907;</th><th>&#35201;&#27714;</th><th>&#26908;&#26597;&#12522;&#12531;&#12463;</th></tr></thead><tbody><tr class='pending'><td><code>REQ-001</code></td><td><span class='badge pending'>PENDING</span></td><td>選択した画像を開いて表示する</td><td>edit_dynamic, ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-002</code></td><td><span class='badge pending'>PENDING</span></td><td>画像を拡大縮小・パンする</td><td>ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-003</code></td><td><span class='badge pending'>PENDING</span></td><td>原本を変更せず、指定した別形式へ保存する</td><td>conversion_cli, save_format_filters, source_safety</td></tr>
-<tr class='pending'><td><code>REQ-003A</code></td><td><span class='badge pending'>PENDING</span></td><td>保存先フォルダへ進む前に、形式・品質・圧縮の保存オプションを表示する</td><td>save_options_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-004</code></td><td><span class='badge pending'>PENDING</span></td><td>Explorerの画像右クリックメニューからQIVを起動する</td><td>context_menu_install, installed_parity</td></tr>
+<table><thead><tr><th>ID</th><th>&#29366;&#24907;</th><th>&#35201;&#27714;</th><th>&#26908;&#26597;&#12522;&#12531;&#12463;</th></tr></thead><tbody><tr class='pending'><td><code>REQ-001</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>選択した画像を開いて表示する</td><td>edit_dynamic, ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-002</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>画像を拡大縮小・パンする</td><td>ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-003</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>原本を変更せず、指定した別形式へ保存する</td><td>conversion_cli, save_format_filters, source_safety</td></tr>
+<tr class='pending'><td><code>REQ-003A</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>保存先フォルダへ進む前に、形式・品質・圧縮の保存オプションを表示する</td><td>save_options_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-004</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>Explorerの画像右クリックメニューからQIVを起動する</td><td>context_menu_install, installed_parity</td></tr>
 <tr class='excluded'><td><code>REQ-005</code></td><td><span class='badge excluded'>EXCLUDED</span></td><td>Explorerのサムネイル用シェル拡張は実装しない</td><td>regression_invariants</td></tr>
-<tr class='pending'><td><code>REQ-006</code></td><td><span class='badge pending'>PENDING</span></td><td>固定プリセットに限定せず、ユーザー指定の正のパーセントまたはピクセル寸法でリサイズする</td><td>resize, edit_dynamic, ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-006A</code></td><td><span class='badge pending'>PENDING</span></td><td>リサイズにアスペクト比固定オプションを付け、デフォルトでONにする</td><td>aspect_ratio_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-007</code></td><td><span class='badge pending'>PENDING</span></td><td>明示的に選択した範囲を切り抜く</td><td>crop, edit_dynamic, ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-007A</code></td><td><span class='badge pending'>PENDING</span></td><td>パン・拡大縮小・範囲選択で画像を点滅させず、滑らかに描画する</td><td>smooth_rendering_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-008</code></td><td><span class='badge pending'>PENDING</span></td><td>90度・180度・270度回転する</td><td>rotate_flip, edit_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-009</code></td><td><span class='badge pending'>PENDING</span></td><td>左右反転（ミラー）・上下反転する</td><td>rotate_flip, edit_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-010</code></td><td><span class='badge pending'>PENDING</span></td><td>50・75・90などの固定候補に限定せず、ユーザー指定のJPEG品質値を適用する</td><td>jpeg_quality, edit_dynamic, compression_settings</td></tr>
-<tr class='pending'><td><code>REQ-011</code></td><td><span class='badge pending'>PENDING</span></td><td>フルカラー・256色・グレースケールへ色変換する</td><td>color_conversion, edit_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-012</code></td><td><span class='badge pending'>PENDING</span></td><td>Ctrl+Z・Ctrl+YだけでUndo・Redoを行う</td><td>undo_redo, undo_redo_shortcuts, edit_dynamic, ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-013</code></td><td><span class='badge pending'>PENDING</span></td><td>Windowsクリップボードで画像をコピー・貼り付けする</td><td>clipboard_image, edit_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-014</code></td><td><span class='badge pending'>PENDING</span></td><td>利用可能なWICコーデックでWebP・HEIC/HEIFへ変換する</td><td>webp_heic_conversion, save_format_filters</td></tr>
-<tr class='pending'><td><code>REQ-015</code></td><td><span class='badge pending'>PENDING</span></td><td>変換時の品質・圧縮設定を適用する</td><td>jpeg_quality, compression_settings, edit_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-016</code></td><td><span class='badge pending'>PENDING</span></td><td>ファイル名・寸法・形式・ファイルサイズを表示する</td><td>regression_invariants, metadata_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-017</code></td><td><span class='badge pending'>PENDING</span></td><td>EXIFがある場合は代表的なEXIF情報を表示する</td><td>regression_invariants, metadata_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-006</code></td><td><span class='badge pending'>UNVERIFIED</span></td><td>固定プリセットに限定せず、ユーザー指定の正のパーセントまたはピクセル寸法でリサイズする</td><td>resize, edit_dynamic, ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-006A</code></td><td><span class='badge pending'>UNVERIFIED</span></td><td>リサイズにアスペクト比固定オプションを付け、デフォルトでONにする</td><td>aspect_ratio_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-007</code></td><td><span class='badge pending'>UNVERIFIED</span></td><td>明示的に選択した範囲を切り抜く</td><td>crop, edit_dynamic, ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-007A</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>パン・拡大縮小・範囲選択で画像を点滅させず、滑らかに描画する</td><td>smooth_rendering_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-008</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>90度・180度・270度回転する</td><td>rotate_flip, edit_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-009</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>左右反転（ミラー）・上下反転する</td><td>rotate_flip, edit_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-010</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>50・75・90などの固定候補に限定せず、ユーザー指定のJPEG品質値を適用する</td><td>jpeg_quality, edit_dynamic, compression_settings</td></tr>
+<tr class='pending'><td><code>REQ-011</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>フルカラー・256色・グレースケールへ色変換する</td><td>color_conversion, edit_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-012</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>Ctrl+Z・Ctrl+YだけでUndo・Redoを行う</td><td>undo_redo, undo_redo_shortcuts, edit_dynamic, ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-013</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>Windowsクリップボードで画像をコピー・貼り付けする</td><td>clipboard_image, edit_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-014</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>利用可能なWICコーデックでWebP・HEIC/HEIFへ変換する</td><td>webp_heic_conversion, save_format_filters</td></tr>
+<tr class='pending'><td><code>REQ-015</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>変換時の品質・圧縮設定を適用する</td><td>jpeg_quality, compression_settings, edit_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-016</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>ファイル名・寸法・形式・ファイルサイズを表示する</td><td>regression_invariants, metadata_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-017</code></td><td><span class='badge pending'>UNVERIFIED</span></td><td>EXIFがある場合は代表的なEXIF情報を表示する</td><td>regression_invariants, metadata_dynamic</td></tr>
 <tr class='excluded'><td><code>REQ-018</code></td><td><span class='badge excluded'>EXCLUDED</span></td><td>EXIF・メタデータの編集は実装しない</td><td>regression_invariants</td></tr>
 <tr class='excluded'><td><code>REQ-019</code></td><td><span class='badge excluded'>EXCLUDED</span></td><td>フォルダ内画像の前後移動は実装しない</td><td>scope_exclusions</td></tr>
 <tr class='excluded'><td><code>REQ-020</code></td><td><span class='badge excluded'>EXCLUDED</span></td><td>スライドショーは実装しない</td><td>scope_exclusions</td></tr>
 <tr class='excluded'><td><code>REQ-021</code></td><td><span class='badge excluded'>EXCLUDED</span></td><td>印刷は実装しない</td><td>scope_exclusions</td></tr>
-<tr class='pending'><td><code>REQ-022</code></td><td><span class='badge pending'>PENDING</span></td><td>Undo・Redoをメニュー項目として表示しない</td><td>undo_redo_shortcuts, ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-023</code></td><td><span class='badge pending'>PENDING</span></td><td>ソースの静的回帰検査を実行する</td><td>regression_invariants</td></tr>
-<tr class='pending'><td><code>REQ-024</code></td><td><span class='badge pending'>PENDING</span></td><td>実データを使った動的編集テストを実行する</td><td>edit_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-025</code></td><td><span class='badge pending'>PENDING</span></td><td>ビルド版に対して動的UIテストを実行する</td><td>ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-026</code></td><td><span class='badge pending'>PENDING</span></td><td>検査済みビルドをインストールし、インストール版に対してUIテストを実行する</td><td>installed_parity, installed_ui_dynamic</td></tr>
-<tr class='pending'><td><code>REQ-027</code></td><td><span class='badge pending'>PENDING</span></td><td>ユーザーの要求と明示的な修正をすべて現在のチェックリストに残す</td><td>checklist_completeness</td></tr>
-<tr class='pending'><td><code>REQ-028</code></td><td><span class='badge pending'>PENDING</span></td><td>過去ログや結果ログを完了根拠に使わない</td><td>checklist_completeness</td></tr>
-<tr class='pending'><td><code>REQ-029</code></td><td><span class='badge pending'>PENDING</span></td><td>現行ビルド仕様書を合格判定の基準にする</td><td>spec_consistency</td></tr>
-<tr class='pending'><td><code>REQ-030</code></td><td><span class='badge pending'>PENDING</span></td><td>要求・指摘・操作・対象外をチェックリストで管理する</td><td>checklist_completeness</td></tr>
-<tr class='pending'><td><code>REQ-031</code></td><td><span class='badge pending'>PENDING</span></td><td>現在の仕様とチェックリストから静的HTMLダッシュボードを生成する</td><td>dashboard_contract</td></tr>
-<tr class='pending'><td><code>REQ-032</code></td><td><span class='badge pending'>PENDING</span></td><td>要求管理者をリリースゲートとして使用する</td><td>manager_contract</td></tr></tbody></table>
+<tr class='pending'><td><code>REQ-022</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>Undo・Redoをメニュー項目として表示しない</td><td>undo_redo_shortcuts, ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-023</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>ソースの静的回帰検査を実行する</td><td>regression_invariants</td></tr>
+<tr class='pending'><td><code>REQ-024</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>実データを使った動的編集テストを実行する</td><td>edit_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-025</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>ビルド版に対して動的UIテストを実行する</td><td>ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-026</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>検査済みビルドをインストールし、インストール版に対してUIテストを実行する</td><td>installed_parity, installed_ui_dynamic</td></tr>
+<tr class='pending'><td><code>REQ-027</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>ユーザーの要求と明示的な修正をすべて現在のチェックリストに残す</td><td>checklist_completeness</td></tr>
+<tr class='pending'><td><code>REQ-028</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>過去ログや結果ログを完了根拠に使わない</td><td>checklist_completeness</td></tr>
+<tr class='pending'><td><code>REQ-029</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>現行ビルド仕様書を合格判定の基準にする</td><td>spec_consistency</td></tr>
+<tr class='pending'><td><code>REQ-030</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>要求・指摘・操作・対象外をチェックリストで管理する</td><td>checklist_completeness</td></tr>
+<tr class='pending'><td><code>REQ-031</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>現在の仕様とチェックリストから静的HTMLダッシュボードを生成する</td><td>dashboard_contract</td></tr>
+<tr class='pending'><td><code>REQ-032</code></td><td><span class='badge pending'>UNCHECKED</span></td><td>要求管理者をリリースゲートとして使用する</td><td>manager_contract</td></tr></tbody></table>
 </body></html>

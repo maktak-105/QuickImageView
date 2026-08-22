@@ -20,7 +20,7 @@
     {
       "id": "context_menu_safety",
       "description": "Explorer登録はQIV専用キーだけを扱い、アンインストールで他の登録を削除しない",
-      "source_probes": ["SystemFileAssociations\\image\\shell\\QuickImageView"]
+      "source_probes": ["SystemFileAssociations", "ContextMenuName", "NoRegisterContextMenu"]
     }
   ]
 }

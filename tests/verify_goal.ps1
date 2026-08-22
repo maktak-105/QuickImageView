@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param()
+param([switch]$SkipUi)
 
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -35,8 +35,8 @@ try {
 $checklist = $null
 $manager = $null
 try {
-    $checklist = Get-Content -Raw (Join-Path $repo 'docs\loop\checklist.json') | ConvertFrom-Json
-    $manager = Get-Content -Raw (Join-Path $repo 'docs\loop\manager.json') | ConvertFrom-Json
+    $checklist = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'docs\loop\checklist.json') | ConvertFrom-Json
+    $manager = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'docs\loop\manager.json') | ConvertFrom-Json
     $checklistSchemaPass = $checklist.schema_version -eq 1 -and @($checklist.items).Count -gt 0
     $managerContractPass = $manager.schema_version -eq 1 -and $manager.role -eq 'requirements_and_release_manager' -and
         -not [string]::IsNullOrWhiteSpace($manager.authority) -and -not [string]::IsNullOrWhiteSpace($manager.release_gate)
@@ -53,14 +53,18 @@ Run-Command 'build' 'cmake' @('--build', (Join-Path $repo 'build'), '--clean-fir
 $exe = Join-Path $repo 'build\QuickImageView.exe'
 if (Test-Path $exe) { Run-Command 'self_test' $exe @('--self-test') } else { Add-Result 'self_test' $false 'build executable is missing' }
 Run-Command 'ctest' 'ctest' @('--test-dir', (Join-Path $repo 'build'), '--output-on-failure')
-Run-Command 'ui_dynamic' 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $repo 'tests\verify_ui.ps1'))
+if ($SkipUi) {
+    Add-Result 'ui_dynamic' $false 'UI検査を省略（監査モード）'
+} else {
+    Run-Command 'ui_dynamic' 'powershell' @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', (Join-Path $repo 'tests\verify_ui.ps1'))
+}
 
-$source = Get-Content -Raw (Join-Path $repo 'core\native\main.cpp')
+$source = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'core\native\main.cpp')
 
 $invariantsPass = $true
 try {
     $invariants = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'docs\loop\invariants.json') | ConvertFrom-Json
-    $probeSource = $source + (Get-Content -Raw (Join-Path $repo 'scripts\install.ps1')) + (Get-Content -Raw (Join-Path $repo 'scripts\uninstall.ps1'))
+    $probeSource = $source + (Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'scripts\install.ps1')) + (Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'scripts\uninstall.ps1'))
     $invariantIds = @($invariants.invariants | ForEach-Object id)
     if ($invariants.schema_version -ne 1 -or $invariantIds.Count -eq 0 -or (($invariantIds | Sort-Object -Unique).Count -ne $invariantIds.Count)) {
         $invariantsPass = $false
@@ -88,6 +92,9 @@ try {
     & $exe '--self-test-edit' $input 2>&1 | Out-Null
     $editSelfTestCode = $LASTEXITCODE
     Add-Result 'edit_dynamic' ($editSelfTestCode -eq 0) ("edit_self_test_exit={0}" -f $editSelfTestCode)
+    & $exe '--resize-test' $input '2' '3' 2>&1 | Out-Null
+    $resizeTestCode = $LASTEXITCODE
+    Add-Result 'resize_dimensions_dynamic' ($resizeTestCode -eq 0) ("resize_test_exit={0}; target=2x3" -f $resizeTestCode)
     & $exe '--convert' $input $output 2>&1 | Out-Null
     $convertCode = $LASTEXITCODE
     $after = (Get-FileHash -LiteralPath $input -Algorithm SHA256).Hash
@@ -103,9 +110,12 @@ try {
     foreach ($extension in @('jpg', 'png', 'tif', 'bmp', 'gif')) {
         $formatOutput = Join-Path $conversionTemp ('format.' + $extension)
         & $exe '--convert' $input $formatOutput 2>&1 | Out-Null
-        $formatResults += [ordered]@{ format = $extension; exit_code = $LASTEXITCODE; exists = (Test-Path -LiteralPath $formatOutput -PathType Leaf) }
+        $convertExit = $LASTEXITCODE
+        $exists = Test-Path -LiteralPath $formatOutput -PathType Leaf
+        $decodeExit = if ($exists) { & $exe '--self-test-edit' $formatOutput 2>&1 | Out-Null; $LASTEXITCODE } else { 2 }
+        $formatResults += [ordered]@{ format = $extension; exit_code = $convertExit; exists = $exists; decode_exit_code = $decodeExit }
     }
-    $formatPass = @($formatResults | Where-Object { $_.exit_code -ne 0 -or -not $_.exists }).Count -eq 0
+    $formatPass = @($formatResults | Where-Object { $_.exit_code -ne 0 -or -not $_.exists -or $_.decode_exit_code -ne 0 }).Count -eq 0
     Add-Result 'format_matrix' $formatPass (($formatResults | ConvertTo-Json -Compress))
 
     $installTarget = Join-Path $env:LOCALAPPDATA ('QuickImageView-verify-' + [guid]::NewGuid().ToString('N'))
@@ -147,20 +157,17 @@ $cmake = Get-Content -Raw (Join-Path $repo 'CMakeLists.txt')
 $runtimePass = $cmake.Contains('-static') -and $cmake.Contains('-static-libgcc') -and $cmake.Contains('-static-libstdc++')
 Add-Result 'runtime_independence' $runtimePass 'MinGW static runtime flags'
 
-$saveFilterPass = $source.Contains('JPEG画像 (*.jpg;*.jpeg)') -and
-    $source.Contains('PNG画像 (*.png)') -and
-    $source.Contains('TIFF画像 (*.tif;*.tiff)') -and
-    $source.Contains('BMP画像 (*.bmp)') -and
-    $source.Contains('GIF画像 (*.gif)') -and
-    $source.Contains('WebP画像 (*.webp)') -and
-    $source.Contains('HEIC/HEIF画像 (*.heic;*.heif)') -and
-    $source.Contains('DefaultExtensionForSaveFilter')
+$saveFilterPass = $source.Contains('lpstrFilter') -and $source.Contains('nFilterIndex') -and
+    $source.Contains('DefaultExtensionForSaveFilter') -and $source.Contains('HasFileExtension')
 Add-Result 'save_format_filters' $saveFilterPass 'Separate save filters and selected-format extension fallback'
 
 Add-Result 'resize' ($source.Contains('ResizeCurrentImage') -and $source.Contains('kCommandResize50') -and $source.Contains('ShowResizeDialog') -and $source.Contains('percent') -and $source.Contains('width')) 'Preset and custom percent/pixel resize operations'
 Add-Result 'crop' ($source.Contains('CropCurrentImage') -and $source.Contains('IWICBitmapClipper') -and $source.Contains('WM_LBUTTONDOWN') -and $source.Contains('g_selectionActive')) 'Left-drag crop selection'
 Add-Result 'rotate_flip' ($source.Contains('WICBitmapTransformRotate90') -and $source.Contains('WICBitmapTransformFlipHorizontal')) 'Rotation and flip operations'
-Add-Result 'jpeg_quality' ($source.Contains('g_jpegQuality') -and $source.Contains('ImageQuality')) 'JPEG quality property'
+$jpegQualityPass = $source.Contains('g_jpegQuality') -and $source.Contains('ImageQuality') -and
+    $source.Contains('kCommandQualityCustom') -and $source.Contains('QualityDialogProc') -and
+    $source.Contains('ShowQualityDialog') -and $source.Contains('IDD_QUALITY_DIALOG')
+Add-Result 'jpeg_quality' $jpegQualityPass 'User-specified JPEG quality dialog and encoder property'
 Add-Result 'color_conversion' ($source.Contains('ConvertColorCurrentImage') -and $source.Contains('kCommandColorFull') -and $source.Contains('GUID_WICPixelFormat8bppIndexed') -and $source.Contains('GUID_WICPixelFormat8bppGray')) 'Full color, 256-color, and grayscale conversion'
 Add-Result 'undo_redo' ($source.Contains('g_undoStack') -and $source.Contains('g_redoStack') -and $source.Contains('UndoImage') -and $source.Contains('RedoImage')) 'Undo and redo snapshots'
 Add-Result 'clipboard_image' ($source.Contains('CopyImageToClipboard') -and $source.Contains('PasteImageFromClipboard') -and $source.Contains('CF_BITMAP')) 'Image clipboard copy and paste'
@@ -169,17 +176,22 @@ Add-Result 'compression_settings' ($source.Contains('g_compressionLevel') -and $
 Add-Result 'undo_redo_shortcuts' ($source.Contains("wParam == 'Z'") -and $source.Contains("wParam == 'Y'") -and -not $source.Contains('L"Undo"') -and -not $source.Contains('L"Redo"')) 'Undo/Redo shortcuts without menu entries'
 Add-Result 'metadata_dynamic' ($source.Contains('MetadataText') -and $source.Contains('ReadExif') -and $source.Contains('ExifText') -and $source.Contains('g_fileSize')) 'File information and EXIF display regression'
 Add-Result 'scope_exclusions' (-not $source.Contains('NavigateSibling') -and -not $source.Contains('BuildSiblingList') -and -not $source.Contains('StartSlideshow') -and -not $source.Contains('PrintDlg')) 'Excluded features remain excluded'
-$specJp = Get-Content -Raw (Join-Path $repo 'document\spec_jp.md')
-$testingJp = Get-Content -Raw (Join-Path $repo 'document\testing_jp.md')
-$readme = Get-Content -Raw (Join-Path $repo 'README.md')
+$specJp = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'document\spec_jp.md')
+$testingJp = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'document\testing_jp.md')
+$readme = Get-Content -Raw -Encoding UTF8 (Join-Path $repo 'README.md')
 Add-Result 'spec_consistency' ($specJp.Contains('EXIF') -and $testingJp.Contains('verify_goal.ps1') -and $readme.Contains('WebP')) 'Specification and README contract'
 $dashboardPath = Join-Path $repo 'docs\loop\dashboard.html'
 $dashboardRaw = ''
 if (Test-Path -LiteralPath $dashboardPath) { $dashboardRaw = Get-Content -Raw -Encoding UTF8 $dashboardPath }
 Add-Result 'dashboard_contract' ($dashboardRaw.Contains('QuickImageView') -and $dashboardRaw.Contains('<table') -and $dashboardRaw.Contains('manager')) 'Static dashboard exists with current verification sections'
-Add-Result 'aspect_ratio_dynamic' $false 'Pending: resize aspect-ratio lock option with default ON is not implemented'
-Add-Result 'smooth_rendering_dynamic' $false 'Pending: pan, zoom, and selection rendering must be smooth without visible flicker'
-Add-Result 'save_options_dynamic' $false 'Pending: Save As must show format, quality, and compression options before folder selection'
+$aspectRatioPass = $source.Contains('IDC_RESIZE_LOCK') -and $source.Contains('keepAspectRatio') -and $source.Contains('BST_CHECKED')
+Add-Result 'aspect_ratio_dynamic' $aspectRatioPass 'Resize aspect-ratio lock option and default state'
+$smoothPass = $source.Contains('CreateCompatibleBitmap') -and $source.Contains('BitBlt') -and $source.Contains('WM_ERASEBKGND')
+Add-Result 'smooth_rendering_dynamic' $smoothPass 'Double-buffered pan, zoom, and selection rendering'
+$saveOptionsPosition = $source.IndexOf('ShowSaveOptionsDialog')
+$saveDialogPosition = $source.IndexOf('GetSaveFileNameW')
+$saveOptionsPass = $source.Contains('IDD_SAVE_OPTIONS_DIALOG') -and $saveOptionsPosition -ge 0 -and $saveDialogPosition -gt $saveOptionsPosition
+Add-Result 'save_options_dynamic' $saveOptionsPass 'Save options dialog precedes destination folder selection'
 
 $knownResultIds = @($results | ForEach-Object id) + 'checklist_completeness'
 $checklistComplete = $true

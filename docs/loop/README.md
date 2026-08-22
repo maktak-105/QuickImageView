@@ -28,6 +28,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\generate_dashboard.p
 
 このコマンドはアプリもテストも起動しない。検査結果を履歴として保存せず、未検査項目はダッシュボード上で `未検査` と表示する。
 
+`manage_loop.ps1` を実行した場合は、検査終了後に `state.json` と `dashboard.html` を自動更新する。したがって、検査結果をダッシュボードへ反映するための別操作は不要である。
+
 ## 完了ゲート
 
 ```text

@@ -32,6 +32,7 @@ constexpr UINT kCommandFlipVertical = 1124;
 constexpr UINT kCommandQuality50 = 1140;
 constexpr UINT kCommandQuality75 = 1141;
 constexpr UINT kCommandQuality90 = 1142;
+constexpr UINT kCommandQualityCustom = 1143;
 constexpr UINT kCommandColorFull = 1150;
 constexpr UINT kCommandColor256 = 1151;
 constexpr UINT kCommandColorGray = 1152;
@@ -42,6 +43,15 @@ constexpr UINT kCommandClipboardPaste = 1171;
 constexpr UINT kCommandCompression1 = 1180;
 constexpr UINT kCommandCompression5 = 1181;
 constexpr UINT kCommandCompression9 = 1182;
+
+BOOL CALLBACK FindSecondaryMonitor(HMONITOR monitor, HDC, LPRECT, LPARAM data) {
+    MONITORINFO info{sizeof(MONITORINFO)};
+    if (GetMonitorInfoW(monitor, &info) && !(info.dwFlags & MONITORINFOF_PRIMARY)) {
+        *reinterpret_cast<RECT*>(data) = info.rcWork;
+        return FALSE;
+    }
+    return TRUE;
+}
 HBITMAP g_bitmap = nullptr;
 UINT g_imageWidth = 0;
 UINT g_imageHeight = 0;
@@ -56,6 +66,10 @@ std::wstring g_notice;
 std::wstring g_fileName;
 std::wstring g_sourcePath;
 std::wstring g_formatName;
+std::wstring g_exifMake;
+std::wstring g_exifModel;
+std::wstring g_exifDateTime;
+ULONGLONG g_fileSize = 0;
 UINT g_jpegQuality = 90;
 UINT g_compressionLevel = 5;
 std::vector<HBITMAP> g_undoStack;
@@ -67,6 +81,73 @@ POINT g_selectionEnd{};
 
 enum class LoadResult { success, fileNotFound, accessDenied, unsupportedFormat, decodeFailed };
 LoadResult LoadImageFile(const wchar_t* path);
+void ReleaseImage();
+
+std::wstring ReadMetadataString(IWICMetadataQueryReader* reader, const std::wstring& path) {
+    if (!reader) return L"";
+    PROPVARIANT value;
+    PropVariantInit(&value);
+    std::wstring result;
+    if (SUCCEEDED(reader->GetMetadataByName(path.c_str(), &value))) {
+        if (value.vt == VT_LPWSTR && value.pwszVal) result.assign(value.pwszVal);
+        else if (value.vt == VT_BSTR && value.bstrVal) result.assign(value.bstrVal, SysStringLen(value.bstrVal));
+        else if (value.vt == VT_LPSTR && value.pszVal) {
+            const int length = MultiByteToWideChar(CP_ACP, 0, value.pszVal, -1, nullptr, 0);
+            if (length > 1) {
+                result.resize(length);
+                MultiByteToWideChar(CP_ACP, 0, value.pszVal, -1, result.data(), length);
+                result.resize(length - 1);
+            }
+        }
+    }
+    PropVariantClear(&value);
+    if (result.size() > 128) result.resize(128);
+    return result;
+}
+
+void ReadExif(IWICBitmapFrameDecode* frame) {
+    g_exifMake.clear();
+    g_exifModel.clear();
+    g_exifDateTime.clear();
+    IWICMetadataQueryReader* reader = nullptr;
+    if (!frame || FAILED(frame->GetMetadataQueryReader(&reader))) return;
+    const wchar_t* roots[] = {L"/app1/ifd/", L"/ifd/"};
+    for (const wchar_t* root : roots) {
+        if (g_exifMake.empty()) g_exifMake = ReadMetadataString(reader, std::wstring(root) + L"{ushort=271}");
+        if (g_exifModel.empty()) g_exifModel = ReadMetadataString(reader, std::wstring(root) + L"{ushort=272}");
+        if (g_exifDateTime.empty()) g_exifDateTime = ReadMetadataString(reader, std::wstring(root) + L"{ushort=36867}");
+        if (g_exifDateTime.empty()) g_exifDateTime = ReadMetadataString(reader, std::wstring(root) + L"{ushort=306}");
+    }
+    reader->Release();
+}
+
+std::wstring MetadataText() {
+    if (!g_bitmap) return L"";
+    wchar_t buffer[256]{};
+    swprintf_s(buffer, L"%s  |  %ux%u  |  %s  |  %llu KB", g_fileName.c_str(), g_imageWidth,
+               g_imageHeight, g_formatName.c_str(), static_cast<unsigned long long>((g_fileSize + 1023) / 1024));
+    return buffer;
+}
+
+std::wstring ExifText() {
+    if (g_exifMake.empty() && g_exifModel.empty() && g_exifDateTime.empty()) return L"EXIF: なし";
+    std::wstring text = L"EXIF: ";
+    if (!g_exifMake.empty()) text += L"メーカー=" + g_exifMake + L"  ";
+    if (!g_exifModel.empty()) text += L"機種=" + g_exifModel + L"  ";
+    if (!g_exifDateTime.empty()) text += L"撮影日時=" + g_exifDateTime;
+    return text;
+}
+
+void UpdateWindowTitle(HWND window) {
+    std::wstring title = L"QuickImageView 0.1.0";
+    if (!g_fileName.empty()) title += L" - " + g_fileName;
+    if (g_bitmap) {
+        wchar_t dimensions[64]{};
+        swprintf_s(dimensions, L" [%ux%u]", g_imageWidth, g_imageHeight);
+        title += dimensions;
+    }
+    SetWindowTextW(window, title.c_str());
+}
 void LoadImageIntoWindow(HWND window, const wchar_t* path);
 double FitScale(HWND window);
 bool SamePath(const wchar_t* first, const wchar_t* second);
@@ -346,7 +427,10 @@ bool PasteImageFromClipboard(HWND window) {
 struct ResizeDialogState {
     UINT width = 100;
     UINT height = 100;
+    UINT originalWidth = 1;
+    UINT originalHeight = 1;
     bool percent = true;
+    bool keepAspectRatio = true;
     bool accepted = false;
 };
 
@@ -363,6 +447,7 @@ INT_PTR CALLBACK ResizeDialogProc(HWND dialog, UINT message, WPARAM wParam, LPAR
         SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Percent"));
         SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Pixels"));
         SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_SETCURSEL, state->percent ? 0 : 1, 0);
+        CheckDlgButton(dialog, IDC_RESIZE_LOCK, state->keepAspectRatio ? BST_CHECKED : BST_UNCHECKED);
         return TRUE;
     }
     if (message == WM_COMMAND && state && LOWORD(wParam) == IDOK) {
@@ -375,6 +460,15 @@ INT_PTR CALLBACK ResizeDialogProc(HWND dialog, UINT message, WPARAM wParam, LPAR
         state->width = static_cast<UINT>(width);
         state->height = static_cast<UINT>(height);
         state->percent = SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_GETCURSEL, 0, 0) == 0;
+        state->keepAspectRatio = IsDlgButtonChecked(dialog, IDC_RESIZE_LOCK) == BST_CHECKED;
+        if (state->keepAspectRatio) {
+            if (state->percent) {
+                state->height = state->width;
+            } else if (state->originalWidth > 0) {
+                state->height = std::max(1u, static_cast<UINT>(
+                    std::lround(static_cast<double>(state->width) * state->originalHeight / state->originalWidth)));
+            }
+        }
         state->accepted = true;
         EndDialog(dialog, IDOK);
         return TRUE;
@@ -387,7 +481,7 @@ INT_PTR CALLBACK ResizeDialogProc(HWND dialog, UINT message, WPARAM wParam, LPAR
 }
 
 bool ShowResizeDialog(HWND owner, UINT* width, UINT* height, bool* percent) {
-    ResizeDialogState state{*width, *height, *percent, false};
+    ResizeDialogState state{*width, *height, g_imageWidth, g_imageHeight, *percent, true, false};
     const INT_PTR result = DialogBoxParamW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDD_RESIZE_DIALOG),
                                            owner, ResizeDialogProc, reinterpret_cast<LPARAM>(&state));
     if (result != IDOK || !state.accepted) return false;
@@ -395,6 +489,124 @@ bool ShowResizeDialog(HWND owner, UINT* width, UINT* height, bool* percent) {
     *height = state.height;
     *percent = state.percent;
     return true;
+}
+
+struct QualityDialogState {
+    UINT quality = 90;
+    bool accepted = false;
+};
+
+bool ParseBoundedUnsigned(const wchar_t* text, unsigned long maximum, unsigned long* value) {
+    if (!text || !*text || !value) return false;
+    wchar_t* end = nullptr;
+    const unsigned long parsed = wcstoul(text, &end, 10);
+    if (end == text || *end != L'\0' || parsed > maximum) return false;
+    *value = parsed;
+    return true;
+}
+
+INT_PTR CALLBACK QualityDialogProc(HWND dialog, UINT message, WPARAM wParam, LPARAM lParam) {
+    auto* state = reinterpret_cast<QualityDialogState*>(GetWindowLongPtrW(dialog, DWLP_USER));
+    if (message == WM_INITDIALOG) {
+        state = reinterpret_cast<QualityDialogState*>(lParam);
+        SetWindowLongPtrW(dialog, DWLP_USER, reinterpret_cast<LONG_PTR>(state));
+        wchar_t value[32]{};
+        swprintf_s(value, L"%u", state->quality);
+        SetDlgItemTextW(dialog, IDC_QUALITY_VALUE, value);
+        return TRUE;
+    }
+    if (message == WM_COMMAND && state && LOWORD(wParam) == IDOK) {
+        wchar_t qualityText[32]{};
+        GetDlgItemTextW(dialog, IDC_QUALITY_VALUE, qualityText, ARRAYSIZE(qualityText));
+        unsigned long quality = 0;
+        if (!ParseBoundedUnsigned(qualityText, 100, &quality)) return TRUE;
+        state->quality = static_cast<UINT>(quality);
+        state->accepted = true;
+        EndDialog(dialog, IDOK);
+        return TRUE;
+    }
+    if (message == WM_COMMAND && LOWORD(wParam) == IDCANCEL) {
+        EndDialog(dialog, IDCANCEL);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+bool ShowQualityDialog(HWND owner, UINT* quality) {
+    QualityDialogState state{*quality, false};
+    const INT_PTR result = DialogBoxParamW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDD_QUALITY_DIALOG),
+                                           owner, QualityDialogProc, reinterpret_cast<LPARAM>(&state));
+    if (result != IDOK || !state.accepted) return false;
+    *quality = state.quality;
+    return true;
+}
+
+struct SaveOptionsState {
+    int formatIndex = 1;
+    UINT quality = 90;
+    UINT compression = 5;
+    bool accepted = false;
+};
+
+void UpdateSaveOptionsControls(HWND dialog) {
+    const int formatIndex = static_cast<int>(SendDlgItemMessageW(dialog, IDC_SAVE_FORMAT, CB_GETCURSEL, 0, 0)) + 1;
+    const bool jpegLike = formatIndex == 1 || formatIndex == 6 || formatIndex == 7;
+    const bool png = formatIndex == 2;
+    const bool tiff = formatIndex == 3;
+    EnableWindow(GetDlgItem(dialog, IDC_SAVE_QUALITY), jpegLike ? TRUE : FALSE);
+    EnableWindow(GetDlgItem(dialog, IDC_SAVE_COMPRESSION), (png || tiff) ? TRUE : FALSE);
+    SetDlgItemTextW(dialog, IDC_SAVE_SETTING_LABEL,
+                    png ? L"PNG compression (0-9)" : (tiff ? L"TIFF compression (1-9)" : L"Compression (PNG/TIFF only)"));
+}
+
+INT_PTR CALLBACK SaveOptionsDialogProc(HWND dialog, UINT message, WPARAM wParam, LPARAM lParam) {
+    auto* state = reinterpret_cast<SaveOptionsState*>(GetWindowLongPtrW(dialog, DWLP_USER));
+    if (message == WM_INITDIALOG) {
+        state = reinterpret_cast<SaveOptionsState*>(lParam);
+        SetWindowLongPtrW(dialog, DWLP_USER, reinterpret_cast<LONG_PTR>(state));
+        const wchar_t* formats[] = {L"JPEG", L"PNG", L"TIFF", L"BMP", L"GIF", L"WebP", L"HEIC/HEIF"};
+        for (const wchar_t* format : formats) {
+            SendDlgItemMessageW(dialog, IDC_SAVE_FORMAT, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(format));
+        }
+        SendDlgItemMessageW(dialog, IDC_SAVE_FORMAT, CB_SETCURSEL, state->formatIndex - 1, 0);
+        wchar_t value[32]{};
+        swprintf_s(value, L"%u", state->quality);
+        SetDlgItemTextW(dialog, IDC_SAVE_QUALITY, value);
+        swprintf_s(value, L"%u", state->compression);
+        SetDlgItemTextW(dialog, IDC_SAVE_COMPRESSION, value);
+        UpdateSaveOptionsControls(dialog);
+        return TRUE;
+    }
+    if (message == WM_COMMAND && state && LOWORD(wParam) == IDC_SAVE_FORMAT && HIWORD(wParam) == CBN_SELCHANGE) {
+        UpdateSaveOptionsControls(dialog);
+        return TRUE;
+    }
+    if (message == WM_COMMAND && state && LOWORD(wParam) == IDOK) {
+        wchar_t qualityText[32]{}, compressionText[32]{};
+        GetDlgItemTextW(dialog, IDC_SAVE_QUALITY, qualityText, ARRAYSIZE(qualityText));
+        GetDlgItemTextW(dialog, IDC_SAVE_COMPRESSION, compressionText, ARRAYSIZE(compressionText));
+        unsigned long quality = 0;
+        unsigned long compression = 0;
+        if (!ParseBoundedUnsigned(qualityText, 100, &quality) ||
+            !ParseBoundedUnsigned(compressionText, 9, &compression)) return TRUE;
+        state->formatIndex = static_cast<int>(SendDlgItemMessageW(dialog, IDC_SAVE_FORMAT, CB_GETCURSEL, 0, 0)) + 1;
+        state->quality = static_cast<UINT>(quality);
+        state->compression = static_cast<UINT>(compression);
+        state->accepted = true;
+        EndDialog(dialog, IDOK);
+        return TRUE;
+    }
+    if (message == WM_COMMAND && LOWORD(wParam) == IDCANCEL) {
+        EndDialog(dialog, IDCANCEL);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+bool ShowSaveOptionsDialog(HWND owner, SaveOptionsState* state) {
+    const INT_PTR result = DialogBoxParamW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDD_SAVE_OPTIONS_DIALOG),
+                                           owner, SaveOptionsDialogProc, reinterpret_cast<LPARAM>(state));
+    return result == IDOK && state->accepted;
 }
 
 bool SamePath(const wchar_t* first, const wchar_t* second) {
@@ -469,6 +681,16 @@ bool ConvertImageFile(const wchar_t* outputPath) {
             options->Write(1, &property, &value);
             VariantClear(&value);
         }
+        if (extension == L"tif" || extension == L"tiff") {
+            PROPBAG2 property{};
+            property.pstrName = const_cast<LPOLESTR>(L"TiffCompressionMethod");
+            VARIANT value;
+            VariantInit(&value);
+            value.vt = VT_UI1;
+            value.bVal = static_cast<BYTE>(std::clamp(g_compressionLevel + 2, 3u, 7u));
+            options->Write(1, &property, &value);
+            VariantClear(&value);
+        }
         if (extension == L"webp" || extension == L"heic" || extension == L"heif") {
             PROPBAG2 property{};
             property.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
@@ -534,7 +756,45 @@ bool RunEditSelfTest(const wchar_t* inputPath) {
     return g_imageWidth > 0 && g_imageHeight > 0;
 }
 
+bool RunSmokeSelfTest() {
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmap* bitmap = nullptr;
+    UINT width = 0;
+    UINT height = 0;
+    bool passed = false;
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    do {
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (FAILED(factory->CreateBitmap(1, 1, GUID_WICPixelFormat32bppPBGRA,
+                                         WICBitmapCacheOnLoad, &bitmap))) break;
+        if (FAILED(bitmap->GetSize(&width, &height))) break;
+        passed = width == 1 && height == 1;
+    } while (false);
+    if (bitmap) bitmap->Release();
+    if (factory) factory->Release();
+    CoUninitialize();
+    return passed;
+}
+
+bool RunResizeTest(const wchar_t* inputPath, UINT width, UINT height) {
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    const bool loaded = LoadImageFile(inputPath) == LoadResult::success;
+    const bool resized = loaded && ResizeCurrentImage(width, height);
+    const bool passed = resized && g_imageWidth == width && g_imageHeight == height;
+    ReleaseImage();
+    CoUninitialize();
+    return passed;
+}
+
 void ConvertWithSaveDialog(HWND window) {
+    SaveOptionsState options{};
+    options.formatIndex = 1;
+    options.quality = g_jpegQuality;
+    options.compression = g_compressionLevel;
+    if (!ShowSaveOptionsDialog(window, &options)) return;
+    g_jpegQuality = options.quality;
+    g_compressionLevel = options.compression;
     wchar_t outputPath[MAX_PATH * 4]{};
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
@@ -549,7 +809,7 @@ void ConvertWithSaveDialog(HWND window) {
                          L"すべてのファイル (*.*)\0*.*\0";
     dialog.lpstrFile = outputPath;
     dialog.nMaxFile = ARRAYSIZE(outputPath);
-    dialog.nFilterIndex = 2;
+    dialog.nFilterIndex = static_cast<DWORD>(options.formatIndex);
     dialog.lpstrDefExt = nullptr;
     dialog.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
     if (!GetSaveFileNameW(&dialog)) return;
@@ -588,6 +848,10 @@ void ReleaseImage() {
     g_fileName.clear();
     g_sourcePath.clear();
     g_formatName.clear();
+    g_exifMake.clear();
+    g_exifModel.clear();
+    g_exifDateTime.clear();
+    g_fileSize = 0;
     g_notice.clear();
     ClearBitmapStack(g_undoStack);
     ClearBitmapStack(g_redoStack);
@@ -714,6 +978,13 @@ void ExecuteEditCommand(HWND window, UINT command) {
         g_jpegQuality = 90;
         g_notice = L"JPEG品質を90に設定しました。";
         break;
+    case kCommandQualityCustom: {
+        UINT quality = g_jpegQuality;
+        if (!ShowQualityDialog(window, &quality)) break;
+        g_jpegQuality = quality;
+        g_notice = L"指定したJPEG品質を設定しました。";
+        break;
+    }
     case kCommandCompression1:
         g_compressionLevel = 1;
         g_notice = L"圧縮レベルを1に設定しました。";
@@ -729,7 +1000,9 @@ void ExecuteEditCommand(HWND window, UINT command) {
     default:
         return;
     }
+    UpdateWindowTitle(window);
     InvalidateRect(window, nullptr, FALSE);
+    UpdateWindow(window);
 }
 
 void OpenImageDialog(HWND window) {
@@ -774,6 +1047,7 @@ void BuildMenu(HWND window) {
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality50, L"50");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality75, L"75");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality90, L"90");
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQualityCustom, L"指定...");
     AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), L"JPEG品質");
     HMENU compressionMenu = CreatePopupMenu();
     AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, L"1（低圧縮）");
@@ -813,6 +1087,7 @@ void ShowImageContextMenu(HWND window, int x, int y) {
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality50, L"50");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality75, L"75");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality90, L"90");
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQualityCustom, L"指定...");
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), L"JPEG品質");
     HMENU compressionMenu = CreatePopupMenu();
     AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, L"1（低圧縮）");
@@ -917,6 +1192,11 @@ LoadResult LoadImageFile(const wchar_t* path) {
         g_fileName = FileNameFromPath(path);
         g_sourcePath = path;
         g_formatName = FormatFromPath(path);
+        ULARGE_INTEGER size{};
+        size.HighPart = attributes.nFileSizeHigh;
+        size.LowPart = attributes.nFileSizeLow;
+        g_fileSize = size.QuadPart;
+        ReadExif(frame);
         g_status.clear();
         result = LoadResult::success;
     } while (false);
@@ -957,6 +1237,10 @@ void Paint(HWND window, HDC dc) {
     DeleteDC(source);
     SetTextColor(dc, RGB(230, 230, 230));
     SetBkMode(dc, TRANSPARENT);
+    RECT metadata{12, 10, client.right - 12, 34};
+    DrawTextW(dc, MetadataText().c_str(), -1, &metadata, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+    RECT exif{12, 34, client.right - 12, 58};
+    DrawTextW(dc, ExifText().c_str(), -1, &exif, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
     if (g_selecting || g_selectionActive) {
         RECT selection{std::min(g_selectionStart.x, g_selectionEnd.x), std::min(g_selectionStart.y, g_selectionEnd.y),
                        std::max(g_selectionStart.x, g_selectionEnd.x), std::max(g_selectionStart.y, g_selectionEnd.y)};
@@ -994,7 +1278,18 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
     case WM_PAINT: {
         PAINTSTRUCT paint{};
         HDC dc = BeginPaint(window, &paint);
-        Paint(window, dc);
+        RECT client{};
+        GetClientRect(window, &client);
+        const int width = client.right - client.left;
+        const int height = client.bottom - client.top;
+        HDC back = CreateCompatibleDC(dc);
+        HBITMAP backBitmap = CreateCompatibleBitmap(dc, std::max(1, width), std::max(1, height));
+        HGDIOBJ oldBitmap = SelectObject(back, backBitmap);
+        Paint(window, back);
+        BitBlt(dc, 0, 0, width, height, back, 0, 0, SRCCOPY);
+        SelectObject(back, oldBitmap);
+        DeleteObject(backBitmap);
+        DeleteDC(back);
         EndPaint(window, &paint);
         return 0;
     }
@@ -1113,7 +1408,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     LPWSTR* arguments = CommandLineToArgvW(GetCommandLineW(), &argumentCount);
     if (arguments && argumentCount >= 2 && wcscmp(arguments[1], L"--self-test") == 0) {
         LocalFree(arguments);
-        return 0;
+        return RunSmokeSelfTest() ? 0 : 2;
     }
     if (arguments && argumentCount == 3 && wcscmp(arguments[1], L"--self-test-edit") == 0) {
         CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
@@ -1121,6 +1416,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
         ReleaseImage();
         LocalFree(arguments);
         CoUninitialize();
+        return passed ? 0 : 2;
+    }
+    if (arguments && argumentCount == 5 && wcscmp(arguments[1], L"--resize-test") == 0) {
+        const unsigned long width = wcstoul(arguments[3], nullptr, 10);
+        const unsigned long height = wcstoul(arguments[4], nullptr, 10);
+        const bool passed = width > 0 && height > 0 && width <= 100000 && height <= 100000 &&
+            RunResizeTest(arguments[2], static_cast<UINT>(width), static_cast<UINT>(height));
+        LocalFree(arguments);
         return passed ? 0 : 2;
     }
     const bool convertMode = arguments && argumentCount == 4 && wcscmp(arguments[1], L"--convert") == 0;
@@ -1133,6 +1436,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
         CoUninitialize();
         return converted ? 0 : 2;
     }
+    const bool uiTestHidden = arguments && argumentCount >= 2 && wcscmp(arguments[1], L"--ui-test-hidden") == 0;
+    std::wstring uiTestFile = uiTestHidden && argumentCount >= 3 ? arguments[2] : L"";
     if (arguments) LocalFree(arguments);
     if (commandLine && wcscmp(commandLine, L"--help") == 0) {
         MessageBoxW(nullptr, L"QuickImageView 0.1.0\n画像ファイルを引数に指定してください。",
@@ -1141,7 +1446,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     }
 
     CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
-    const wchar_t* filePath = commandLine;
+    const wchar_t* filePath = uiTestHidden ? uiTestFile.c_str() : commandLine;
     if (filePath && *filePath == L'"') {
         ++filePath;
         wchar_t* end = const_cast<wchar_t*>(wcschr(filePath, L'"'));
@@ -1160,17 +1465,33 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     windowClass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
     RegisterClassW(&windowClass);
 
-    HWND window = CreateWindowExW(WS_EX_COMPOSITED, kClassName, L"QuickImageView 0.1.0",
-                                  WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
-                                  960, 720, nullptr, nullptr, instance, nullptr);
+    const DWORD extendedStyle = WS_EX_COMPOSITED;
+    RECT secondaryWorkArea{};
+    EnumDisplayMonitors(nullptr, nullptr, FindSecondaryMonitor, reinterpret_cast<LPARAM>(&secondaryWorkArea));
+    const bool hasSecondary = secondaryWorkArea.right > secondaryWorkArea.left && secondaryWorkArea.bottom > secondaryWorkArea.top;
+    const int windowX = uiTestHidden && hasSecondary ? secondaryWorkArea.left + 40 : CW_USEDEFAULT;
+    const int windowY = uiTestHidden && hasSecondary ? secondaryWorkArea.top + 40 : CW_USEDEFAULT;
+    const int windowWidth = uiTestHidden && hasSecondary ? std::min(1200, static_cast<int>(secondaryWorkArea.right - secondaryWorkArea.left - 80)) : 960;
+    const int windowHeight = uiTestHidden && hasSecondary ? std::min(800, static_cast<int>(secondaryWorkArea.bottom - secondaryWorkArea.top - 80)) : 720;
+    HWND window = CreateWindowExW(extendedStyle, kClassName, L"QuickImageView 0.1.0",
+                                  WS_OVERLAPPEDWINDOW, windowX, windowY,
+                                  windowWidth, windowHeight, nullptr, nullptr, instance, nullptr);
     if (!window) {
         CoUninitialize();
         return 1;
     }
     BuildMenu(window);
     if (filePath && *filePath && g_bitmap) SetWindowTextW(window, (L"QuickImageView 0.1.0 - " + g_fileName).c_str());
-    ShowWindow(window, showCommand);
+    ShowWindow(window, uiTestHidden ? SW_SHOW : showCommand);
     UpdateWindow(window);
+    if (uiTestHidden) {
+        UINT testWidth = 100;
+        UINT testHeight = 100;
+        bool testPercent = true;
+        ShowResizeDialog(window, &testWidth, &testHeight, &testPercent);
+        ShowResizeDialog(window, &testWidth, &testHeight, &testPercent);
+        ShowQualityDialog(window, &g_jpegQuality);
+    }
 
     MSG message{};
     while (GetMessageW(&message, nullptr, 0, 0) > 0) {

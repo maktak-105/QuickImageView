@@ -1,4 +1,94 @@
 {
   "status": "FAIL",
-  "next": "manage_loop.ps1を明示実行し、FAIL項目を解消する"
+  "checked_at": "2026-08-22T19:51:36+09:00",
+  "next": "FAIL項目を解消して再検査する",
+  "errors": [
+    "verify_goal.ps1 execution error: Conversion from JSON failed with error: Invalid character after parsing property name. Expected ':' but got: }. Path '', line 1, position 9.",
+    "REQ-001 links to missing test edit_dynamic",
+    "REQ-001 links to missing test ui_dynamic",
+    "REQ-002 links to missing test ui_dynamic",
+    "REQ-003 links to missing test conversion_cli",
+    "REQ-003 links to missing test save_format_filters",
+    "REQ-003 links to missing test source_safety",
+    "REQ-003A links to missing test save_options_dynamic",
+    "REQ-004 links to missing test context_menu_install",
+    "REQ-004 links to missing test installed_parity",
+    "REQ-006 links to missing test resize",
+    "REQ-006 links to missing test edit_dynamic",
+    "REQ-006 links to missing test ui_dynamic",
+    "REQ-006A links to missing test aspect_ratio_dynamic",
+    "REQ-007 links to missing test crop",
+    "REQ-007 links to missing test edit_dynamic",
+    "REQ-007 links to missing test ui_dynamic",
+    "REQ-007A links to missing test smooth_rendering_dynamic",
+    "REQ-008 links to missing test rotate_flip",
+    "REQ-008 links to missing test edit_dynamic",
+    "REQ-009 links to missing test rotate_flip",
+    "REQ-009 links to missing test edit_dynamic",
+    "REQ-010 links to missing test jpeg_quality",
+    "REQ-010 links to missing test edit_dynamic",
+    "REQ-010 links to missing test compression_settings",
+    "REQ-011 links to missing test color_conversion",
+    "REQ-011 links to missing test edit_dynamic",
+    "REQ-012 links to missing test undo_redo",
+    "REQ-012 links to missing test undo_redo_shortcuts",
+    "REQ-012 links to missing test edit_dynamic",
+    "REQ-012 links to missing test ui_dynamic",
+    "REQ-013 links to missing test clipboard_image",
+    "REQ-013 links to missing test edit_dynamic",
+    "REQ-014 links to missing test webp_heic_conversion",
+    "REQ-014 links to missing test save_format_filters",
+    "REQ-015 links to missing test jpeg_quality",
+    "REQ-015 links to missing test compression_settings",
+    "REQ-015 links to missing test edit_dynamic",
+    "REQ-016 links to missing test regression_invariants",
+    "REQ-016 links to missing test metadata_dynamic",
+    "REQ-017 links to missing test regression_invariants",
+    "REQ-017 links to missing test metadata_dynamic",
+    "REQ-022 links to missing test undo_redo_shortcuts",
+    "REQ-022 links to missing test ui_dynamic",
+    "REQ-023 links to missing test regression_invariants",
+    "REQ-024 links to missing test edit_dynamic",
+    "REQ-025 links to missing test ui_dynamic",
+    "REQ-026 links to missing test installed_parity",
+    "REQ-026 links to missing test installed_ui_dynamic",
+    "REQ-027 links to missing test checklist_completeness",
+    "REQ-028 links to missing test checklist_completeness",
+    "REQ-029 links to missing test spec_consistency",
+    "REQ-030 links to missing test checklist_completeness",
+    "REQ-031 links to missing test dashboard_contract",
+    "REQ-032 links to missing test manager_contract",
+    "verify_goal.ps1 status=FAIL",
+    "metadata_real_exif=UNVERIFIED: metadata_dynamic は実EXIF表示操作ではなく、ソースプローブ中心の検査",
+    "resize_visual_dimensions=UNVERIFIED: ui_dynamic はリサイズ後の実画像寸法を画面または出力で比較していない"
+  ],
+  "unverified": [
+    {
+      "id": "metadata_real_exif",
+      "status": "UNVERIFIED",
+      "detail": "metadata_dynamic は実EXIF表示操作ではなく、ソースプローブ中心の検査"
+    },
+    {
+      "id": "resize_visual_dimensions",
+      "status": "UNVERIFIED",
+      "detail": "ui_dynamic はリサイズ後の実画像寸法を画面または出力で比較していない"
+    }
+  ],
+  "unverified_requirements": {
+    "metadata_real_exif": [
+      "REQ-017"
+    ],
+    "resize_visual_dimensions": [
+      "REQ-006",
+      "REQ-006A",
+      "REQ-007"
+    ]
+  },
+  "checks": [
+    {
+      "id": "verify_goal_execution",
+      "status": "FAIL",
+      "detail": "Conversion from JSON failed with error: Invalid character after parsing property name. Expected ':' but got: }. Path '', line 1, position 9."
+    }
+  ]
 }
