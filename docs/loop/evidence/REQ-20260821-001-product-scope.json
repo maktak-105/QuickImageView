@@ -1,9 +1,0 @@
-{
-  "request_id": "REQ-20260821-001-product",
-  "checkpoint": "001 現状監査",
-  "command": "git diff --name-only -- core scripts CMakeLists.txt README.md",
-  "exit_code": 0,
-  "ran_at": "2026-08-21T08:28:00Z",
-  "result": "PASS",
-  "evidence_path": "docs/loop/evidence/REQ-20260821-001-product-scope.json"
-}

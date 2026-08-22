@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "project": "QuickImageView",
+  "policy": {
+    "source_of_truth": "user_requirements_and_explicit_feedback",
+    "invented_requirements_allowed": false,
+    "completion_rule": "every required item must have a passing linked test"
+  },
+  "items": [
+    { "id": "REQ-001", "category": "core", "description": "選択した画像を開いて表示する", "source": "user_original_request", "status": "required", "test_ids": ["edit_dynamic", "ui_dynamic"] },
+    { "id": "REQ-002", "category": "core", "description": "画像を拡大縮小・パンする", "source": "user_original_request", "status": "required", "test_ids": ["ui_dynamic"] },
+    { "id": "REQ-003", "category": "save", "description": "原本を変更せず、指定した別形式へ保存する", "source": "user_feedback_save_format", "status": "required", "test_ids": ["conversion_cli", "save_format_filters", "source_safety"] },
+    { "id": "REQ-003A", "category": "save", "description": "保存先フォルダへ進む前に、形式・品質・圧縮の保存オプションを表示する", "source": "user_feedback_save_options_order", "status": "required", "test_ids": ["save_options_dynamic"] },
+    { "id": "REQ-004", "category": "shell", "description": "Explorerの画像右クリックメニューからQIVを起動する", "source": "user_feedback_context_menu", "status": "required", "test_ids": ["context_menu_install", "installed_parity"] },
+    { "id": "REQ-005", "category": "shell", "description": "Explorerのサムネイル用シェル拡張は実装しない", "source": "user_scope_decision", "status": "excluded", "test_ids": ["regression_invariants"] },
+    { "id": "REQ-006", "category": "editing", "description": "固定プリセットに限定せず、ユーザー指定の正のパーセントまたはピクセル寸法でリサイズする", "source": "user_feature_request_resize", "status": "required", "test_ids": ["resize", "edit_dynamic", "ui_dynamic"] },
+    { "id": "REQ-006A", "category": "editing", "description": "リサイズにアスペクト比固定オプションを付け、デフォルトでONにする", "source": "user_feature_request_resize_aspect_ratio", "status": "required", "test_ids": ["aspect_ratio_dynamic"] },
+    { "id": "REQ-007", "category": "editing", "description": "明示的に選択した範囲を切り抜く", "source": "user_feature_request_crop", "status": "required", "test_ids": ["crop", "edit_dynamic", "ui_dynamic"] },
+    { "id": "REQ-007A", "category": "display", "description": "パン・拡大縮小・範囲選択で画像を点滅させず、滑らかに描画する", "source": "user_feedback_image_flicker", "status": "required", "test_ids": ["smooth_rendering_dynamic"] },
+    { "id": "REQ-008", "category": "editing", "description": "90度・180度・270度回転する", "source": "user_feature_request_rotate_flip", "status": "required", "test_ids": ["rotate_flip", "edit_dynamic"] },
+    { "id": "REQ-009", "category": "editing", "description": "左右反転（ミラー）・上下反転する", "source": "user_feature_request_rotate_flip", "status": "required", "test_ids": ["rotate_flip", "edit_dynamic"] },
+    { "id": "REQ-010", "category": "conversion", "description": "50・75・90などの固定候補に限定せず、ユーザー指定のJPEG品質値を適用する", "source": "user_feature_request_jpeg_quality", "status": "required", "test_ids": ["jpeg_quality", "edit_dynamic", "compression_settings"] },
+    { "id": "REQ-011", "category": "conversion", "description": "フルカラー・256色・グレースケールへ色変換する", "source": "user_feature_request_color", "status": "required", "test_ids": ["color_conversion", "edit_dynamic"] },
+    { "id": "REQ-012", "category": "editing", "description": "Ctrl+Z・Ctrl+YだけでUndo・Redoを行う", "source": "user_feature_request_undo_redo_and_menu_feedback", "status": "required", "test_ids": ["undo_redo", "undo_redo_shortcuts", "edit_dynamic", "ui_dynamic"] },
+    { "id": "REQ-013", "category": "clipboard", "description": "Windowsクリップボードで画像をコピー・貼り付けする", "source": "user_feature_request_clipboard", "status": "required", "test_ids": ["clipboard_image", "edit_dynamic"] },
+    { "id": "REQ-014", "category": "conversion", "description": "利用可能なWICコーデックでWebP・HEIC/HEIFへ変換する", "source": "user_feature_request_webp_heic", "status": "required", "test_ids": ["webp_heic_conversion", "save_format_filters"] },
+    { "id": "REQ-015", "category": "conversion", "description": "変換時の品質・圧縮設定を適用する", "source": "user_feature_request_compression", "status": "required", "test_ids": ["jpeg_quality", "compression_settings", "edit_dynamic"] },
+    { "id": "REQ-016", "category": "preservation", "description": "ファイル名・寸法・形式・ファイルサイズを表示する", "source": "existing_feature_and_user_regression_feedback", "status": "required", "test_ids": ["regression_invariants", "metadata_dynamic"] },
+    { "id": "REQ-017", "category": "preservation", "description": "EXIFがある場合は代表的なEXIF情報を表示する", "source": "existing_feature_and_user_regression_feedback", "status": "required", "test_ids": ["regression_invariants", "metadata_dynamic"] },
+    { "id": "REQ-018", "category": "scope", "description": "EXIF・メタデータの編集は実装しない", "source": "user_scope_feedback_metadata_editing", "status": "excluded", "test_ids": ["regression_invariants"] },
+    { "id": "REQ-019", "category": "scope", "description": "フォルダ内画像の前後移動は実装しない", "source": "user_scope_feedback_folder_navigation", "status": "excluded", "test_ids": ["scope_exclusions"] },
+    { "id": "REQ-020", "category": "scope", "description": "スライドショーは実装しない", "source": "user_scope_feedback_slideshow", "status": "excluded", "test_ids": ["scope_exclusions"] },
+    { "id": "REQ-021", "category": "scope", "description": "印刷は実装しない", "source": "user_scope_feedback_printing", "status": "excluded", "test_ids": ["scope_exclusions"] },
+    { "id": "REQ-022", "category": "scope", "description": "Undo・Redoをメニュー項目として表示しない", "source": "user_scope_feedback_undo_menu", "status": "required", "test_ids": ["undo_redo_shortcuts", "ui_dynamic"] },
+    { "id": "REQ-023", "category": "verification", "description": "ソースの静的回帰検査を実行する", "source": "user_loop_request_machine_checkable", "status": "required", "test_ids": ["regression_invariants"] },
+    { "id": "REQ-024", "category": "verification", "description": "実データを使った動的編集テストを実行する", "source": "user_loop_request_complete_until_done", "status": "required", "test_ids": ["edit_dynamic"] },
+    { "id": "REQ-025", "category": "verification", "description": "ビルド版に対して動的UIテストを実行する", "source": "user_feedback_real_device_test", "status": "required", "test_ids": ["ui_dynamic"] },
+    { "id": "REQ-026", "category": "verification", "description": "検査済みビルドをインストールし、インストール版に対してUIテストを実行する", "source": "user_feedback_latest_install_and_test", "status": "required", "test_ids": ["installed_parity", "installed_ui_dynamic"] },
+    { "id": "REQ-027", "category": "verification", "description": "ユーザーの要求と明示的な修正をすべて現在のチェックリストに残す", "source": "user_loop_management_request", "status": "required", "test_ids": ["checklist_completeness"] },
+    { "id": "REQ-028", "category": "verification", "description": "過去ログや結果ログを完了根拠に使わない", "source": "user_loop_log_scope", "status": "required", "test_ids": ["checklist_completeness"] }
+    ,{ "id": "REQ-029", "category": "process", "description": "現行ビルド仕様書を合格判定の基準にする", "source": "user_specification_correction", "status": "required", "test_ids": ["spec_consistency"] }
+    ,{ "id": "REQ-030", "category": "process", "description": "要求・指摘・操作・対象外をチェックリストで管理する", "source": "user_loop_management_request", "status": "required", "test_ids": ["checklist_completeness"] }
+    ,{ "id": "REQ-031", "category": "process", "description": "現在の仕様とチェックリストから静的HTMLダッシュボードを生成する", "source": "user_dashboard_request", "status": "required", "test_ids": ["dashboard_contract"] }
+    ,{ "id": "REQ-032", "category": "process", "description": "要求管理者をリリースゲートとして使用する", "source": "user_manager_request", "status": "required", "test_ids": ["manager_contract"] }
+  ]
+}

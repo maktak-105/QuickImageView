@@ -1,0 +1,6 @@
+#pragma once
+
+#define IDD_RESIZE_DIALOG 2000
+#define IDC_RESIZE_WIDTH 2001
+#define IDC_RESIZE_HEIGHT 2002
+#define IDC_RESIZE_MODE 2003

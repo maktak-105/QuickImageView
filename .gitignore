@@ -1,5 +1,7 @@
 build/
-dist/binary/
+dist/binary/*
+!dist/binary/.gitkeep
+dist/staging/
 *.user
 *.suo
 *.log

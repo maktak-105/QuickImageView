@@ -1,1 +1,0 @@
-{"request_id":"REQ-20260821-001-product","iteration":1,"checkpoint":"001 現状監査","command":"powershell -NoProfile -ExecutionPolicy Bypass -File tests/audit_current_state.ps1 -RequireCompleteMatrix","exit_code":0,"ran_at":"2026-08-21T08:27:42Z","result":"PASS"}

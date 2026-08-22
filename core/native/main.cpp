@@ -4,6 +4,7 @@
 #include <shlwapi.h>
 #include <shellapi.h>
 #include <commdlg.h>
+#include "resource.h"
 
 #include <algorithm>
 #include <cmath>
@@ -11,11 +12,36 @@
 #include <cwchar>
 #include <cstring>
 #include <string>
+#include <vector>
 
 namespace {
 constexpr wchar_t kClassName[] = L"QuickImageViewWindow";
 constexpr UINT kCommandOpen = 1001;
 constexpr UINT kCommandExit = 1002;
+constexpr UINT kCommandResize50 = 1101;
+constexpr UINT kCommandResize75 = 1102;
+constexpr UINT kCommandResize125 = 1103;
+constexpr UINT kCommandResize200 = 1104;
+constexpr UINT kCommandResizeCustom = 1105;
+constexpr UINT kCommandCrop = 1110;
+constexpr UINT kCommandRotate90 = 1120;
+constexpr UINT kCommandRotate180 = 1121;
+constexpr UINT kCommandRotate270 = 1122;
+constexpr UINT kCommandFlipHorizontal = 1123;
+constexpr UINT kCommandFlipVertical = 1124;
+constexpr UINT kCommandQuality50 = 1140;
+constexpr UINT kCommandQuality75 = 1141;
+constexpr UINT kCommandQuality90 = 1142;
+constexpr UINT kCommandColorFull = 1150;
+constexpr UINT kCommandColor256 = 1151;
+constexpr UINT kCommandColorGray = 1152;
+constexpr UINT kCommandUndo = 1160;
+constexpr UINT kCommandRedo = 1161;
+constexpr UINT kCommandClipboardCopy = 1170;
+constexpr UINT kCommandClipboardPaste = 1171;
+constexpr UINT kCommandCompression1 = 1180;
+constexpr UINT kCommandCompression5 = 1181;
+constexpr UINT kCommandCompression9 = 1182;
 HBITMAP g_bitmap = nullptr;
 UINT g_imageWidth = 0;
 UINT g_imageHeight = 0;
@@ -30,53 +56,20 @@ std::wstring g_notice;
 std::wstring g_fileName;
 std::wstring g_sourcePath;
 std::wstring g_formatName;
-std::wstring g_exifMake;
-std::wstring g_exifModel;
-std::wstring g_exifDateTime;
-ULONGLONG g_fileSize = 0;
+UINT g_jpegQuality = 90;
+UINT g_compressionLevel = 5;
+std::vector<HBITMAP> g_undoStack;
+std::vector<HBITMAP> g_redoStack;
+bool g_selecting = false;
+bool g_selectionActive = false;
+POINT g_selectionStart{};
+POINT g_selectionEnd{};
 
 enum class LoadResult { success, fileNotFound, accessDenied, unsupportedFormat, decodeFailed };
 LoadResult LoadImageFile(const wchar_t* path);
-
-std::wstring ReadMetadataString(IWICMetadataQueryReader* reader, const std::wstring& path) {
-    if (!reader) return L"";
-    PROPVARIANT value;
-    PropVariantInit(&value);
-    std::wstring result;
-    if (SUCCEEDED(reader->GetMetadataByName(path.c_str(), &value))) {
-        if (value.vt == VT_LPWSTR && value.pwszVal) {
-            result.assign(value.pwszVal);
-        } else if (value.vt == VT_BSTR && value.bstrVal) {
-            result.assign(value.bstrVal, SysStringLen(value.bstrVal));
-        } else if (value.vt == VT_LPSTR && value.pszVal) {
-            const int length = MultiByteToWideChar(CP_ACP, 0, value.pszVal, -1, nullptr, 0);
-            if (length > 1) {
-                result.resize(length);
-                MultiByteToWideChar(CP_ACP, 0, value.pszVal, -1, result.data(), length);
-                result.resize(length - 1);
-            }
-        }
-    }
-    PropVariantClear(&value);
-    if (result.size() > 128) result.resize(128);
-    return result;
-}
-
-void ReadExif(IWICBitmapFrameDecode* frame) {
-    g_exifMake.clear();
-    g_exifModel.clear();
-    g_exifDateTime.clear();
-    IWICMetadataQueryReader* reader = nullptr;
-    if (FAILED(frame->GetMetadataQueryReader(&reader))) return;
-    const wchar_t* roots[] = {L"/app1/ifd/", L"/ifd/"};
-    for (const wchar_t* root : roots) {
-        if (g_exifMake.empty()) g_exifMake = ReadMetadataString(reader, std::wstring(root) + L"{ushort=271}");
-        if (g_exifModel.empty()) g_exifModel = ReadMetadataString(reader, std::wstring(root) + L"{ushort=272}");
-        if (g_exifDateTime.empty()) g_exifDateTime = ReadMetadataString(reader, std::wstring(root) + L"{ushort=36867}");
-        if (g_exifDateTime.empty()) g_exifDateTime = ReadMetadataString(reader, std::wstring(root) + L"{ushort=306}");
-    }
-    reader->Release();
-}
+void LoadImageIntoWindow(HWND window, const wchar_t* path);
+double FitScale(HWND window);
+bool SamePath(const wchar_t* first, const wchar_t* second);
 
 std::wstring FileNameFromPath(const wchar_t* path) {
     const wchar_t* slash = wcsrchr(path, L'\\');
@@ -92,6 +85,318 @@ std::wstring FormatFromPath(const wchar_t* path) {
     return format;
 }
 
+const wchar_t* DefaultExtensionForSaveFilter(DWORD filterIndex) {
+    switch (filterIndex) {
+    case 1: return L"jpg";
+    case 2: return L"png";
+    case 3: return L"tif";
+    case 4: return L"bmp";
+    case 5: return L"gif";
+    case 6: return L"webp";
+    case 7: return L"heic";
+    default: return L"png";
+    }
+}
+
+bool HasFileExtension(const wchar_t* path) {
+    const wchar_t* slash = wcsrchr(path, L'\\');
+    if (!slash) slash = wcsrchr(path, L'/');
+    const wchar_t* dot = wcsrchr(path, L'.');
+    return dot && (!slash || dot > slash + 1) && dot[1] != L'\0';
+}
+
+bool ReplaceBitmapFromSource(IWICBitmapSource* source, const wchar_t* notice) {
+    if (!source) return false;
+    IWICImagingFactory* factory = nullptr;
+    IWICFormatConverter* converter = nullptr;
+    HBITMAP replacement = nullptr;
+    void* pixels = nullptr;
+    UINT width = 0;
+    UINT height = 0;
+    bool success = false;
+    do {
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (FAILED(factory->CreateFormatConverter(&converter))) break;
+        if (FAILED(converter->Initialize(source, GUID_WICPixelFormat32bppPBGRA,
+                                         WICBitmapDitherTypeNone, nullptr, 0.0,
+                                         WICBitmapPaletteTypeCustom))) break;
+        if (FAILED(converter->GetSize(&width, &height)) || width == 0 || height == 0) break;
+        BITMAPINFO info{};
+        info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        info.bmiHeader.biWidth = static_cast<LONG>(width);
+        info.bmiHeader.biHeight = -static_cast<LONG>(height);
+        info.bmiHeader.biPlanes = 1;
+        info.bmiHeader.biBitCount = 32;
+        info.bmiHeader.biCompression = BI_RGB;
+        HDC screen = GetDC(nullptr);
+        replacement = CreateDIBSection(screen, &info, DIB_RGB_COLORS, &pixels, nullptr, 0);
+        ReleaseDC(nullptr, screen);
+        if (!replacement || !pixels) break;
+        if (FAILED(converter->CopyPixels(nullptr, width * 4, width * height * 4,
+                                         static_cast<BYTE*>(pixels)))) break;
+        if (g_bitmap) DeleteObject(g_bitmap);
+        g_bitmap = replacement;
+        replacement = nullptr;
+        g_imageWidth = width;
+        g_imageHeight = height;
+        g_zoom = 1.0;
+        g_panX = 0;
+        g_panY = 0;
+        g_selectionActive = false;
+        g_notice = notice;
+        success = true;
+    } while (false);
+    if (replacement) DeleteObject(replacement);
+    if (converter) converter->Release();
+    if (factory) factory->Release();
+    return success;
+}
+
+HBITMAP CloneBitmap(HBITMAP bitmap) {
+    return bitmap ? static_cast<HBITMAP>(CopyImage(bitmap, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION)) : nullptr;
+}
+
+void ClearBitmapStack(std::vector<HBITMAP>& stack) {
+    for (HBITMAP bitmap : stack) if (bitmap) DeleteObject(bitmap);
+    stack.clear();
+}
+
+void RecordUndoState() {
+    HBITMAP snapshot = CloneBitmap(g_bitmap);
+    if (snapshot) g_undoStack.push_back(snapshot);
+    ClearBitmapStack(g_redoStack);
+}
+
+bool ReplaceBitmapFromHBitmap(HBITMAP bitmap, const wchar_t* notice) {
+    if (!bitmap) return false;
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmap* source = nullptr;
+    bool success = false;
+    if (SUCCEEDED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                   IID_PPV_ARGS(&factory))) &&
+        SUCCEEDED(factory->CreateBitmapFromHBITMAP(bitmap, nullptr, WICBitmapUsePremultipliedAlpha, &source))) {
+        success = ReplaceBitmapFromSource(source, notice);
+    }
+    if (source) source->Release();
+    if (factory) factory->Release();
+    return success;
+}
+
+bool UndoImage(HWND window) {
+    if (g_undoStack.empty()) return false;
+    HBITMAP current = CloneBitmap(g_bitmap);
+    HBITMAP target = g_undoStack.back();
+    g_undoStack.pop_back();
+    if (current) g_redoStack.push_back(current);
+    const bool success = ReplaceBitmapFromHBitmap(target, L"Undoしました。再適用するにはRedoしてください。");
+    DeleteObject(target);
+    if (success) InvalidateRect(window, nullptr, FALSE);
+    return success;
+}
+
+bool RedoImage(HWND window) {
+    if (g_redoStack.empty()) return false;
+    HBITMAP current = CloneBitmap(g_bitmap);
+    HBITMAP target = g_redoStack.back();
+    g_redoStack.pop_back();
+    if (current) g_undoStack.push_back(current);
+    const bool success = ReplaceBitmapFromHBitmap(target, L"Redoしました。");
+    DeleteObject(target);
+    if (success) InvalidateRect(window, nullptr, FALSE);
+    return success;
+}
+
+bool CreateCurrentWicSource(IWICImagingFactory* factory, IWICBitmapSource** source) {
+    if (!factory || !g_bitmap || !source) return false;
+    IWICBitmap* bitmap = nullptr;
+    const HRESULT result = factory->CreateBitmapFromHBITMAP(g_bitmap, nullptr,
+                                                             WICBitmapUsePremultipliedAlpha,
+                                                             &bitmap);
+    if (SUCCEEDED(result)) *source = bitmap;
+    return SUCCEEDED(result);
+}
+
+bool ResizeCurrentImage(UINT width, UINT height) {
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmapSource* source = nullptr;
+    IWICBitmapScaler* scaler = nullptr;
+    bool success = false;
+    do {
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (!CreateCurrentWicSource(factory, &source)) break;
+        if (FAILED(factory->CreateBitmapScaler(&scaler))) break;
+        if (FAILED(scaler->Initialize(source, width, height, WICBitmapInterpolationModeFant))) break;
+        success = ReplaceBitmapFromSource(scaler, L"リサイズしました。保存するには右クリックしてください。");
+    } while (false);
+    if (scaler) scaler->Release();
+    if (source) source->Release();
+    if (factory) factory->Release();
+    return success;
+}
+
+bool ConvertColorCurrentImage(const GUID& pixelFormat, WICBitmapPaletteType paletteType,
+                              const wchar_t* notice) {
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmapSource* source = nullptr;
+    IWICFormatConverter* converter = nullptr;
+    bool success = false;
+    do {
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (!CreateCurrentWicSource(factory, &source)) break;
+        if (FAILED(factory->CreateFormatConverter(&converter))) break;
+        if (FAILED(converter->Initialize(source, pixelFormat, WICBitmapDitherTypeErrorDiffusion,
+                                         nullptr, 0.0, paletteType))) break;
+        success = ReplaceBitmapFromSource(converter, notice);
+    } while (false);
+    if (converter) converter->Release();
+    if (source) source->Release();
+    if (factory) factory->Release();
+    return success;
+}
+
+bool TransformCurrentImage(WICBitmapTransformOptions options, const wchar_t* notice) {
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmapSource* source = nullptr;
+    IWICBitmapFlipRotator* transform = nullptr;
+    bool success = false;
+    do {
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (!CreateCurrentWicSource(factory, &source)) break;
+        if (FAILED(factory->CreateBitmapFlipRotator(&transform))) break;
+        if (FAILED(transform->Initialize(source, options))) break;
+        success = ReplaceBitmapFromSource(transform, notice);
+    } while (false);
+    if (transform) transform->Release();
+    if (source) source->Release();
+    if (factory) factory->Release();
+    return success;
+}
+
+bool CropCurrentImage(RECT imageRect) {
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmapSource* source = nullptr;
+    IWICBitmapClipper* clipper = nullptr;
+    bool success = false;
+    do {
+        if (imageRect.right <= imageRect.left || imageRect.bottom <= imageRect.top) break;
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (!CreateCurrentWicSource(factory, &source)) break;
+        if (FAILED(factory->CreateBitmapClipper(&clipper))) break;
+        WICRect clipRect{imageRect.left, imageRect.top,
+                         imageRect.right - imageRect.left,
+                         imageRect.bottom - imageRect.top};
+        if (FAILED(clipper->Initialize(source, &clipRect))) break;
+        success = ReplaceBitmapFromSource(clipper, L"切り抜きました。保存するには右クリックしてください。");
+    } while (false);
+    if (clipper) clipper->Release();
+    if (source) source->Release();
+    if (factory) factory->Release();
+    return success;
+}
+
+RECT SelectionImageRect(HWND window) {
+    RECT client{};
+    GetClientRect(window, &client);
+    const double scale = FitScale(window) * g_zoom;
+    const int width = std::max(1, static_cast<int>(g_imageWidth * scale));
+    const int height = std::max(1, static_cast<int>(g_imageHeight * scale));
+    const int originX = (client.right - client.left - width) / 2 + g_panX;
+    const int originY = (client.bottom - client.top - height) / 2 + g_panY;
+    const int left = std::clamp(static_cast<int>(std::min(g_selectionStart.x, g_selectionEnd.x)), originX, originX + width);
+    const int right = std::clamp(static_cast<int>(std::max(g_selectionStart.x, g_selectionEnd.x)), originX, originX + width);
+    const int top = std::clamp(static_cast<int>(std::min(g_selectionStart.y, g_selectionEnd.y)), originY, originY + height);
+    const int bottom = std::clamp(static_cast<int>(std::max(g_selectionStart.y, g_selectionEnd.y)), originY, originY + height);
+    return RECT{static_cast<LONG>((left - originX) / scale), static_cast<LONG>((top - originY) / scale),
+                static_cast<LONG>((right - originX) / scale), static_cast<LONG>((bottom - originY) / scale)};
+}
+
+bool CopyImageToClipboard(HWND window) {
+    if (!g_bitmap || !OpenClipboard(window)) return false;
+    EmptyClipboard();
+    HBITMAP copy = CloneBitmap(g_bitmap);
+    const bool success = copy && SetClipboardData(CF_BITMAP, copy) != nullptr;
+    if (!success && copy) DeleteObject(copy);
+    CloseClipboard();
+    if (success) g_notice = L"画像をクリップボードへコピーしました。";
+    return success;
+}
+
+bool PasteImageFromClipboard(HWND window) {
+    if (!OpenClipboard(window)) return false;
+    HBITMAP clipboardBitmap = static_cast<HBITMAP>(GetClipboardData(CF_BITMAP));
+    HBITMAP copy = CloneBitmap(clipboardBitmap);
+    CloseClipboard();
+    if (!copy) return false;
+    RecordUndoState();
+    const bool success = ReplaceBitmapFromHBitmap(copy, L"クリップボードから貼り付けました。保存するには右クリックしてください。");
+    DeleteObject(copy);
+    if (!success && !g_undoStack.empty()) {
+        DeleteObject(g_undoStack.back());
+        g_undoStack.pop_back();
+    }
+    InvalidateRect(window, nullptr, FALSE);
+    return success;
+}
+
+struct ResizeDialogState {
+    UINT width = 100;
+    UINT height = 100;
+    bool percent = true;
+    bool accepted = false;
+};
+
+INT_PTR CALLBACK ResizeDialogProc(HWND dialog, UINT message, WPARAM wParam, LPARAM lParam) {
+    auto* state = reinterpret_cast<ResizeDialogState*>(GetWindowLongPtrW(dialog, DWLP_USER));
+    if (message == WM_INITDIALOG) {
+        state = reinterpret_cast<ResizeDialogState*>(lParam);
+        SetWindowLongPtrW(dialog, DWLP_USER, reinterpret_cast<LONG_PTR>(state));
+        wchar_t value[32]{};
+        swprintf_s(value, L"%u", state->width);
+        SetDlgItemTextW(dialog, IDC_RESIZE_WIDTH, value);
+        swprintf_s(value, L"%u", state->height);
+        SetDlgItemTextW(dialog, IDC_RESIZE_HEIGHT, value);
+        SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Percent"));
+        SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_ADDSTRING, 0, reinterpret_cast<LPARAM>(L"Pixels"));
+        SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_SETCURSEL, state->percent ? 0 : 1, 0);
+        return TRUE;
+    }
+    if (message == WM_COMMAND && state && LOWORD(wParam) == IDOK) {
+        wchar_t widthText[32]{}, heightText[32]{};
+        GetDlgItemTextW(dialog, IDC_RESIZE_WIDTH, widthText, ARRAYSIZE(widthText));
+        GetDlgItemTextW(dialog, IDC_RESIZE_HEIGHT, heightText, ARRAYSIZE(heightText));
+        const unsigned long width = wcstoul(widthText, nullptr, 10);
+        const unsigned long height = wcstoul(heightText, nullptr, 10);
+        if (width == 0 || height == 0 || width > 100000 || height > 100000) return TRUE;
+        state->width = static_cast<UINT>(width);
+        state->height = static_cast<UINT>(height);
+        state->percent = SendDlgItemMessageW(dialog, IDC_RESIZE_MODE, CB_GETCURSEL, 0, 0) == 0;
+        state->accepted = true;
+        EndDialog(dialog, IDOK);
+        return TRUE;
+    }
+    if (message == WM_COMMAND && LOWORD(wParam) == IDCANCEL) {
+        EndDialog(dialog, IDCANCEL);
+        return TRUE;
+    }
+    return FALSE;
+}
+
+bool ShowResizeDialog(HWND owner, UINT* width, UINT* height, bool* percent) {
+    ResizeDialogState state{*width, *height, *percent, false};
+    const INT_PTR result = DialogBoxParamW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(IDD_RESIZE_DIALOG),
+                                           owner, ResizeDialogProc, reinterpret_cast<LPARAM>(&state));
+    if (result != IDOK || !state.accepted) return false;
+    *width = state.width;
+    *height = state.height;
+    *percent = state.percent;
+    return true;
+}
+
 bool SamePath(const wchar_t* first, const wchar_t* second) {
     wchar_t firstFull[MAX_PATH * 4]{};
     wchar_t secondFull[MAX_PATH * 4]{};
@@ -103,7 +408,7 @@ bool SamePath(const wchar_t* first, const wchar_t* second) {
 bool IsSupportedOutputFormat(const std::wstring& extension) {
     return extension == L"jpg" || extension == L"jpeg" || extension == L"png" ||
            extension == L"tif" || extension == L"tiff" || extension == L"bmp" ||
-           extension == L"gif" || extension == L"webp" || extension == L"heic";
+           extension == L"gif" || extension == L"webp" || extension == L"heic" || extension == L"heif";
 }
 
 const GUID* EncoderFormat(const std::wstring& extension) {
@@ -112,6 +417,8 @@ const GUID* EncoderFormat(const std::wstring& extension) {
     if (extension == L"tif" || extension == L"tiff") return &GUID_ContainerFormatTiff;
     if (extension == L"bmp") return &GUID_ContainerFormatBmp;
     if (extension == L"gif") return &GUID_ContainerFormatGif;
+    if (extension == L"webp") return &GUID_ContainerFormatWebp;
+    if (extension == L"heic" || extension == L"heif") return &GUID_ContainerFormatHeif;
     return nullptr;
 }
 
@@ -127,19 +434,51 @@ bool ConvertImageFile(const wchar_t* outputPath) {
     CloseHandle(reservation);
 
     IWICImagingFactory* factory = nullptr;
-    IWICStream* stream = nullptr;
+    IStream* stream = nullptr;
     IWICBitmapEncoder* encoder = nullptr;
     IWICBitmapFrameEncode* frame = nullptr;
     IWICBitmap* source = nullptr;
+    IPropertyBag2* options = nullptr;
     bool success = false;
     do {
         if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
                                     IID_PPV_ARGS(&factory)))) break;
-        if (FAILED(factory->CreateStream(&stream))) break;
-        if (FAILED(stream->InitializeFromFilename(outputPath, GENERIC_WRITE))) break;
+        if (FAILED(SHCreateStreamOnFileEx(outputPath,
+                                          STGM_WRITE | STGM_SHARE_DENY_WRITE,
+                                          FILE_ATTRIBUTE_NORMAL, FALSE, nullptr, &stream))) break;
         if (FAILED(factory->CreateEncoder(*format, nullptr, &encoder))) break;
         if (FAILED(encoder->Initialize(stream, WICBitmapEncoderNoCache))) break;
-        if (FAILED(encoder->CreateNewFrame(&frame, nullptr))) break;
+        if (FAILED(encoder->CreateNewFrame(&frame, &options))) break;
+        if (extension == L"jpg" || extension == L"jpeg") {
+            PROPBAG2 property{};
+            property.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
+            VARIANT value;
+            VariantInit(&value);
+            value.vt = VT_R4;
+            value.fltVal = g_jpegQuality / 100.0f;
+            options->Write(1, &property, &value);
+            VariantClear(&value);
+        }
+        if (extension == L"png") {
+            PROPBAG2 property{};
+            property.pstrName = const_cast<LPOLESTR>(L"CompressionLevel");
+            VARIANT value;
+            VariantInit(&value);
+            value.vt = VT_UI1;
+            value.bVal = static_cast<BYTE>(g_compressionLevel);
+            options->Write(1, &property, &value);
+            VariantClear(&value);
+        }
+        if (extension == L"webp" || extension == L"heic" || extension == L"heif") {
+            PROPBAG2 property{};
+            property.pstrName = const_cast<LPOLESTR>(L"ImageQuality");
+            VARIANT value;
+            VariantInit(&value);
+            value.vt = VT_R4;
+            value.fltVal = g_jpegQuality / 100.0f;
+            options->Write(1, &property, &value);
+            VariantClear(&value);
+        }
         if (FAILED(frame->Initialize(nullptr))) break;
         if (FAILED(frame->SetSize(g_imageWidth, g_imageHeight))) break;
         WICPixelFormatGUID pixelFormat = GUID_WICPixelFormat32bppBGRA;
@@ -152,6 +491,7 @@ bool ConvertImageFile(const wchar_t* outputPath) {
         success = true;
     } while (false);
     if (source) source->Release();
+    if (options) options->Release();
     if (frame) frame->Release();
     if (encoder) encoder->Release();
     if (stream) stream->Release();
@@ -160,17 +500,66 @@ bool ConvertImageFile(const wchar_t* outputPath) {
     return success;
 }
 
+bool RunEditSelfTest(const wchar_t* inputPath) {
+    if (LoadImageFile(inputPath) != LoadResult::success || !g_bitmap) return false;
+    const UINT originalWidth = g_imageWidth;
+    const UINT originalHeight = g_imageHeight;
+    if (originalWidth == 0 || originalHeight == 0) return false;
+    RecordUndoState();
+    if (!ResizeCurrentImage(originalWidth + 1, originalHeight + 1)) return false;
+    RecordUndoState();
+    if (!TransformCurrentImage(WICBitmapTransformRotate90, L"")) return false;
+    RecordUndoState();
+    if (!TransformCurrentImage(WICBitmapTransformFlipHorizontal, L"")) return false;
+    RecordUndoState();
+    if (!ConvertColorCurrentImage(GUID_WICPixelFormat8bppIndexed, WICBitmapPaletteTypeFixedHalftone256, L"")) return false;
+    RecordUndoState();
+    if (!ConvertColorCurrentImage(GUID_WICPixelFormat8bppGray, WICBitmapPaletteTypeCustom, L"")) return false;
+    const RECT crop{0, 0, static_cast<LONG>(std::max(1u, g_imageWidth - 1)), static_cast<LONG>(std::max(1u, g_imageHeight - 1))};
+    RecordUndoState();
+    if (!CropCurrentImage(crop)) return false;
+    if (!CopyImageToClipboard(nullptr) || !PasteImageFromClipboard(nullptr)) return false;
+    g_jpegQuality = 50;
+    g_compressionLevel = 1;
+    wchar_t temporaryPath[MAX_PATH]{};
+    if (!GetTempFileNameW(L".", L"qiv", 0, temporaryPath)) return false;
+    DeleteFileW(temporaryPath);
+    std::wstring jpgPath = std::wstring(temporaryPath) + L".jpg";
+    std::wstring pngPath = std::wstring(temporaryPath) + L".png";
+    const bool qualityPass = ConvertImageFile(jpgPath.c_str()) && ConvertImageFile(pngPath.c_str());
+    DeleteFileW(jpgPath.c_str());
+    DeleteFileW(pngPath.c_str());
+    if (!qualityPass) return false;
+    if (!UndoImage(nullptr) || !RedoImage(nullptr)) return false;
+    return g_imageWidth > 0 && g_imageHeight > 0;
+}
+
 void ConvertWithSaveDialog(HWND window) {
     wchar_t outputPath[MAX_PATH * 4]{};
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = window;
-    dialog.lpstrFilter = L"画像ファイル\0*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif;*.webp;*.heic\0すべてのファイル\0*.*\0";
+    dialog.lpstrFilter = L"JPEG画像 (*.jpg;*.jpeg)\0*.jpg;*.jpeg\0"
+                         L"PNG画像 (*.png)\0*.png\0"
+                         L"TIFF画像 (*.tif;*.tiff)\0*.tif;*.tiff\0"
+                         L"BMP画像 (*.bmp)\0*.bmp\0"
+                         L"GIF画像 (*.gif)\0*.gif\0"
+                         L"WebP画像 (*.webp)\0*.webp\0"
+                         L"HEIC/HEIF画像 (*.heic;*.heif)\0*.heic;*.heif\0"
+                         L"すべてのファイル (*.*)\0*.*\0";
     dialog.lpstrFile = outputPath;
     dialog.nMaxFile = ARRAYSIZE(outputPath);
-    dialog.lpstrDefExt = L"png";
+    dialog.nFilterIndex = 2;
+    dialog.lpstrDefExt = nullptr;
     dialog.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
     if (!GetSaveFileNameW(&dialog)) return;
+    if (!HasFileExtension(outputPath)) {
+        const std::wstring extension = L"." + std::wstring(DefaultExtensionForSaveFilter(dialog.nFilterIndex));
+        const size_t currentLength = wcslen(outputPath);
+        if (currentLength + extension.size() + 1 < ARRAYSIZE(outputPath)) {
+            wcscat_s(outputPath, extension.c_str());
+        }
+    }
     if (SamePath(g_sourcePath.c_str(), outputPath)) {
         g_notice = L"原本と同じ場所には保存できません。原本は変更していません。";
         InvalidateRect(window, nullptr, FALSE);
@@ -182,24 +571,6 @@ void ConvertWithSaveDialog(HWND window) {
         g_notice = L"保存できませんでした。既存ファイルへの上書きは禁止されています。";
     }
     InvalidateRect(window, nullptr, FALSE);
-}
-
-std::wstring MetadataText() {
-    if (!g_bitmap) return L"";
-    wchar_t buffer[256]{};
-    swprintf_s(buffer, L"%s  |  %ux%u  |  %s  |  %llu KB",
-               g_fileName.c_str(), g_imageWidth, g_imageHeight, g_formatName.c_str(),
-               static_cast<unsigned long long>((g_fileSize + 1023) / 1024));
-    return buffer;
-}
-
-std::wstring ExifText() {
-    if (g_exifMake.empty() && g_exifModel.empty() && g_exifDateTime.empty()) return L"EXIF: なし";
-    std::wstring text = L"EXIF: ";
-    if (!g_exifMake.empty()) text += L"メーカー=" + g_exifMake + L"  ";
-    if (!g_exifModel.empty()) text += L"機種=" + g_exifModel + L"  ";
-    if (!g_exifDateTime.empty()) text += L"撮影日時=" + g_exifDateTime;
-    return text;
 }
 
 void ReleaseImage() {
@@ -217,11 +588,9 @@ void ReleaseImage() {
     g_fileName.clear();
     g_sourcePath.clear();
     g_formatName.clear();
-    g_exifMake.clear();
-    g_exifModel.clear();
-    g_exifDateTime.clear();
-    g_fileSize = 0;
     g_notice.clear();
+    ClearBitmapStack(g_undoStack);
+    ClearBitmapStack(g_redoStack);
 }
 
 const wchar_t* LoadErrorMessage(LoadResult result) {
@@ -246,12 +615,129 @@ void LoadImageIntoWindow(HWND window, const wchar_t* path) {
     InvalidateRect(window, nullptr, TRUE);
 }
 
+void ExecuteEditCommand(HWND window, UINT command) {
+    if (command == kCommandUndo) {
+        UndoImage(window);
+        return;
+    }
+    if (command == kCommandRedo) {
+        RedoImage(window);
+        return;
+    }
+    if (command == kCommandClipboardCopy) {
+        CopyImageToClipboard(window);
+        InvalidateRect(window, nullptr, FALSE);
+        return;
+    }
+    if (command == kCommandClipboardPaste) {
+        PasteImageFromClipboard(window);
+        return;
+    }
+    if (!g_bitmap) return;
+    switch (command) {
+    case kCommandResize50:
+        RecordUndoState();
+        ResizeCurrentImage(std::max(1u, g_imageWidth / 2), std::max(1u, g_imageHeight / 2));
+        break;
+    case kCommandResize75:
+        RecordUndoState();
+        ResizeCurrentImage(std::max(1u, g_imageWidth * 3 / 4), std::max(1u, g_imageHeight * 3 / 4));
+        break;
+    case kCommandResize125:
+        RecordUndoState();
+        ResizeCurrentImage(std::max(1u, g_imageWidth * 5 / 4), std::max(1u, g_imageHeight * 5 / 4));
+        break;
+    case kCommandResize200:
+        RecordUndoState();
+        ResizeCurrentImage(std::max(1u, g_imageWidth * 2), std::max(1u, g_imageHeight * 2));
+        break;
+    case kCommandResizeCustom: {
+        UINT width = 100;
+        UINT height = 100;
+        bool percent = true;
+        if (!ShowResizeDialog(window, &width, &height, &percent)) break;
+        if (percent) {
+            width = std::max(1u, static_cast<UINT>(g_imageWidth * (width / 100.0)));
+            height = std::max(1u, static_cast<UINT>(g_imageHeight * (height / 100.0)));
+        }
+        RecordUndoState();
+        ResizeCurrentImage(width, height);
+        break;
+    }
+    case kCommandCrop:
+        if (g_selectionActive) {
+            RecordUndoState();
+            CropCurrentImage(SelectionImageRect(window));
+        }
+        break;
+    case kCommandRotate90:
+        RecordUndoState();
+        TransformCurrentImage(WICBitmapTransformRotate90, L"右へ90度回転しました。保存するには右クリックしてください。");
+        break;
+    case kCommandRotate180:
+        RecordUndoState();
+        TransformCurrentImage(WICBitmapTransformRotate180, L"180度回転しました。保存するには右クリックしてください。");
+        break;
+    case kCommandRotate270:
+        RecordUndoState();
+        TransformCurrentImage(WICBitmapTransformRotate270, L"左へ90度回転しました。保存するには右クリックしてください。");
+        break;
+    case kCommandFlipHorizontal:
+        RecordUndoState();
+        TransformCurrentImage(WICBitmapTransformFlipHorizontal, L"左右反転しました。保存するには右クリックしてください。");
+        break;
+    case kCommandFlipVertical:
+        RecordUndoState();
+        TransformCurrentImage(WICBitmapTransformFlipVertical, L"上下反転しました。保存するには右クリックしてください。");
+        break;
+    case kCommandColorFull:
+        RecordUndoState();
+        ConvertColorCurrentImage(GUID_WICPixelFormat32bppPBGRA, WICBitmapPaletteTypeCustom, L"フルカラーへ変換しました。保存するには右クリックしてください。");
+        break;
+    case kCommandColor256:
+        RecordUndoState();
+        ConvertColorCurrentImage(GUID_WICPixelFormat8bppIndexed, WICBitmapPaletteTypeFixedHalftone256, L"256色へ変換しました。保存するには右クリックしてください。");
+        break;
+    case kCommandColorGray:
+        RecordUndoState();
+        ConvertColorCurrentImage(GUID_WICPixelFormat8bppGray, WICBitmapPaletteTypeCustom, L"グレースケールへ変換しました。保存するには右クリックしてください。");
+        break;
+    case kCommandQuality50:
+        g_jpegQuality = 50;
+        g_notice = L"JPEG品質を50に設定しました。";
+        break;
+    case kCommandQuality75:
+        g_jpegQuality = 75;
+        g_notice = L"JPEG品質を75に設定しました。";
+        break;
+    case kCommandQuality90:
+        g_jpegQuality = 90;
+        g_notice = L"JPEG品質を90に設定しました。";
+        break;
+    case kCommandCompression1:
+        g_compressionLevel = 1;
+        g_notice = L"圧縮レベルを1に設定しました。";
+        break;
+    case kCommandCompression5:
+        g_compressionLevel = 5;
+        g_notice = L"圧縮レベルを5に設定しました。";
+        break;
+    case kCommandCompression9:
+        g_compressionLevel = 9;
+        g_notice = L"圧縮レベルを9に設定しました。";
+        break;
+    default:
+        return;
+    }
+    InvalidateRect(window, nullptr, FALSE);
+}
+
 void OpenImageDialog(HWND window) {
     wchar_t path[MAX_PATH * 4]{};
     OPENFILENAMEW dialog{};
     dialog.lStructSize = sizeof(dialog);
     dialog.hwndOwner = window;
-    dialog.lpstrFilter = L"画像ファイル\0*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif;*.webp;*.heic\0すべてのファイル\0*.*\0";
+    dialog.lpstrFilter = L"画像ファイル\0*.jpg;*.jpeg;*.png;*.tif;*.tiff;*.bmp;*.gif;*.webp;*.heic;*.heif\0すべてのファイル\0*.*\0";
     dialog.lpstrFile = path;
     dialog.nMaxFile = ARRAYSIZE(path);
     dialog.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR;
@@ -265,6 +751,39 @@ void BuildMenu(HWND window) {
     AppendMenuW(fileMenu, MF_SEPARATOR, 0, nullptr);
     AppendMenuW(fileMenu, MF_STRING, kCommandExit, L"終了");
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(fileMenu), L"ファイル");
+    HMENU editMenu = CreatePopupMenu();
+    AppendMenuW(editMenu, MF_STRING, kCommandResize50, L"リサイズ 50%\tCtrl+1");
+    AppendMenuW(editMenu, MF_STRING, kCommandResize75, L"リサイズ 75%\tCtrl+2");
+    AppendMenuW(editMenu, MF_STRING, kCommandResize125, L"リサイズ 125%\tCtrl+3");
+    AppendMenuW(editMenu, MF_STRING, kCommandResize200, L"リサイズ 200%\tCtrl+4");
+    AppendMenuW(editMenu, MF_STRING, kCommandResizeCustom, L"リサイズを指定...");
+    AppendMenuW(editMenu, MF_STRING, kCommandCrop, L"選択範囲を切り抜く");
+    AppendMenuW(editMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(editMenu, MF_STRING, kCommandRotate90, L"右へ90度回転");
+    AppendMenuW(editMenu, MF_STRING, kCommandRotate180, L"180度回転");
+    AppendMenuW(editMenu, MF_STRING, kCommandRotate270, L"左へ90度回転");
+    AppendMenuW(editMenu, MF_STRING, kCommandFlipHorizontal, L"ミラー（左右反転 / Mirror）");
+    AppendMenuW(editMenu, MF_STRING, kCommandFlipVertical, L"上下反転");
+    HMENU colorMenu = CreatePopupMenu();
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorFull, L"フルカラー");
+    AppendMenuW(colorMenu, MF_STRING, kCommandColor256, L"256色");
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorGray, L"グレースケール");
+    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(colorMenu), L"色変換");
+    AppendMenuW(editMenu, MF_SEPARATOR, 0, nullptr);
+    HMENU qualityMenu = CreatePopupMenu();
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQuality50, L"50");
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQuality75, L"75");
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQuality90, L"90");
+    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), L"JPEG品質");
+    HMENU compressionMenu = CreatePopupMenu();
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, L"1（低圧縮）");
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression5, L"5（標準）");
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression9, L"9（高圧縮）");
+    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(compressionMenu), L"PNG圧縮");
+    AppendMenuW(editMenu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(editMenu, MF_STRING, kCommandClipboardCopy, L"画像をコピー");
+    AppendMenuW(editMenu, MF_STRING, kCommandClipboardPaste, L"画像を貼り付け");
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(editMenu), L"編集");
     SetMenu(window, menu);
 }
 
@@ -272,9 +791,41 @@ void ShowImageContextMenu(HWND window, int x, int y) {
     if (!g_bitmap) return;
     HMENU menu = CreatePopupMenu();
     AppendMenuW(menu, MF_STRING, 1, L"別形式で保存...");
+    HMENU resizeMenu = CreatePopupMenu();
+    AppendMenuW(resizeMenu, MF_STRING, kCommandResize50, L"50%");
+    AppendMenuW(resizeMenu, MF_STRING, kCommandResize75, L"75%");
+    AppendMenuW(resizeMenu, MF_STRING, kCommandResize125, L"125%");
+    AppendMenuW(resizeMenu, MF_STRING, kCommandResize200, L"200%");
+    AppendMenuW(resizeMenu, MF_STRING, kCommandResizeCustom, L"指定...");
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(resizeMenu), L"リサイズ");
+    AppendMenuW(menu, MF_STRING | (g_selectionActive ? 0 : MF_GRAYED), kCommandCrop, L"選択範囲を切り抜く");
+    AppendMenuW(menu, MF_STRING, kCommandRotate90, L"右へ90度回転");
+    AppendMenuW(menu, MF_STRING, kCommandRotate180, L"180度回転");
+    AppendMenuW(menu, MF_STRING, kCommandRotate270, L"左へ90度回転");
+    AppendMenuW(menu, MF_STRING, kCommandFlipHorizontal, L"ミラー（左右反転 / Mirror）");
+    AppendMenuW(menu, MF_STRING, kCommandFlipVertical, L"上下反転");
+    HMENU colorMenu = CreatePopupMenu();
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorFull, L"フルカラー");
+    AppendMenuW(colorMenu, MF_STRING, kCommandColor256, L"256色");
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorGray, L"グレースケール");
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(colorMenu), L"色変換");
+    HMENU qualityMenu = CreatePopupMenu();
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQuality50, L"50");
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQuality75, L"75");
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQuality90, L"90");
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), L"JPEG品質");
+    HMENU compressionMenu = CreatePopupMenu();
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, L"1（低圧縮）");
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression5, L"5（標準）");
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression9, L"9（高圧縮）");
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(compressionMenu), L"PNG圧縮");
+    AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
+    AppendMenuW(menu, MF_STRING, kCommandClipboardCopy, L"画像をコピー");
+    AppendMenuW(menu, MF_STRING, kCommandClipboardPaste, L"画像を貼り付け");
     const int command = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, 0, window, nullptr);
     DestroyMenu(menu);
     if (command == 1) ConvertWithSaveDialog(window);
+    else SendMessageW(window, WM_COMMAND, command, 0);
 }
 
 double FitScale(HWND window) {
@@ -324,7 +875,7 @@ LoadResult LoadImageFile(const wchar_t* path) {
     }
     do {
         HRESULT hr = factory->CreateDecoderFromFilename(path, nullptr, GENERIC_READ,
-                                                        WICDecodeMetadataCacheOnLoad, &decoder);
+                                                        WICDecodeMetadataCacheOnDemand, &decoder);
         if (FAILED(hr)) {
             if (hr == WINCODEC_ERR_UNKNOWNIMAGEFORMAT) result = LoadResult::unsupportedFormat;
             else if (hr == HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED) || hr == E_ACCESSDENIED) result = LoadResult::accessDenied;
@@ -366,16 +917,6 @@ LoadResult LoadImageFile(const wchar_t* path) {
         g_fileName = FileNameFromPath(path);
         g_sourcePath = path;
         g_formatName = FormatFromPath(path);
-        WIN32_FILE_ATTRIBUTE_DATA attributes{};
-        if (GetFileAttributesExW(path, GetFileExInfoStandard, &attributes)) {
-            ULARGE_INTEGER size{};
-            size.HighPart = attributes.nFileSizeHigh;
-            size.LowPart = attributes.nFileSizeLow;
-            g_fileSize = size.QuadPart;
-        } else {
-            g_fileSize = 0;
-        }
-        ReadExif(frame);
         g_status.clear();
         result = LoadResult::success;
     } while (false);
@@ -416,10 +957,17 @@ void Paint(HWND window, HDC dc) {
     DeleteDC(source);
     SetTextColor(dc, RGB(230, 230, 230));
     SetBkMode(dc, TRANSPARENT);
-    RECT metadata{12, 10, client.right - 12, 34};
-    DrawTextW(dc, MetadataText().c_str(), -1, &metadata, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
-    RECT exif{12, 34, client.right - 12, 58};
-    DrawTextW(dc, ExifText().c_str(), -1, &exif, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+    if (g_selecting || g_selectionActive) {
+        RECT selection{std::min(g_selectionStart.x, g_selectionEnd.x), std::min(g_selectionStart.y, g_selectionEnd.y),
+                       std::max(g_selectionStart.x, g_selectionEnd.x), std::max(g_selectionStart.y, g_selectionEnd.y)};
+        HPEN pen = CreatePen(PS_DASH, 1, RGB(255, 220, 80));
+        HGDIOBJ oldPen = SelectObject(dc, pen);
+        HGDIOBJ oldBrush = SelectObject(dc, GetStockObject(HOLLOW_BRUSH));
+        Rectangle(dc, selection.left, selection.top, selection.right, selection.bottom);
+        SelectObject(dc, oldBrush);
+        SelectObject(dc, oldPen);
+        DeleteObject(pen);
+    }
     if (!g_notice.empty()) {
         SetTextColor(dc, RGB(150, 230, 160));
         RECT notice{12, client.bottom - 34, client.right - 12, client.bottom - 10};
@@ -432,9 +980,16 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
     case WM_COMMAND:
         if (LOWORD(wParam) == kCommandOpen) OpenImageDialog(window);
         else if (LOWORD(wParam) == kCommandExit) DestroyWindow(window);
+        else if (LOWORD(wParam) == 1) ConvertWithSaveDialog(window);
+        else if (LOWORD(wParam) >= kCommandResize50 && LOWORD(wParam) <= kCommandCompression9) ExecuteEditCommand(window, LOWORD(wParam));
         return 0;
     case WM_KEYDOWN:
         if (wParam == 'O' && (GetKeyState(VK_CONTROL) & 0x8000)) OpenImageDialog(window);
+        else if (wParam == 'Z' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandUndo);
+        else if (wParam == 'Y' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandRedo);
+        else if ((GetKeyState(VK_CONTROL) & 0x8000) && wParam >= '1' && wParam <= '4') {
+            ExecuteEditCommand(window, kCommandResize50 + (wParam - '1'));
+        }
         return 0;
     case WM_PAINT: {
         PAINTSTRUCT paint{};
@@ -475,7 +1030,30 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         InvalidateRect(window, nullptr, FALSE);
         return 0;
     }
-    case WM_RBUTTONDOWN:
+    case WM_LBUTTONDOWN:
+        if (g_bitmap) {
+            const POINT point{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            g_selecting = true;
+            g_selectionActive = false;
+            g_selectionStart = point;
+            g_selectionEnd = point;
+            SetCapture(window);
+        }
+        return 0;
+    case WM_LBUTTONUP: {
+        const POINT point{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        if (g_selecting) {
+            g_selectionEnd = point;
+            g_selectionActive = std::abs(g_selectionEnd.x - g_selectionStart.x) > 4 &&
+                                std::abs(g_selectionEnd.y - g_selectionStart.y) > 4;
+        }
+        g_selecting = false;
+        g_panning = false;
+        if (GetCapture() == window) ReleaseCapture();
+        g_panMoved = false;
+        return 0;
+    }
+    case WM_MBUTTONDOWN:
         if (g_bitmap) {
             g_panning = true;
             g_panMoved = false;
@@ -483,16 +1061,17 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
             SetCapture(window);
         }
         return 0;
-    case WM_RBUTTONUP: {
-        const POINT point{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+    case WM_MBUTTONUP:
         g_panning = false;
         if (GetCapture() == window) ReleaseCapture();
-        if (g_bitmap && !g_panMoved) {
-            POINT screenPoint = point;
+        g_panMoved = false;
+        return 0;
+    case WM_RBUTTONUP: {
+        if (g_bitmap) {
+            POINT screenPoint{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
             ClientToScreen(window, &screenPoint);
             ShowImageContextMenu(window, screenPoint.x, screenPoint.y);
         }
-        g_panMoved = false;
         return 0;
     }
     case WM_CONTEXTMENU: {
@@ -502,7 +1081,10 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         return 0;
     }
     case WM_MOUSEMOVE:
-        if (g_panning) {
+        if (g_selecting) {
+            g_selectionEnd = POINT{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            InvalidateRect(window, nullptr, FALSE);
+        } else if (g_panning) {
             const POINT current{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
             g_panX += current.x - g_lastPanPoint.x;
             g_panY += current.y - g_lastPanPoint.y;
@@ -514,6 +1096,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         return 0;
     case WM_CAPTURECHANGED:
         g_panning = false;
+        g_selecting = false;
         return 0;
     case WM_DESTROY:
         ReleaseImage();
@@ -531,6 +1114,14 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     if (arguments && argumentCount >= 2 && wcscmp(arguments[1], L"--self-test") == 0) {
         LocalFree(arguments);
         return 0;
+    }
+    if (arguments && argumentCount == 3 && wcscmp(arguments[1], L"--self-test-edit") == 0) {
+        CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+        const bool passed = RunEditSelfTest(arguments[2]);
+        ReleaseImage();
+        LocalFree(arguments);
+        CoUninitialize();
+        return passed ? 0 : 2;
     }
     const bool convertMode = arguments && argumentCount == 4 && wcscmp(arguments[1], L"--convert") == 0;
     if (convertMode) {

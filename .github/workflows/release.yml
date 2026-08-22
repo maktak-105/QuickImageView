@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  package:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022"
+      - name: Build
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: Assemble package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force dist\binary | Out-Null
+          Copy-Item build\Release\QuickImageView.exe dist\binary\QuickImageView.exe
+          Compress-Archive -Path dist\binary\QuickImageView.exe,dist\documents\* -DestinationPath QuickImageView-binary.zip -Force
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: QuickImageView-binary.zip

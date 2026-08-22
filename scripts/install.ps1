@@ -2,7 +2,8 @@
 param(
     [string]$SourceExe,
     [string]$InstallDirectory = "$(Join-Path $env:LOCALAPPDATA 'QuickImageView')",
-    [switch]$RegisterContextMenu
+    [string]$ContextMenuName = 'QuickImageView',
+    [switch]$NoRegisterContextMenu
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,8 +20,8 @@ if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
 New-Item -ItemType Directory -Force -Path $target | Out-Null
 Copy-Item -LiteralPath $source -Destination (Join-Path $target 'QuickImageView.exe') -Force
 
-$keyPath = 'HKCU:\Software\Classes\SystemFileAssociations\image\shell\QuickImageView'
-if ($RegisterContextMenu) {
+$keyPath = 'HKCU:\Software\Classes\SystemFileAssociations\image\shell\' + $ContextMenuName
+if (-not $NoRegisterContextMenu) {
     New-Item -Path $keyPath -Force | Out-Null
     Set-ItemProperty -Path $keyPath -Name '(default)' -Value 'Open with QuickImageView'
     New-Item -Path (Join-Path $keyPath 'command') -Force | Out-Null
@@ -29,5 +30,5 @@ if ($RegisterContextMenu) {
 }
 
 Write-Output "QuickImageView installed: $target"
-if ($RegisterContextMenu) { Write-Output 'Context menu registration enabled.' }
+if (-not $NoRegisterContextMenu) { Write-Output 'Context menu registration enabled.' }
 else { Write-Output 'Context menu registration skipped.' }

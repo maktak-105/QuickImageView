@@ -16,13 +16,14 @@ ctest --test-dir build --output-on-failure
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-画像の右クリックメニューへ登録する場合は、ユーザーが明示的にスイッチを指定する。
+画像の右クリックメニューへは既定で登録する。
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -RegisterContextMenu
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
 管理者権限は要求しない。登録先は現在のユーザー（HKCU）に限定する。
+登録しない場合は `-NoRegisterContextMenu` を指定する。
 
 ## アンインストール
 

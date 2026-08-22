@@ -1,11 +1,12 @@
 [CmdletBinding()]
 param(
-    [string]$InstallDirectory = "$(Join-Path $env:LOCALAPPDATA 'QuickImageView')"
+    [string]$InstallDirectory = "$(Join-Path $env:LOCALAPPDATA 'QuickImageView')",
+    [string]$ContextMenuName = 'QuickImageView'
 )
 
 $ErrorActionPreference = 'Stop'
 $target = [IO.Path]::GetFullPath($InstallDirectory)
-$keyPath = 'HKCU:\Software\Classes\SystemFileAssociations\image\shell\QuickImageView'
+$keyPath = 'HKCU:\Software\Classes\SystemFileAssociations\image\shell\' + $ContextMenuName
 
 if (Test-Path -LiteralPath $keyPath) {
     Remove-Item -LiteralPath $keyPath -Recurse -Force
