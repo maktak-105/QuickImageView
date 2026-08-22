@@ -24,4 +24,4 @@
 
 ## 今後の方針
 
-このQuickImageView開発ループを、二度とCodexで実行しない。
+このQuickImageView開発ループを、二度とCodexでもChatGPTでも実行しない。
