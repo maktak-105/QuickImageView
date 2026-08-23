@@ -13,7 +13,7 @@
 
 ## 2. 仕様書の扱い
 
-この文書は、現行ビルドを合格判定するための要求仕様です。必須項目を満たさないビルドは未完成です。判定は `tests/manage_loop.ps1` の終了コードと生成済みダッシュボードで行います。
+この文書は、現行ビルドを合格判定するための要求仕様です。必須項目を満たさないビルドは未完成です。判定は `python tests/run_loop.py` の終了コードと生成済みダッシュボードで行います。
 
 - `0`: 仕様・検査・ビルド・インストール版検査がすべて合格
 - `1`: 未達、回帰、検査不足、または手動確認待ち
@@ -72,7 +72,7 @@
 完了判定:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\manage_loop.ps1
+python .\tests\run_loop.py
 ```
 
 ダッシュボード生成:

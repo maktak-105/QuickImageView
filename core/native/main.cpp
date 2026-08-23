@@ -4,6 +4,7 @@
 #include <shlwapi.h>
 #include <shellapi.h>
 #include <commdlg.h>
+#include <webp/encode.h>
 #include "resource.h"
 
 #include <algorithm>
@@ -150,6 +151,7 @@ void UpdateWindowTitle(HWND window) {
 }
 void LoadImageIntoWindow(HWND window, const wchar_t* path);
 double FitScale(HWND window);
+void ClampPan(HWND window);
 bool SamePath(const wchar_t* first, const wchar_t* second);
 
 std::wstring FileNameFromPath(const wchar_t* path) {
@@ -238,6 +240,34 @@ HBITMAP CloneBitmap(HBITMAP bitmap) {
     return bitmap ? static_cast<HBITMAP>(CopyImage(bitmap, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION)) : nullptr;
 }
 
+HBITMAP CloneClipboardBitmap() {
+    if (HBITMAP bitmap = static_cast<HBITMAP>(GetClipboardData(CF_BITMAP))) {
+        return CloneBitmap(bitmap);
+    }
+    UINT formats[] = {CF_DIBV5, CF_DIB};
+    UINT format = GetPriorityClipboardFormat(formats, 2);
+    if (format != CF_DIBV5 && format != CF_DIB) return nullptr;
+    HGLOBAL data = static_cast<HGLOBAL>(GetClipboardData(format));
+    if (!data) return nullptr;
+    void* locked = GlobalLock(data);
+    if (!locked) return nullptr;
+    const auto* header = static_cast<const BITMAPINFOHEADER*>(locked);
+    if (header->biSize < sizeof(BITMAPINFOHEADER) || header->biWidth <= 0 || header->biHeight == 0 ||
+        header->biBitCount == 0) {
+        GlobalUnlock(data);
+        return nullptr;
+    }
+    const size_t headerSize = header->biSize + (header->biBitCount <= 8 ?
+        (static_cast<size_t>(1) << header->biBitCount) * sizeof(RGBQUAD) : 0);
+    const BYTE* pixels = static_cast<const BYTE*>(locked) + headerSize;
+    HDC screen = GetDC(nullptr);
+    HBITMAP bitmap = CreateDIBitmap(screen, header, CBM_INIT, pixels,
+                                    reinterpret_cast<const BITMAPINFO*>(header), DIB_RGB_COLORS);
+    ReleaseDC(nullptr, screen);
+    GlobalUnlock(data);
+    return bitmap;
+}
+
 void ClearBitmapStack(std::vector<HBITMAP>& stack) {
     for (HBITMAP bitmap : stack) if (bitmap) DeleteObject(bitmap);
     stack.clear();
@@ -314,6 +344,19 @@ bool ResizeCurrentImage(UINT width, UINT height) {
     if (scaler) scaler->Release();
     if (source) source->Release();
     if (factory) factory->Release();
+    return success;
+}
+
+bool ResizeCurrentImageForDisplay(HWND window, UINT width, UINT height) {
+    const double oldDisplayScale = window ? FitScale(window) * g_zoom : 0.0;
+    const bool success = ResizeCurrentImage(width, height);
+    if (success && window) {
+        const double newFitScale = FitScale(window);
+        if (oldDisplayScale > 0.0 && newFitScale > 0.0) {
+            g_zoom = std::clamp(oldDisplayScale / newFitScale, 0.1, 20.0);
+        }
+        ClampPan(window);
+    }
     return success;
 }
 
@@ -409,8 +452,7 @@ bool CopyImageToClipboard(HWND window) {
 
 bool PasteImageFromClipboard(HWND window) {
     if (!OpenClipboard(window)) return false;
-    HBITMAP clipboardBitmap = static_cast<HBITMAP>(GetClipboardData(CF_BITMAP));
-    HBITMAP copy = CloneBitmap(clipboardBitmap);
+    HBITMAP copy = CloneClipboardBitmap();
     CloseClipboard();
     if (!copy) return false;
     RecordUndoState();
@@ -623,6 +665,47 @@ bool IsSupportedOutputFormat(const std::wstring& extension) {
            extension == L"gif" || extension == L"webp" || extension == L"heic" || extension == L"heif";
 }
 
+bool ConvertWebPFile(const wchar_t* outputPath) {
+    IWICImagingFactory* factory = nullptr;
+    IWICBitmap* source = nullptr;
+    IWICFormatConverter* converter = nullptr;
+    uint8_t* encoded = nullptr;
+    size_t encodedSize = 0;
+    bool success = false;
+    do {
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (FAILED(factory->CreateBitmapFromHBITMAP(g_bitmap, nullptr,
+                                                    WICBitmapUsePremultipliedAlpha, &source))) break;
+        if (FAILED(factory->CreateFormatConverter(&converter))) break;
+        if (FAILED(converter->Initialize(source, GUID_WICPixelFormat32bppBGRA,
+                                         WICBitmapDitherTypeNone, nullptr, 0.0,
+                                         WICBitmapPaletteTypeCustom))) break;
+        UINT width = 0;
+        UINT height = 0;
+        if (FAILED(converter->GetSize(&width, &height)) || width == 0 || height == 0) break;
+        const UINT stride = width * 4;
+        std::vector<BYTE> pixels(static_cast<size_t>(stride) * height);
+        if (FAILED(converter->CopyPixels(nullptr, stride, static_cast<UINT>(pixels.size()), pixels.data()))) break;
+        encodedSize = WebPEncodeBGRA(pixels.data(), static_cast<int>(width), static_cast<int>(height),
+                                     static_cast<int>(stride), g_jpegQuality, &encoded);
+        if (encodedSize == 0 || encoded == nullptr) break;
+        HANDLE file = CreateFileW(outputPath, GENERIC_WRITE, 0, nullptr, CREATE_NEW,
+                                  FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (file == INVALID_HANDLE_VALUE) break;
+        DWORD written = 0;
+        success = WriteFile(file, encoded, static_cast<DWORD>(encodedSize), &written, nullptr) &&
+                  written == encodedSize;
+        CloseHandle(file);
+    } while (false);
+    if (encoded) WebPFree(encoded);
+    if (converter) converter->Release();
+    if (source) source->Release();
+    if (factory) factory->Release();
+    if (!success) DeleteFileW(outputPath);
+    return success;
+}
+
 const GUID* EncoderFormat(const std::wstring& extension) {
     if (extension == L"jpg" || extension == L"jpeg") return &GUID_ContainerFormatJpeg;
     if (extension == L"png") return &GUID_ContainerFormatPng;
@@ -637,6 +720,7 @@ const GUID* EncoderFormat(const std::wstring& extension) {
 bool ConvertImageFile(const wchar_t* outputPath) {
     const std::wstring extension = FormatFromPath(outputPath);
     if (!IsSupportedOutputFormat(extension) || !g_bitmap) return false;
+    if (extension == L"webp") return ConvertWebPFile(outputPath);
     const GUID* format = EncoderFormat(extension);
     if (!format) return false;
 
@@ -787,6 +871,15 @@ bool RunResizeTest(const wchar_t* inputPath, UINT width, UINT height) {
     return passed;
 }
 
+bool RunMetadataTest(const wchar_t* inputPath) {
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    const bool loaded = LoadImageFile(inputPath) == LoadResult::success;
+    const bool passed = loaded && !g_exifMake.empty() && !g_exifModel.empty() && !g_exifDateTime.empty();
+    ReleaseImage();
+    CoUninitialize();
+    return passed;
+}
+
 void ConvertWithSaveDialog(HWND window) {
     SaveOptionsState options{};
     options.formatIndex = 1;
@@ -901,19 +994,19 @@ void ExecuteEditCommand(HWND window, UINT command) {
     switch (command) {
     case kCommandResize50:
         RecordUndoState();
-        ResizeCurrentImage(std::max(1u, g_imageWidth / 2), std::max(1u, g_imageHeight / 2));
+        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth / 2), std::max(1u, g_imageHeight / 2));
         break;
     case kCommandResize75:
         RecordUndoState();
-        ResizeCurrentImage(std::max(1u, g_imageWidth * 3 / 4), std::max(1u, g_imageHeight * 3 / 4));
+        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth * 3 / 4), std::max(1u, g_imageHeight * 3 / 4));
         break;
     case kCommandResize125:
         RecordUndoState();
-        ResizeCurrentImage(std::max(1u, g_imageWidth * 5 / 4), std::max(1u, g_imageHeight * 5 / 4));
+        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth * 5 / 4), std::max(1u, g_imageHeight * 5 / 4));
         break;
     case kCommandResize200:
         RecordUndoState();
-        ResizeCurrentImage(std::max(1u, g_imageWidth * 2), std::max(1u, g_imageHeight * 2));
+        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth * 2), std::max(1u, g_imageHeight * 2));
         break;
     case kCommandResizeCustom: {
         UINT width = 100;
@@ -925,7 +1018,7 @@ void ExecuteEditCommand(HWND window, UINT command) {
             height = std::max(1u, static_cast<UINT>(g_imageHeight * (height / 100.0)));
         }
         RecordUndoState();
-        ResizeCurrentImage(width, height);
+        ResizeCurrentImageForDisplay(window, width, height);
         break;
     }
     case kCommandCrop:
@@ -1072,6 +1165,7 @@ void ShowImageContextMenu(HWND window, int x, int y) {
     AppendMenuW(resizeMenu, MF_STRING, kCommandResize200, L"200%");
     AppendMenuW(resizeMenu, MF_STRING, kCommandResizeCustom, L"指定...");
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(resizeMenu), L"リサイズ");
+    AppendMenuW(menu, MF_STRING, kCommandResizeCustom, L"リサイズを指定...");
     AppendMenuW(menu, MF_STRING | (g_selectionActive ? 0 : MF_GRAYED), kCommandCrop, L"選択範囲を切り抜く");
     AppendMenuW(menu, MF_STRING, kCommandRotate90, L"右へ90度回転");
     AppendMenuW(menu, MF_STRING, kCommandRotate180, L"180度回転");
@@ -1261,6 +1355,23 @@ void Paint(HWND window, HDC dc) {
 
 LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
+    case WM_CREATE:
+        DragAcceptFiles(window, TRUE);
+        return 0;
+    case WM_DROPFILES: {
+        HDROP drop = reinterpret_cast<HDROP>(wParam);
+        wchar_t path[MAX_PATH * 4]{};
+        const UINT count = DragQueryFileW(drop, 0xFFFFFFFF, nullptr, 0);
+        if (count > 0 && DragQueryFileW(drop, 0, path, ARRAYSIZE(path)) > 0) {
+            const bool shouldOpen = !g_bitmap ||
+                MessageBoxW(window,
+                            L"現在開いている画像を閉じて、ドロップした画像を開きますか？",
+                            L"画像を開く確認", MB_YESNO | MB_ICONQUESTION) == IDYES;
+            if (shouldOpen) LoadImageIntoWindow(window, path);
+        }
+        DragFinish(drop);
+        return 0;
+    }
     case WM_COMMAND:
         if (LOWORD(wParam) == kCommandOpen) OpenImageDialog(window);
         else if (LOWORD(wParam) == kCommandExit) DestroyWindow(window);
@@ -1269,6 +1380,8 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         return 0;
     case WM_KEYDOWN:
         if (wParam == 'O' && (GetKeyState(VK_CONTROL) & 0x8000)) OpenImageDialog(window);
+        else if (wParam == 'C' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandClipboardCopy);
+        else if (wParam == 'V' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandClipboardPaste);
         else if (wParam == 'Z' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandUndo);
         else if (wParam == 'Y' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandRedo);
         else if ((GetKeyState(VK_CONTROL) & 0x8000) && wParam >= '1' && wParam <= '4') {
@@ -1423,6 +1536,11 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
         const unsigned long height = wcstoul(arguments[4], nullptr, 10);
         const bool passed = width > 0 && height > 0 && width <= 100000 && height <= 100000 &&
             RunResizeTest(arguments[2], static_cast<UINT>(width), static_cast<UINT>(height));
+        LocalFree(arguments);
+        return passed ? 0 : 2;
+    }
+    if (arguments && argumentCount == 3 && wcscmp(arguments[1], L"--metadata-test") == 0) {
+        const bool passed = RunMetadataTest(arguments[2]);
         LocalFree(arguments);
         return passed ? 0 : 2;
     }

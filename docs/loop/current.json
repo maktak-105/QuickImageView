@@ -1,0 +1,695 @@
+{
+  "schema_version": 1,
+  "source": "README.md -> tests/operations.json",
+  "ui_first": true,
+  "excluded_from_app_ui": [
+    "feature_057",
+    "feature_058",
+    "feature_059",
+    "feature_060",
+    "feature_061",
+    "feature_062",
+    "feature_063"
+  ],
+  "flow": [
+    "build",
+    "install",
+    "ui_installed",
+    "supplemental"
+  ],
+  "ui_results": [
+    {
+      "id": "feature_001",
+      "section": "表示と基本操作",
+      "text": "コマンドラインまたはファイルメニューから画像を開いて表示する",
+      "source": "README.md",
+      "source_line": 9,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "通常起動した実UIのタイトルを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_002",
+      "section": "表示と基本操作",
+      "text": "起動後に画像ファイルをウィンドウへドラッグ＆ドロップして開く（画像表示中は確認後に現在の画像を閉じて開く）",
+      "source": "README.md",
+      "source_line": 10,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "表示中の画像へ実ファイルをD&Dし、確認後に新画像へ切り替わることを確認（title=QuickImageView 0.1.0 - qiv-drop-target.png, target=True）",
+      "ui": true
+    },
+    {
+      "id": "feature_003",
+      "section": "表示と基本操作",
+      "text": "Windowsで利用可能な画像をWIC経由で読み込む",
+      "source": "README.md",
+      "source_line": 11,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "WIC画像を実UIで表示して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_004",
+      "section": "表示と基本操作",
+      "text": "ウィンドウ内に画像をフィット表示する",
+      "source": "README.md",
+      "source_line": 12,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実ウィンドウの描画画像を取得して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_005",
+      "section": "表示と基本操作",
+      "text": "マウスホイールで拡大・縮小する",
+      "source": "README.md",
+      "source_line": 13,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実ホイール入力前後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_006",
+      "section": "表示と基本操作",
+      "text": "中ドラッグでパンする",
+      "source": "README.md",
+      "source_line": 14,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実中ドラッグ前後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_007",
+      "section": "表示と基本操作",
+      "text": "拡大・縮小・パン中も画像をちらつかせず滑らかに描画する",
+      "source": "README.md",
+      "source_line": 15,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実UI操作中の連続画面取得を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_008",
+      "section": "表示と基本操作",
+      "text": "左ドラッグで範囲を選択する",
+      "source": "README.md",
+      "source_line": 16,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実左ドラッグ前後の選択表示差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_009",
+      "section": "表示と基本操作",
+      "text": "選択範囲を表示し、右クリックメニューから切り抜く",
+      "source": "README.md",
+      "source_line": 17,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実UIで選択範囲を作成し切り抜き後の画面を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_010",
+      "section": "表示と基本操作",
+      "text": "ファイル名、画像寸法、形式、ファイルサイズを表示する",
+      "source": "README.md",
+      "source_line": 18,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実画面のメタデータ帯をOCR観測: QuicklmageView0.1.0 - input.jpg 社余0× 320×240 | jpg 11 KB EXiF:×-力-=Quicklmageview Test Maker  iocx 概種=QIV-EXIF-01 摄影日时=2026:08:2310:00:00 QuicklmageView0.1.0-input.jpg 社0| 320×240 | jpg  11 KB docx EXIF:×-力-=Quicklmageview Test Maker # 树種=QIV-EXIF-01  摄影日时=2026:08:23 10:00:00",
+      "ui": true
+    },
+    {
+      "id": "feature_011",
+      "section": "表示と基本操作",
+      "text": "EXIFが存在する場合、メーカー、機種、撮影日時など代表的な情報を表示する",
+      "source": "README.md",
+      "source_line": 19,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実画面のEXIF帯をOCR観測: QuicklmageView 0.1.0 - input.jpg 社会 doox input.jpg13 320x240 / jpg  11 KB EXIF: ×-力-=QuicklmageView Test Maker 機種=QIV-EXIF-01  摄影日时=2026:08：2310:00:00 TQuicklmageView0.1.0-input.jpg 社会 xooP input.jpg 1 320x240 1 jpg 1 11 KB FEXIF: ×-力-=QuicklmageView Test Maker 機種=QIV-EXIF-01  摄影日时=2026:08:23 10:00:00",
+      "ui": true
+    },
+    {
+      "id": "feature_012",
+      "section": "リサイズ",
+      "text": "編集メニューおよび右クリックメニューからリサイズ指定ダイアログを開く",
+      "source": "README.md",
+      "source_line": 23,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UIA/Win32でリサイズダイアログの実コントロールを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_013",
+      "section": "リサイズ",
+      "text": "任意の正のパーセントを指定する",
+      "source": "README.md",
+      "source_line": 24,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実ダイアログへ83%を入力し適用後の寸法表示を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_014",
+      "section": "リサイズ",
+      "text": "任意の正のピクセル幅・高さを指定する",
+      "source": "README.md",
+      "source_line": 25,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実ダイアログへ160x120を入力しタイトル寸法を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_015",
+      "section": "リサイズ",
+      "text": "アスペクト比固定オプションを表示する",
+      "source": "README.md",
+      "source_line": 26,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実ダイアログのアスペクト比固定UIを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_016",
+      "section": "リサイズ",
+      "text": "アスペクト比固定は初期状態でONにする",
+      "source": "README.md",
+      "source_line": 27,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実ダイアログのチェック状態を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_017",
+      "section": "リサイズ",
+      "text": "リサイズ後は画像データだけでなく、画面上の表示サイズにも結果を反映する",
+      "source": "README.md",
+      "source_line": 28,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "リサイズ適用後の実UIタイトル寸法を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_018",
+      "section": "リサイズ",
+      "text": "拡大表示中にリサイズしても、リサイズ後の寸法変化が画面に反映される",
+      "source": "README.md",
+      "source_line": 29,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "リサイズ適用後の実UIタイトル寸法を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_019",
+      "section": "画像編集",
+      "text": "90度、180度、270度回転する",
+      "source": "README.md",
+      "source_line": 33,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実編集メニュー操作後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_020",
+      "section": "画像編集",
+      "text": "左右反転（ミラー）する",
+      "source": "README.md",
+      "source_line": 34,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実編集メニュー操作後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_021",
+      "section": "画像編集",
+      "text": "上下反転する",
+      "source": "README.md",
+      "source_line": 35,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実編集メニュー操作後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_022",
+      "section": "画像編集",
+      "text": "フルカラーへ変換する",
+      "source": "README.md",
+      "source_line": 36,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実編集メニュー操作後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_023",
+      "section": "画像編集",
+      "text": "256色へ変換する",
+      "source": "README.md",
+      "source_line": 37,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実編集メニュー操作後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_024",
+      "section": "画像編集",
+      "text": "グレースケールへ変換する",
+      "source": "README.md",
+      "source_line": 38,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実編集メニュー操作後の画面差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_025",
+      "section": "画像編集",
+      "text": "`Ctrl+Z` でUndoする",
+      "source": "README.md",
+      "source_line": 39,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実編集後にCtrl+Zを入力し画面を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_026",
+      "section": "画像編集",
+      "text": "`Ctrl+Y` でRedoする",
+      "source": "README.md",
+      "source_line": 40,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "Ctrl+Yを入力し画面を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_027",
+      "section": "画像編集",
+      "text": "Undo／Redoをメニュー項目として表示しない",
+      "source": "README.md",
+      "source_line": 41,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実メニューの項目テキストを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_028",
+      "section": "画像編集",
+      "text": "編集前の画像状態をUndo用に保持する",
+      "source": "README.md",
+      "source_line": 42,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "編集前後を実UIで作成しUndo後の画像キャンバスを確認（差分スコア=0.00）",
+      "ui": true
+    },
+    {
+      "id": "feature_029",
+      "section": "画像編集",
+      "text": "新しい編集を行った場合、Redo履歴を破棄する",
+      "source": "README.md",
+      "source_line": 43,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "新しい編集後にRedo入力し画像キャンバスが変わらないことを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_030",
+      "section": "クリップボード",
+      "text": "編集メニューから画像をコピーする",
+      "source": "README.md",
+      "source_line": 47,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UIAメニュー選択後のCF_BITMAPを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_031",
+      "section": "クリップボード",
+      "text": "右クリックメニューから画像をコピーする",
+      "source": "README.md",
+      "source_line": 48,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "右クリックメニューのコピー項目を実クリックしCF_BITMAPを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_032",
+      "section": "クリップボード",
+      "text": "`Ctrl+C` で画像をコピーする",
+      "source": "README.md",
+      "source_line": 49,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実Ctrl+C後のCF_BITMAPを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_033",
+      "section": "クリップボード",
+      "text": "編集メニューから画像を貼り付ける",
+      "source": "README.md",
+      "source_line": 50,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UIAメニューで貼り付けを実行し画面を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_034",
+      "section": "クリップボード",
+      "text": "右クリックメニューから画像を貼り付ける",
+      "source": "README.md",
+      "source_line": 51,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "右クリックメニューの貼り付け項目を実クリックして確認",
+      "ui": true
+    },
+    {
+      "id": "feature_035",
+      "section": "クリップボード",
+      "text": "`Ctrl+V` で画像を貼り付ける",
+      "source": "README.md",
+      "source_line": 52,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実Ctrl+Vを入力し画面を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_036",
+      "section": "クリップボード",
+      "text": "Windowsの画像クリップボード形式を扱う",
+      "source": "README.md",
+      "source_line": 53,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "CF_DIBを実クリップボードへ設定後、Ctrl+Vで表示変化を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_037",
+      "section": "クリップボード",
+      "text": "`CF_BITMAP`、`CF_DIB`、`CF_DIBV5`を扱う",
+      "source": "README.md",
+      "source_line": 54,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "CF_DIBV5を実クリップボードへ設定後、Ctrl+Vで表示変化を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_038",
+      "section": "クリップボード",
+      "text": "貼り付けた画像を現在の画像として表示する",
+      "source": "README.md",
+      "source_line": 55,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "コピー後の編集状態へ貼り付け、表示差分を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_039",
+      "section": "クリップボード",
+      "text": "貼り付け前の状態をUndoできる",
+      "source": "README.md",
+      "source_line": 56,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "貼り付け後にCtrl+Zを入力し画像キャンバスの復元を確認（貼付差分=89.32, 復元差分=0.00）",
+      "ui": true
+    },
+    {
+      "id": "feature_040",
+      "section": "保存と変換",
+      "text": "原本を変更、削除、上書きしない",
+      "source": "README.md",
+      "source_line": 60,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UI編集前後で原本SHA-256を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_041",
+      "section": "保存と変換",
+      "text": "名前を付けて保存する前に保存オプションを表示する",
+      "source": "README.md",
+      "source_line": 61,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "右クリックの保存項目から保存オプションUIを実表示して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_042",
+      "section": "保存と変換",
+      "text": "保存先フォルダーの選択前に、保存形式を選択する",
+      "source": "README.md",
+      "source_line": 62,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "右クリックの保存項目から保存オプションUIを実表示して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_043",
+      "section": "保存と変換",
+      "text": "JPEG品質を指定する",
+      "source": "README.md",
+      "source_line": 63,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "保存オプションのJPEG品質欄へ83を入力して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_044",
+      "section": "保存と変換",
+      "text": "JPEG品質は固定候補だけでなく任意の値を指定できる",
+      "source": "README.md",
+      "source_line": 64,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "固定候補外のJPEG品質83を実UI入力して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_045",
+      "section": "保存と変換",
+      "text": "PNG圧縮レベルを指定する",
+      "source": "README.md",
+      "source_line": 65,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "保存オプションのPNG圧縮欄へ7を入力して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_046",
+      "section": "保存と変換",
+      "text": "WebP品質を指定する",
+      "source": "README.md",
+      "source_line": 66,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "保存形式WebPの品質欄へ83を入力して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_047",
+      "section": "保存と変換",
+      "text": "HEIC/HEIF品質を指定する",
+      "source": "README.md",
+      "source_line": 67,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "保存形式HEIC/HEIFの品質欄へ83を入力して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_048",
+      "section": "保存と変換",
+      "text": "保存形式に応じて使用可能な品質・圧縮オプションだけを有効にする",
+      "source": "README.md",
+      "source_line": 68,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "PNG選択後の品質・圧縮コントロール有効状態を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_049",
+      "section": "保存と変換",
+      "text": "保存形式に応じた拡張子フィルターを表示する",
+      "source": "README.md",
+      "source_line": 69,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "PNG形式の保存ダイアログフィルターを実表示して確認",
+      "ui": true
+    },
+    {
+      "id": "feature_050",
+      "section": "保存と変換",
+      "text": "拡張子が省略された場合、選択した形式の拡張子を補う",
+      "source": "README.md",
+      "source_line": 70,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "拡張子なしのファイル名をUI入力しPNG出力を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_051",
+      "section": "保存と変換",
+      "text": "JPEG、PNG、TIFF、BMP、GIFへ保存・変換する",
+      "source": "README.md",
+      "source_line": 71,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UI保存形式を5種類選択し出力ファイルを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_052",
+      "section": "保存と変換",
+      "text": "WindowsのWICコーデックが利用可能な場合、WebPへ保存・変換する",
+      "source": "README.md",
+      "source_line": 72,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UIでWebPを選択し、0バイトでない出力ファイルを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_053",
+      "section": "保存と変換",
+      "text": "WindowsのWICコーデックが利用可能な場合、HEIC/HEIFへ保存・変換する",
+      "source": "README.md",
+      "source_line": 73,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UIでHEIC/HEIFを選択し、0バイトでない出力ファイルを確認",
+      "ui": true
+    },
+    {
+      "id": "feature_054",
+      "section": "保存と変換",
+      "text": "同一パスへの保存を拒否する",
+      "source": "README.md",
+      "source_line": 74,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実保存ダイアログへ原本パスを入力し、原本不変と拒否通知の画面変化を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_055",
+      "section": "保存と変換",
+      "text": "既存ファイルへの上書きを拒否する",
+      "source": "README.md",
+      "source_line": 75,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "実保存ダイアログへ既存パスを入力し、既存ファイル不変と拒否通知の画面変化を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_056",
+      "section": "保存と変換",
+      "text": "変換元ファイルを変更しないことを保証する",
+      "source": "README.md",
+      "source_line": 76,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "UI変換保存後に変換元JPEGのSHA-256不変と出力生成を確認",
+      "ui": true
+    },
+    {
+      "id": "feature_064",
+      "section": "Windows連携",
+      "text": "インストールした実行ファイルを起動して画像を開ける",
+      "source": "README.md",
+      "source_line": 93,
+      "ui_required": true,
+      "status": "PASS",
+      "detail": "インストール済みQuickImageView.exeを実起動し画像タイトルを確認",
+      "ui": true
+    }
+  ],
+  "steps": [
+    {
+      "name": "configure",
+      "status": "PASS",
+      "exit_code": 0,
+      "output": "-- Performing Test WEBP_HAVE_FLAG_AVX2\n-- Performing Test WEBP_HAVE_FLAG_AVX2 - Failed\n-- Performing Test WEBP_HAVE_FLAG_AVX2\n-- Performing Test WEBP_HAVE_FLAG_AVX2 - Success\n-- Performing Test WEBP_HAVE_FLAG_SSE41\n-- Performing Test WEBP_HAVE_FLAG_SSE41 - Failed\n-- Performing Test WEBP_HAVE_FLAG_SSE41\n-- Performing Test WEBP_HAVE_FLAG_SSE41 - Success\n-- Performing Test WEBP_HAVE_FLAG_SSE2\n-- Performing Test WEBP_HAVE_FLAG_SSE2 - Success\n-- Performing Test WEBP_HAVE_FLAG_MIPS32\n-- Performing Test WEBP_HAVE_FLAG_MIPS32 - Failed\n-- Performing Test WEBP_HAVE_FLAG_MIPS32\n-- Performing Test WEBP_HAVE_FLAG_MIPS32 - Failed\n-- Performing Test WEBP_HAVE_FLAG_MIPS_DSP_R2\n-- Performing Test WEBP_HAVE_FLAG_MIPS_DSP_R2 - Failed\n-- Performing Test WEBP_HAVE_FLAG_MIPS_DSP_R2\n-- Performing Test WEBP_HAVE_FLAG_MIPS_DSP_R2 - Failed\n-- Performing Test HAS_COMPILE_FLAG\n-- Performing Test HAS_COMPILE_FLAG - Failed\n-- Performing Test WEBP_HAVE_FLAG_NEON\n-- Performing Test WEBP_HAVE_FLAG_NEON - Failed\n-- Performing Test WEBP_HAVE_FLAG_NEON\n-- Performing Test WEBP_HAVE_FLAG_NEON - Failed\n-- Performing Test WEBP_HAVE_FLAG_MSA\n-- Performing Test WEBP_HAVE_FLAG_MSA - Failed\n-- Performing Test WEBP_HAVE_FLAG_MSA\n-- Performing Test WEBP_HAVE_FLAG_MSA - Failed\n-- Performing Test HAS_COMPILE_FLAG\n-- Performing Test HAS_COMPILE_FLAG - Failed\n-- Configuring done (5.0s)\n-- Generating done (0.3s)\n-- Build files have been written to: C:/Users/makta/source/QuickImageView/build"
+    },
+    {
+      "name": "build",
+      "status": "PASS",
+      "exit_code": 0,
+      "output": "[  0%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/alpha_processing.c.obj\n[  1%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/cpu.c.obj\n[  1%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec.c.obj\n[  2%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec_clip_tables.c.obj\n[  4%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/filters.c.obj\n[  4%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless.c.obj\n[  5%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/rescaler.c.obj\n[  5%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/upsampling.c.obj\n[  7%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/yuv.c.obj\n[  7%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_avx2.c.obj\n[  8%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/alpha_processing_sse41.c.obj\n[  8%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec_sse41.c.obj\n[ 10%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_sse41.c.obj\n[ 10%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/upsampling_sse41.c.obj\n[ 11%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/yuv_sse41.c.obj\n[ 13%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/alpha_processing_sse2.c.obj\n[ 13%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec_sse2.c.obj\n[ 14%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/filters_sse2.c.obj\n[ 14%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_sse2.c.obj\n[ 16%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/rescaler_sse2.c.obj\n[ 16%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/upsampling_sse2.c.obj\n[ 17%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/yuv_sse2.c.obj\n[ 17%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/alpha_processing_neon.c.obj\n[ 19%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec_neon.c.obj\n[ 20%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/filters_neon.c.obj\n[ 20%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_neon.c.obj\n[ 22%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/rescaler_neon.c.obj\n[ 22%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/upsampling_neon.c.obj\n[ 23%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/yuv_neon.c.obj\n[ 23%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec_msa.c.obj\n[ 25%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/filters_msa.c.obj\n[ 25%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_msa.c.obj\n[ 26%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/rescaler_msa.c.obj\n[ 26%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/upsampling_msa.c.obj\n[ 27%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec_mips32.c.obj\n[ 29%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/rescaler_mips32.c.obj\n[ 29%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/yuv_mips32.c.obj\n[ 30%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/alpha_processing_mips_dsp_r2.c.obj\n[ 30%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/dec_mips_dsp_r2.c.obj\n[ 32%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/filters_mips_dsp_r2.c.obj\n[ 32%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_mips_dsp_r2.c.obj\n[ 33%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/rescaler_mips_dsp_r2.c.obj\n[ 33%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/upsampling_mips_dsp_r2.c.obj\n[ 35%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/yuv_mips_dsp_r2.c.obj\n[ 36%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/cost.c.obj\n[ 36%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/enc.c.obj\n[ 38%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc.c.obj\n[ 38%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/ssim.c.obj\n[ 39%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/cost_sse2.c.obj\n[ 39%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/enc_sse2.c.obj\n[ 41%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc_sse2.c.obj\n[ 41%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/ssim_sse2.c.obj\n[ 42%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/enc_sse41.c.obj\n[ 42%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc_sse41.c.obj\n[ 44%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc_avx2.c.obj\n[ 45%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/cost_neon.c.obj\n[ 45%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/enc_neon.c.obj\n[ 47%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc_neon.c.obj\n[ 47%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/enc_msa.c.obj\n[ 48%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc_msa.c.obj\n[ 48%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/cost_mips32.c.obj\n[ 50%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/enc_mips32.c.obj\n[ 50%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc_mips32.c.obj\n[ 51%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/cost_mips_dsp_r2.c.obj\n[ 52%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/enc_mips_dsp_r2.c.obj\n[ 52%] Building C object third_party/libwebp-build/CMakeFiles/webpdsp.dir/src/dsp/lossless_enc_mips_dsp_r2.c.obj\n[ 52%] Built target webpdsp\n[ 52%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/bit_reader_utils.c.obj\n[ 54%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/color_cache_utils.c.obj\n[ 55%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/filters_utils.c.obj\n[ 55%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/huffman_utils.c.obj\n[ 57%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/palette.c.obj\n[ 57%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/quant_levels_dec_utils.c.obj\n[ 58%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/rescaler_utils.c.obj\n[ 58%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/random_utils.c.obj\n[ 60%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/thread_utils.c.obj\n[ 60%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/utils.c.obj\n[ 61%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/bit_writer_utils.c.obj\n[ 61%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/huffman_encode_utils.c.obj\n[ 63%] Building C object third_party/libwebp-build/CMakeFiles/webputils.dir/src/utils/quant_levels_utils.c.obj\n[ 63%] Built target webputils\n[ 64%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/alpha_dec.c.obj\n[ 64%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/buffer_dec.c.obj\n[ 66%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/frame_dec.c.obj\n[ 66%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/idec_dec.c.obj\n[ 67%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/io_dec.c.obj\n[ 67%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/quant_dec.c.obj\n[ 69%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/tree_dec.c.obj\n[ 69%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/vp8_dec.c.obj\n[ 70%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/vp8l_dec.c.obj\n[ 72%] Building C object third_party/libwebp-build/CMakeFiles/webpdecode.dir/src/dec/webp_dec.c.obj\n[ 72%] Built target webpdecode\n[ 73%] Building C object third_party/libwebp-build/CMakeFiles/sharpyuv.dir/sharpyuv/sharpyuv_sse2.c.obj\n[ 73%] Building C object third_party/libwebp-build/CMakeFiles/sharpyuv.dir/sharpyuv/sharpyuv_neon.c.obj\n[ 75%] Building C object third_party/libwebp-build/CMakeFiles/sharpyuv.dir/sharpyuv/sharpyuv_cpu.c.obj\n[ 75%] Building C object third_party/libwebp-build/CMakeFiles/sharpyuv.dir/sharpyuv/sharpyuv_csp.c.obj\n[ 76%] Building C object third_party/libwebp-build/CMakeFiles/sharpyuv.dir/sharpyuv/sharpyuv_dsp.c.obj\n[ 76%] Building C object third_party/libwebp-build/CMakeFiles/sharpyuv.dir/sharpyuv/sharpyuv_gamma.c.obj\n[ 77%] Building C object third_party/libwebp-build/CMakeFiles/sharpyuv.dir/sharpyuv/sharpyuv.c.obj\n[ 79%] Linking C static library libsharpyuv.a\n[ 79%] Built target sharpyuv\n[ 80%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/alpha_enc.c.obj\n[ 80%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/analysis_enc.c.obj\n[ 82%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/backward_references_cost_enc.c.obj\n[ 82%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/backward_references_enc.c.obj\n[ 83%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/config_enc.c.obj\n[ 85%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/cost_enc.c.obj\n[ 85%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/filter_enc.c.obj\n[ 86%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/frame_enc.c.obj\n[ 86%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/histogram_enc.c.obj\n[ 88%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/iterator_enc.c.obj\n[ 88%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/near_lossless_enc.c.obj\n[ 89%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/picture_enc.c.obj\n[ 89%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/picture_csp_enc.c.obj\n[ 91%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/picture_psnr_enc.c.obj\n[ 91%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/picture_rescale_enc.c.obj\n[ 92%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/picture_tools_enc.c.obj\n[ 94%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/predictor_enc.c.obj\n[ 94%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/quant_enc.c.obj\n[ 95%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/syntax_enc.c.obj\n[ 95%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/token_enc.c.obj\n[ 97%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/tree_enc.c.obj\n[ 97%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/vp8l_enc.c.obj\n[ 98%] Building C object third_party/libwebp-build/CMakeFiles/webpencode.dir/src/enc/webp_enc.c.obj\n[ 98%] Built target webpencode\n[ 98%] Linking C static library libwebp.a\n[ 98%] Built target webp\n[ 98%] Building CXX object CMakeFiles/QuickImageView.dir/core/native/main.cpp.obj\n[100%] Building RC object CMakeFiles/QuickImageView.dir/core/native/resource.rc.obj\n[100%] Linking CXX executable QuickImageView.exe\n[100%] Built target QuickImageView"
+    },
+    {
+      "name": "install",
+      "status": "PASS",
+      "exit_code": 0,
+      "output": "QuickImageView installed: C:\\Users\\makta\\AppData\\Local\\Temp\\QuickImageView-python-loop-sgdcm9g9\\installed\nContext menu registration enabled."
+    },
+    {
+      "name": "install_parity",
+      "status": "PASS",
+      "exit_code": 0,
+      "output": "build=D848C40087F0737A27153F8459785A8D3FA83719DBF389BF902742676F506623 install=D848C40087F0737A27153F8459785A8D3FA83719DBF389BF902742676F506623"
+    },
+    {
+      "name": "ui_installed",
+      "status": "PASS",
+      "exit_code": 0,
+      "output": "インストール済みアプリで全台帳行を実行"
+    }
+  ],
+  "supplemental": [
+    {
+      "name": "ctest",
+      "status": "PASS",
+      "exit_code": 0,
+      "output": "Test project C:/Users/makta/source/QuickImageView/build\n    Start 1: smoke_self_test\n1/1 Test #1: smoke_self_test ..................   Passed    0.10 sec\n\n100% tests passed out of 1\n\nTotal Test time (real) =   0.11 sec"
+    },
+    {
+      "name": "self_test",
+      "status": "PASS",
+      "exit_code": 0,
+      "output": ""
+    }
+  ]
+}

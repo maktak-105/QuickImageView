@@ -24,14 +24,14 @@ QuickImageView is a Windows image viewer implemented with C++17, Win32, and Wind
 
 - The original image is never overwritten or deleted.
 - Existing output files are rejected.
-- UI and Explorer behavior is tested by sending operations to a running window from `tests/verify_ui.ps1`.
+- UI and Explorer behavior is tested by `tests/ui_test.py` using pywinauto/uiautomation against the installed application.
 
 ## Verification
 
 Run the single completion command:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\verify_goal.ps1
+python .\tests\run_loop.py
 ```
 
 It validates the goal and invariant contracts, performs a clean build, runs CTest, executes data-backed edit self-tests, drives the build UI, installs to a temporary directory, compares SHA-256 hashes, and drives the installed UI. Any failed gate means the work is incomplete.

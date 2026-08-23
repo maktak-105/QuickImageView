@@ -1,0 +1,520 @@
+{
+  "schema_version": 1,
+  "source": "README.md",
+  "generated_when": "README.mdの機能箇条書き変更時のみ",
+  "ui_required": true,
+  "operations": [
+    {
+      "id": "feature_001",
+      "section": "表示と基本操作",
+      "text": "コマンドラインまたはファイルメニューから画像を開いて表示する",
+      "source": "README.md",
+      "source_line": 9,
+      "ui_required": true
+    },
+    {
+      "id": "feature_002",
+      "section": "表示と基本操作",
+      "text": "起動後に画像ファイルをウィンドウへドラッグ＆ドロップして開く（画像表示中は確認後に現在の画像を閉じて開く）",
+      "source": "README.md",
+      "source_line": 10,
+      "ui_required": true
+    },
+    {
+      "id": "feature_003",
+      "section": "表示と基本操作",
+      "text": "Windowsで利用可能な画像をWIC経由で読み込む",
+      "source": "README.md",
+      "source_line": 11,
+      "ui_required": true
+    },
+    {
+      "id": "feature_004",
+      "section": "表示と基本操作",
+      "text": "ウィンドウ内に画像をフィット表示する",
+      "source": "README.md",
+      "source_line": 12,
+      "ui_required": true
+    },
+    {
+      "id": "feature_005",
+      "section": "表示と基本操作",
+      "text": "マウスホイールで拡大・縮小する",
+      "source": "README.md",
+      "source_line": 13,
+      "ui_required": true
+    },
+    {
+      "id": "feature_006",
+      "section": "表示と基本操作",
+      "text": "中ドラッグでパンする",
+      "source": "README.md",
+      "source_line": 14,
+      "ui_required": true
+    },
+    {
+      "id": "feature_007",
+      "section": "表示と基本操作",
+      "text": "拡大・縮小・パン中も画像をちらつかせず滑らかに描画する",
+      "source": "README.md",
+      "source_line": 15,
+      "ui_required": true
+    },
+    {
+      "id": "feature_008",
+      "section": "表示と基本操作",
+      "text": "左ドラッグで範囲を選択する",
+      "source": "README.md",
+      "source_line": 16,
+      "ui_required": true
+    },
+    {
+      "id": "feature_009",
+      "section": "表示と基本操作",
+      "text": "選択範囲を表示し、右クリックメニューから切り抜く",
+      "source": "README.md",
+      "source_line": 17,
+      "ui_required": true
+    },
+    {
+      "id": "feature_010",
+      "section": "表示と基本操作",
+      "text": "ファイル名、画像寸法、形式、ファイルサイズを表示する",
+      "source": "README.md",
+      "source_line": 18,
+      "ui_required": true
+    },
+    {
+      "id": "feature_011",
+      "section": "表示と基本操作",
+      "text": "EXIFが存在する場合、メーカー、機種、撮影日時など代表的な情報を表示する",
+      "source": "README.md",
+      "source_line": 19,
+      "ui_required": true
+    },
+    {
+      "id": "feature_012",
+      "section": "リサイズ",
+      "text": "編集メニューおよび右クリックメニューからリサイズ指定ダイアログを開く",
+      "source": "README.md",
+      "source_line": 23,
+      "ui_required": true
+    },
+    {
+      "id": "feature_013",
+      "section": "リサイズ",
+      "text": "任意の正のパーセントを指定する",
+      "source": "README.md",
+      "source_line": 24,
+      "ui_required": true
+    },
+    {
+      "id": "feature_014",
+      "section": "リサイズ",
+      "text": "任意の正のピクセル幅・高さを指定する",
+      "source": "README.md",
+      "source_line": 25,
+      "ui_required": true
+    },
+    {
+      "id": "feature_015",
+      "section": "リサイズ",
+      "text": "アスペクト比固定オプションを表示する",
+      "source": "README.md",
+      "source_line": 26,
+      "ui_required": true
+    },
+    {
+      "id": "feature_016",
+      "section": "リサイズ",
+      "text": "アスペクト比固定は初期状態でONにする",
+      "source": "README.md",
+      "source_line": 27,
+      "ui_required": true
+    },
+    {
+      "id": "feature_017",
+      "section": "リサイズ",
+      "text": "リサイズ後は画像データだけでなく、画面上の表示サイズにも結果を反映する",
+      "source": "README.md",
+      "source_line": 28,
+      "ui_required": true
+    },
+    {
+      "id": "feature_018",
+      "section": "リサイズ",
+      "text": "拡大表示中にリサイズしても、リサイズ後の寸法変化が画面に反映される",
+      "source": "README.md",
+      "source_line": 29,
+      "ui_required": true
+    },
+    {
+      "id": "feature_019",
+      "section": "画像編集",
+      "text": "90度、180度、270度回転する",
+      "source": "README.md",
+      "source_line": 33,
+      "ui_required": true
+    },
+    {
+      "id": "feature_020",
+      "section": "画像編集",
+      "text": "左右反転（ミラー）する",
+      "source": "README.md",
+      "source_line": 34,
+      "ui_required": true
+    },
+    {
+      "id": "feature_021",
+      "section": "画像編集",
+      "text": "上下反転する",
+      "source": "README.md",
+      "source_line": 35,
+      "ui_required": true
+    },
+    {
+      "id": "feature_022",
+      "section": "画像編集",
+      "text": "フルカラーへ変換する",
+      "source": "README.md",
+      "source_line": 36,
+      "ui_required": true
+    },
+    {
+      "id": "feature_023",
+      "section": "画像編集",
+      "text": "256色へ変換する",
+      "source": "README.md",
+      "source_line": 37,
+      "ui_required": true
+    },
+    {
+      "id": "feature_024",
+      "section": "画像編集",
+      "text": "グレースケールへ変換する",
+      "source": "README.md",
+      "source_line": 38,
+      "ui_required": true
+    },
+    {
+      "id": "feature_025",
+      "section": "画像編集",
+      "text": "`Ctrl+Z` でUndoする",
+      "source": "README.md",
+      "source_line": 39,
+      "ui_required": true
+    },
+    {
+      "id": "feature_026",
+      "section": "画像編集",
+      "text": "`Ctrl+Y` でRedoする",
+      "source": "README.md",
+      "source_line": 40,
+      "ui_required": true
+    },
+    {
+      "id": "feature_027",
+      "section": "画像編集",
+      "text": "Undo／Redoをメニュー項目として表示しない",
+      "source": "README.md",
+      "source_line": 41,
+      "ui_required": true
+    },
+    {
+      "id": "feature_028",
+      "section": "画像編集",
+      "text": "編集前の画像状態をUndo用に保持する",
+      "source": "README.md",
+      "source_line": 42,
+      "ui_required": true
+    },
+    {
+      "id": "feature_029",
+      "section": "画像編集",
+      "text": "新しい編集を行った場合、Redo履歴を破棄する",
+      "source": "README.md",
+      "source_line": 43,
+      "ui_required": true
+    },
+    {
+      "id": "feature_030",
+      "section": "クリップボード",
+      "text": "編集メニューから画像をコピーする",
+      "source": "README.md",
+      "source_line": 47,
+      "ui_required": true
+    },
+    {
+      "id": "feature_031",
+      "section": "クリップボード",
+      "text": "右クリックメニューから画像をコピーする",
+      "source": "README.md",
+      "source_line": 48,
+      "ui_required": true
+    },
+    {
+      "id": "feature_032",
+      "section": "クリップボード",
+      "text": "`Ctrl+C` で画像をコピーする",
+      "source": "README.md",
+      "source_line": 49,
+      "ui_required": true
+    },
+    {
+      "id": "feature_033",
+      "section": "クリップボード",
+      "text": "編集メニューから画像を貼り付ける",
+      "source": "README.md",
+      "source_line": 50,
+      "ui_required": true
+    },
+    {
+      "id": "feature_034",
+      "section": "クリップボード",
+      "text": "右クリックメニューから画像を貼り付ける",
+      "source": "README.md",
+      "source_line": 51,
+      "ui_required": true
+    },
+    {
+      "id": "feature_035",
+      "section": "クリップボード",
+      "text": "`Ctrl+V` で画像を貼り付ける",
+      "source": "README.md",
+      "source_line": 52,
+      "ui_required": true
+    },
+    {
+      "id": "feature_036",
+      "section": "クリップボード",
+      "text": "Windowsの画像クリップボード形式を扱う",
+      "source": "README.md",
+      "source_line": 53,
+      "ui_required": true
+    },
+    {
+      "id": "feature_037",
+      "section": "クリップボード",
+      "text": "`CF_BITMAP`、`CF_DIB`、`CF_DIBV5`を扱う",
+      "source": "README.md",
+      "source_line": 54,
+      "ui_required": true
+    },
+    {
+      "id": "feature_038",
+      "section": "クリップボード",
+      "text": "貼り付けた画像を現在の画像として表示する",
+      "source": "README.md",
+      "source_line": 55,
+      "ui_required": true
+    },
+    {
+      "id": "feature_039",
+      "section": "クリップボード",
+      "text": "貼り付け前の状態をUndoできる",
+      "source": "README.md",
+      "source_line": 56,
+      "ui_required": true
+    },
+    {
+      "id": "feature_040",
+      "section": "保存と変換",
+      "text": "原本を変更、削除、上書きしない",
+      "source": "README.md",
+      "source_line": 60,
+      "ui_required": true
+    },
+    {
+      "id": "feature_041",
+      "section": "保存と変換",
+      "text": "名前を付けて保存する前に保存オプションを表示する",
+      "source": "README.md",
+      "source_line": 61,
+      "ui_required": true
+    },
+    {
+      "id": "feature_042",
+      "section": "保存と変換",
+      "text": "保存先フォルダーの選択前に、保存形式を選択する",
+      "source": "README.md",
+      "source_line": 62,
+      "ui_required": true
+    },
+    {
+      "id": "feature_043",
+      "section": "保存と変換",
+      "text": "JPEG品質を指定する",
+      "source": "README.md",
+      "source_line": 63,
+      "ui_required": true
+    },
+    {
+      "id": "feature_044",
+      "section": "保存と変換",
+      "text": "JPEG品質は固定候補だけでなく任意の値を指定できる",
+      "source": "README.md",
+      "source_line": 64,
+      "ui_required": true
+    },
+    {
+      "id": "feature_045",
+      "section": "保存と変換",
+      "text": "PNG圧縮レベルを指定する",
+      "source": "README.md",
+      "source_line": 65,
+      "ui_required": true
+    },
+    {
+      "id": "feature_046",
+      "section": "保存と変換",
+      "text": "WebP品質を指定する",
+      "source": "README.md",
+      "source_line": 66,
+      "ui_required": true
+    },
+    {
+      "id": "feature_047",
+      "section": "保存と変換",
+      "text": "HEIC/HEIF品質を指定する",
+      "source": "README.md",
+      "source_line": 67,
+      "ui_required": true
+    },
+    {
+      "id": "feature_048",
+      "section": "保存と変換",
+      "text": "保存形式に応じて使用可能な品質・圧縮オプションだけを有効にする",
+      "source": "README.md",
+      "source_line": 68,
+      "ui_required": true
+    },
+    {
+      "id": "feature_049",
+      "section": "保存と変換",
+      "text": "保存形式に応じた拡張子フィルターを表示する",
+      "source": "README.md",
+      "source_line": 69,
+      "ui_required": true
+    },
+    {
+      "id": "feature_050",
+      "section": "保存と変換",
+      "text": "拡張子が省略された場合、選択した形式の拡張子を補う",
+      "source": "README.md",
+      "source_line": 70,
+      "ui_required": true
+    },
+    {
+      "id": "feature_051",
+      "section": "保存と変換",
+      "text": "JPEG、PNG、TIFF、BMP、GIFへ保存・変換する",
+      "source": "README.md",
+      "source_line": 71,
+      "ui_required": true
+    },
+    {
+      "id": "feature_052",
+      "section": "保存と変換",
+      "text": "WindowsのWICコーデックが利用可能な場合、WebPへ保存・変換する",
+      "source": "README.md",
+      "source_line": 72,
+      "ui_required": true
+    },
+    {
+      "id": "feature_053",
+      "section": "保存と変換",
+      "text": "WindowsのWICコーデックが利用可能な場合、HEIC/HEIFへ保存・変換する",
+      "source": "README.md",
+      "source_line": 73,
+      "ui_required": true
+    },
+    {
+      "id": "feature_054",
+      "section": "保存と変換",
+      "text": "同一パスへの保存を拒否する",
+      "source": "README.md",
+      "source_line": 74,
+      "ui_required": true
+    },
+    {
+      "id": "feature_055",
+      "section": "保存と変換",
+      "text": "既存ファイルへの上書きを拒否する",
+      "source": "README.md",
+      "source_line": 75,
+      "ui_required": true
+    },
+    {
+      "id": "feature_056",
+      "section": "保存と変換",
+      "text": "変換元ファイルを変更しないことを保証する",
+      "source": "README.md",
+      "source_line": 76,
+      "ui_required": true
+    },
+    {
+      "id": "feature_057",
+      "section": "Windows連携",
+      "text": "インストール時に画像ファイルの右クリックメニューへ登録できる",
+      "source": "README.md",
+      "source_line": 86,
+      "ui_required": true
+    },
+    {
+      "id": "feature_058",
+      "section": "Windows連携",
+      "text": "右クリックメニュー登録は現在のユーザー（HKCU）に限定する",
+      "source": "README.md",
+      "source_line": 87,
+      "ui_required": true
+    },
+    {
+      "id": "feature_059",
+      "section": "Windows連携",
+      "text": "登録コマンドはインストール先のQuickImageView.exeを指す",
+      "source": "README.md",
+      "source_line": 88,
+      "ui_required": true
+    },
+    {
+      "id": "feature_060",
+      "section": "Windows連携",
+      "text": "Windows 11では「その他のオプションを表示」内から利用できる",
+      "source": "README.md",
+      "source_line": 89,
+      "ui_required": true
+    },
+    {
+      "id": "feature_061",
+      "section": "Windows連携",
+      "text": "登録なしでインストールできるオプションを用意する",
+      "source": "README.md",
+      "source_line": 90,
+      "ui_required": true
+    },
+    {
+      "id": "feature_062",
+      "section": "Windows連携",
+      "text": "アンインストール時はQuickImageView専用の登録だけを削除する",
+      "source": "README.md",
+      "source_line": 91,
+      "ui_required": true
+    },
+    {
+      "id": "feature_063",
+      "section": "Windows連携",
+      "text": "他のアプリケーションの登録を削除しない",
+      "source": "README.md",
+      "source_line": 92,
+      "ui_required": true
+    },
+    {
+      "id": "feature_064",
+      "section": "Windows連携",
+      "text": "インストールした実行ファイルを起動して画像を開ける",
+      "source": "README.md",
+      "source_line": 93,
+      "ui_required": true
+    }
+  ]
+}
