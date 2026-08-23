@@ -1,6 +1,41 @@
 #include <windows.h>
 #include "resource.h"
 
+IDI_QUICKIMAGEVIEW ICON "../../assets/QuickImageView-icon.ico"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,0
+ PRODUCTVERSION 1,0,0,0
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x40004L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "maktak-105"
+            VALUE "FileDescription", "QuickImageView"
+            VALUE "FileVersion", "1.0.0"
+            VALUE "InternalName", "QuickImageView"
+            VALUE "LegalCopyright", "Copyright (c) 2026 maktak-105 (GitHub: https://github.com/maktak-105)"
+            VALUE "OriginalFilename", "QuickImageView.exe"
+            VALUE "ProductName", "QuickImageView"
+            VALUE "ProductVersion", "1.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 1200
+    END
+END
+
 IDD_RESIZE_DIALOG DIALOGEX 0, 0, 240, 125
 STYLE DS_MODALFRAME | DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Resize"
@@ -12,8 +47,8 @@ BEGIN
     EDITTEXT IDC_RESIZE_HEIGHT, 58, 28, 70, 14, ES_NUMBER | WS_BORDER
     COMBOBOX IDC_RESIZE_MODE, 135, 8, 75, 60, CBS_DROPDOWNLIST | WS_BORDER
     AUTOCHECKBOX "Keep aspect ratio", IDC_RESIZE_LOCK, 8, 52, 120, 12, BS_AUTOCHECKBOX
-    DEFPUSHBUTTON "OK", IDOK, 82, 88, 58, 16
-    PUSHBUTTON "Cancel", IDCANCEL, 150, 88, 58, 16
+    DEFPUSHBUTTON "OK", IDOK, 82, 88, 58, 16, BS_OWNERDRAW
+    PUSHBUTTON "Cancel", IDCANCEL, 150, 88, 58, 16, BS_OWNERDRAW
 END
 
 IDD_SAVE_OPTIONS_DIALOG DIALOGEX 0, 0, 250, 150
@@ -27,8 +62,8 @@ BEGIN
     EDITTEXT IDC_SAVE_QUALITY, 82, 34, 70, 14, ES_NUMBER | WS_BORDER
     LTEXT "Compression (0-9)", IDC_SAVE_SETTING_LABEL, 8, 60, 120, 12
     EDITTEXT IDC_SAVE_COMPRESSION, 132, 58, 70, 14, ES_NUMBER | WS_BORDER
-    DEFPUSHBUTTON "Next", IDOK, 82, 112, 58, 16
-    PUSHBUTTON "Cancel", IDCANCEL, 150, 112, 58, 16
+    DEFPUSHBUTTON "Next", IDOK, 82, 112, 58, 16, BS_OWNERDRAW
+    PUSHBUTTON "Cancel", IDCANCEL, 150, 112, 58, 16, BS_OWNERDRAW
 END
 
 IDD_QUALITY_DIALOG DIALOGEX 0, 0, 180, 80
@@ -38,6 +73,6 @@ FONT 9, "Segoe UI"
 BEGIN
     LTEXT "Quality (0-100)", -1, 8, 10, 70, 12
     EDITTEXT IDC_QUALITY_VALUE, 84, 8, 70, 14, ES_NUMBER | WS_BORDER
-    DEFPUSHBUTTON "OK", IDOK, 52, 48, 50, 14
-    PUSHBUTTON "Cancel", IDCANCEL, 108, 48, 60, 14
+    DEFPUSHBUTTON "OK", IDOK, 52, 48, 50, 14, BS_OWNERDRAW
+    PUSHBUTTON "Cancel", IDCANCEL, 108, 48, 60, 14, BS_OWNERDRAW
 END

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(QuickImageView VERSION 0.1.0 LANGUAGES CXX)
+project(QuickImageView VERSION 1.0.0 LANGUAGES CXX)
 
 set(WEBP_BUILD_ANIM_UTILS OFF CACHE BOOL "" FORCE)
 set(WEBP_BUILD_CWEBP OFF CACHE BOOL "" FORCE)
@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_executable(QuickImageView WIN32 core/native/main.cpp core/native/resource.rc)
 target_compile_definitions(QuickImageView PRIVATE UNICODE _UNICODE NOMINMAX)
-target_link_libraries(QuickImageView PRIVATE windowscodecs ole32 user32 gdi32 shlwapi shell32 comdlg32 webp)
+target_link_libraries(QuickImageView PRIVATE windowscodecs ole32 user32 gdi32 shlwapi shell32 comdlg32 uxtheme webp)
 
 if (MINGW)
   target_link_options(QuickImageView PRIVATE

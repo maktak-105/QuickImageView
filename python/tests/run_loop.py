@@ -79,14 +79,16 @@ def run_ui_isolated(executable: Path, image: Path, readme: Path, ledger: Path, f
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     args = parser.parse_args()
     root = args.root.resolve()
     build = root / "build"
     exe = build / "QuickImageView.exe"
     readme = root / "README.md"
-    ledger = root / "tests" / "operations.json"
+    ledger = root / "python" / "tests" / "operations.json"
     all_features = load_and_validate(readme, ledger)
+    if not all_features:
+        raise RuntimeError("固定台帳が空です。UI検査を開始しません")
     EXCLUDED_FROM_APP_UI = {feature["id"] for feature in all_features
                             if feature["text"] in INSTALL_TIME_FEATURES}
     catalog = [feature for feature in all_features if feature["id"] not in EXCLUDED_FROM_APP_UI]
@@ -123,7 +125,7 @@ def main() -> int:
         if uninstall.exists():
             subprocess.run(["pwsh", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(uninstall), "-InstallDirectory", str(install)], capture_output=True, text=True)
 
-    payload = {"schema_version": 1, "source": "README.md -> tests/operations.json", "ui_first": True, "excluded_from_app_ui": sorted(EXCLUDED_FROM_APP_UI), "flow": ["build", "install", "ui_installed", "supplemental"], "ui_results": ui_results, "steps": steps, "supplemental": supplemental}
+    payload = {"schema_version": 1, "source": "README.md + README_jp.md -> python/tests/operations.json", "ui_first": True, "excluded_from_app_ui": sorted(EXCLUDED_FROM_APP_UI), "flow": ["build", "install", "ui_installed", "supplemental"], "ui_results": ui_results, "steps": steps, "supplemental": supplemental}
     output = root / "docs" / "loop" / "current.json"
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")

@@ -13,7 +13,7 @@
 
 ## 2. 仕様書の扱い
 
-この文書は、現行ビルドを合格判定するための要求仕様です。必須項目を満たさないビルドは未完成です。判定は `python tests/run_loop.py` の終了コードと生成済みダッシュボードで行います。
+この文書は、現行ビルドを合格判定するための要求仕様です。必須項目を満たさないビルドは未完成です。判定は `python .\python\tests\run_loop.py` の終了コードと生成済みダッシュボードで行います。
 
 - `0`: 仕様・検査・ビルド・インストール版検査がすべて合格
 - `1`: 未達、回帰、検査不足、または手動確認待ち
@@ -54,7 +54,23 @@
 - 登録コマンドと実行ファイルの一致は自動検査する。
 - 実際のExplorer画面での右クリック操作は別の手動確認項目とし、確認なしに合格としない。
 
+### UI・配布・安全性
+
+- 情報帯と下部メッセージは黒背景・白文字で表示する。
+- アプリ全体、タイトルバー、メニュー、ダイアログ、EXIF、ヘルプをダークテーマにする。
+- Windows標準のSegoe UIを使用し、専用フォントをインストールしない。
+- 日英切替でメニュー、ダイアログ、情報帯、EXIF、ヘルプの表示言語を切り替える。
+- EXIF情報は画像に重ならないフローティングウィンドウで表示し、Unicodeテキストとしてコピーできる。
+- 貼り付け画像は原寸のオーバーレイとして移動し、移動範囲を元画像内に制限する。右クリックのOKで確定し、やり直しで移動を継続する。
+- 変換成功後は確認なしで保存先を再読み込みし、原本を変更しない。
+- MSIには実行ファイル、日英ヘルプ・文書・履歴、MIT License、libwebpのCOPYING/PATENTSを同梱する。
+- MSIの右クリック登録と各画像拡張子関連付けは独立した任意選択で、既定では関連付けを選択しない。
+
 ## 4. 明示的な対象外
+
+## 対応画像形式
+
+Windows Imaging Component（WIC）の対応デコーダーが利用できる場合、BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDS、WebP、HEIC、HEIFを開けます。BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDSはWindows標準WICで扱えます。WebPとHEIF/HEICは追加コーデックの導入状況に依存します。現在の「画像を開く」ダイアログにはJPG/JPEG、PNG、TIFF、BMP、GIF、WebP、HEIC、HEIFを表示します。
 
 - Explorerのサムネイル表示シェル拡張。
 - フォルダ内画像の前後移動、スライドショー、印刷。
@@ -72,13 +88,13 @@
 完了判定:
 
 ```powershell
-python .\tests\run_loop.py
+python .\python\tests\run_loop.py
 ```
 
 ダッシュボード生成:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\generate_dashboard.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\python\tests\generate_dashboard.ps1
 ```
 
 正本は `docs/loop/goal.json`、`docs/loop/invariants.json`、`docs/loop/checklist.json` です。

@@ -1,6 +1,6 @@
 # サードパーティライセンス
 
-[日本語版 third_party_licenses_jp.md](third_party_licenses_jp.md)
+[English version third_party_licenses.md](third_party_licenses.md)
 
 ## libwebp 1.6.0
 

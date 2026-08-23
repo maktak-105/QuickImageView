@@ -26,9 +26,9 @@ README.mdの実装対象機能を、実際のインストール済みQuickImageV
 ## 正本
 
 - 機能仕様: `README.md`
-- 固定操作台帳: `tests/operations.json`
-- Python実行入口: `tests/run_loop.py`
-- UI検査: `tests/ui_test.py`
+- 固定操作台帳: `python/tests/operations.json`
+- Python実行入口: `python/tests/run_loop.py`
+- UI検査: `python/tests/ui_test.py`
 - レポート: `docs/loop/current.json`, `docs/loop/report.html`
 
 README.mdの機能変更時だけ、明示的な台帳再構築を行う。通常実行で機能行を生成しない。

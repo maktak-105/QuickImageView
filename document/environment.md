@@ -11,7 +11,7 @@ Build and test:
 
 ```powershell
 .\build.bat
-ctest --test-dir build --output-on-failure
+ctest --test-dir dist/binary --output-on-failure
 ```
 
-The MinGW runtime is statically linked. Verify with `objdump -p build/QuickImageView.exe`.
+The MinGW runtime is statically linked. Verify with `objdump -p dist/binary/QuickImageView.exe`.

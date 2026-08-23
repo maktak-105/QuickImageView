@@ -1,29 +1,86 @@
-# QuickImageView 検査引き継ぎ
+# QuickImageView 引き継ぎ
 
-## 正本
+## 現在の状態
 
-- 機能仕様: `README.md`
-- 固定操作台帳: `tests/operations.json`
+- リポジトリ: `C:\Users\makta\source\QuickImageView`
+- ブランチ: `main`
+- 最新コミット: `eb12d60`（`origin/main`へプッシュ済み）
+- 直近コミット時点の作業ツリー: クリーン（この引き継ぎ更新自体は未コミット）
+- PowerShell: 7.6.5
+- アプリ: QuickImageView 0.1.0
+
+## 正本と検査の入口
+
+- 機能仕様の正本: `README.md`
+- 日本語仕様: `README_jp.md`、`document/spec_jp.md`
+- 固定操作台帳: `python/tests/operations.json`
+- 台帳再生成: `python python/tests/rebuild_catalog.py`
 - ループ設計: `plans/test-rebuild-python-001.md`
-- 実行入口: `tests/run_loop.py`
+- 正式ループ入口: `python python/tests/run_loop.py`
+- UI操作本体: `python/tests/ui_test.py`
 - 直近結果: `docs/loop/current.json`
-- ダッシュボード: `docs/loop/report.html`
+- HTMLレポート: `docs/loop/report.html`
 
-README.mdの実装対象6セクションの箇条書き63件と操作台帳は1:1で一致している。通常実行では台帳を再生成しない。README.mdの機能追加・変更・削除時だけ、明示的に `python tests/rebuild_catalog.py` を実行し、差分を確認する。
-
-## 実行順
-
-1. ビルドする。
-2. ビルド成果物をインストールする。
-3. インストール済みアプリで台帳の全機能を実UIで1回だけ検査する。
-4. UI検査終了後にだけ、CLI・静的・関数・変数・ビルド補助検査を実行する。
-4. UIのFAIL/ERROR/UNCHECKEDは補助検査で覆さない。
-5. `current.json` と `report.html` は直近結果だけを上書きする。過去履歴は保存しない。
-
-## コマンド
+READMEの実装対象は現在64件で、操作台帳と1:1で対応している。通常の検査実行では台帳を再生成しない。READMEの機能を追加・変更・削除した場合だけ、明示的に次を実行して台帳差分を確認する。
 
 ```powershell
-python .\tests\run_loop.py
+python .\python\tests\rebuild_catalog.py
 ```
 
-PowerShell 7.6.5を使用する。ユーザーの明示なしにcommit・push・アプリ実装変更を行わない。
+## 直近の正式ループ
+
+実行順は次のとおり。
+
+1. CMake configure
+2. ビルド
+3. ビルド成果物をインストール
+4. ビルド版とインストール版の実行ファイル同一性を確認
+5. インストール済みアプリを起動し、UI操作を機能ごとに独立プロセスで1回ずつ実行
+6. UI検査の後にCTestと`--self-test`を実行
+7. `docs/loop/current.json`と`docs/loop/report.html`へ直近結果を出力
+
+直近結果:
+
+- UI対象: 57件
+- UI PASS: 57件
+- UI FAIL/ERROR/UNCHECKED: 0件
+- CTest: PASS
+- `--self-test`: PASS
+- install-time専用の除外: 7件（README全64件には含まれるが、アプリ起動後のUI検査対象外）
+- 除外ID: `feature_057`～`feature_063`
+
+UIでFAIL・ERROR・UNCHECKEDになった機能を、CLI・静的検査・関数検査で合格扱いにしてはいけない。
+
+## 完了済みの主な変更
+
+- 起動後の画像ファイルD&Dを実装
+- 画像表示中のD&Dで確認メッセージを表示し、了承時だけ現在画像を閉じて新画像を開く処理を実装
+- D&DをREADME・操作台帳・UI検査へ追加
+- libwebp 1.6.0をソース組込みし、WebP保存を実装
+- libwebpの`COPYING`・`PATENTS`と配布時の注意を`document/third_party_licenses.md`へ記録
+- 旧PowerShell検査プログラム、旧台帳、旧ループ管理ファイルを削除
+- Python + pywinautoによる実UI検査へ再構築
+- 保存拒否、パン、EXIFのUI検査判定を実画面の挙動に合わせて修正
+
+## 次に扱う未着手事項: EXIF表示の改善
+
+ユーザーから次の方向性が提示されているが、まだREADMEへの仕様追加も実装もしていない。
+
+- EXIFを画像本体と重ならないフローティングウィンドウで表示する
+- EXIF情報のコピーボタンを付ける
+- コピーボタンでEXIFテキストをクリップボードへコピーする
+- EXIFなしの場合の表示を定義する
+- OCRではなく、フローティングウィンドウのUI要素とクリップボード内容を直接検査する
+
+現行READMEにあるのは「EXIFが存在する場合、メーカー、機種、撮影日時など代表的な情報を表示する」だけであり、EXIFコピーは未記載である。この引継ぎ時点の未実装指摘であり、現在はREADMEと仕様書へ反映済みである。仕様変更時は `python python/tests/rebuild_catalog.py` で台帳を更新すること。
+
+現行のEXIF UI検査は画像上部の文字をOCRしているため、背景色・画像内容・アンチエイリアスの影響を受ける。これは暫定的な既存検査であり、フローティングウィンドウ実装後はOCR判定を残さず、UIコントロールの存在・表示テキスト・コピー結果を直接検査する。
+
+## 運用上の注意
+
+- 作業開始時に`C:\Users\makta\.codex\AGENTS.md`とリポジトリのREADME・関連仕様を確認する。
+- 1ループの変更は1つの明確な変更に限定し、Plan / Act / Observe / Reflectで記録する。
+- 実機確認できていないものをPASSと報告しない。
+- 作業時の企画・計画・実装・評価は`plans/`または本ファイルなど所定ドキュメントへ残す。
+- `msedgewebview2.exe`をプロセス名だけで終了しない。対象アプリのPIDをコマンドラインで特定してから扱う。
+- commit・push・アプリ実装変更はユーザーの明示指示がある場合だけ行う。

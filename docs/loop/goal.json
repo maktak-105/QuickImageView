@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "project": "QuickImageView",
+  "version": "1.0.0",
+  "goal": "追加仕様、テーマ、日英UI、EXIF/ヘルプ、文書、配布物、MSIを実装し、実UIと配布物を確認可能な状態にする",
+  "completion_gate": "実装・文書・配布定義の全項目が揃った後にのみ検査を実行する",
+  "test_policy": "実装完了前のUIループ実行は禁止"
+}

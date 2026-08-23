@@ -8,7 +8,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 if ([string]::IsNullOrWhiteSpace($SourceExe)) {
-    $SourceExe = Join-Path $PSScriptRoot '..\build\QuickImageView.exe'
+    $SourceExe = Join-Path $PSScriptRoot '..\dist\binary\QuickImageView.exe'
 }
 $source = [IO.Path]::GetFullPath($SourceExe)
 $target = [IO.Path]::GetFullPath($InstallDirectory)

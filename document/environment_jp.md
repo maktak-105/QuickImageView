@@ -11,7 +11,7 @@
 
 ```powershell
 .\build.bat
-ctest --test-dir build --output-on-failure
+ctest --test-dir dist/binary --output-on-failure
 ```
 
-MinGW runtimeは静的リンクしています。`objdump -p build/QuickImageView.exe`で確認できます。
+MinGW runtimeは静的リンクしています。`objdump -p dist/binary/QuickImageView.exe`で確認できます。

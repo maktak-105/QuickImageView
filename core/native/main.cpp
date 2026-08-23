@@ -4,6 +4,7 @@
 #include <shlwapi.h>
 #include <shellapi.h>
 #include <commdlg.h>
+#include <uxtheme.h>
 #include <webp/encode.h>
 #include "resource.h"
 
@@ -12,6 +13,7 @@
 #include <cwctype>
 #include <cwchar>
 #include <cstring>
+#include <list>
 #include <string>
 #include <vector>
 
@@ -19,10 +21,6 @@ namespace {
 constexpr wchar_t kClassName[] = L"QuickImageViewWindow";
 constexpr UINT kCommandOpen = 1001;
 constexpr UINT kCommandExit = 1002;
-constexpr UINT kCommandResize50 = 1101;
-constexpr UINT kCommandResize75 = 1102;
-constexpr UINT kCommandResize125 = 1103;
-constexpr UINT kCommandResize200 = 1104;
 constexpr UINT kCommandResizeCustom = 1105;
 constexpr UINT kCommandCrop = 1110;
 constexpr UINT kCommandRotate90 = 1120;
@@ -44,6 +42,56 @@ constexpr UINT kCommandClipboardPaste = 1171;
 constexpr UINT kCommandCompression1 = 1180;
 constexpr UINT kCommandCompression5 = 1181;
 constexpr UINT kCommandCompression9 = 1182;
+constexpr UINT kCommandPasteCommit = 1190;
+constexpr UINT kCommandPasteRetry = 1191;
+constexpr UINT kCommandToggleLanguage = 1200;
+constexpr UINT kCommandCopyExif = 1210;
+constexpr UINT kCommandOpenExif = 1211;
+constexpr UINT kCommandHelp = 1220;
+constexpr int kInfoBarHeight = 34;
+constexpr int kStatusBarHeight = 34;
+constexpr COLORREF kDarkBackground = RGB(18, 22, 24);
+constexpr COLORREF kDarkSurface = RGB(28, 34, 37);
+constexpr COLORREF kDarkText = RGB(242, 246, 247);
+constexpr COLORREF kDarkAccent = RGB(48, 190, 160);
+
+using DwmSetWindowAttributeFn = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
+
+void EnableDarkTheme(HWND window);
+
+void PaintDarkMenuBoundary(HWND window) {
+    if (!window) return;
+    RECT windowRect{};
+    RECT clientRect{};
+    if (!GetWindowRect(window, &windowRect) || !GetClientRect(window, &clientRect)) return;
+    POINT clientOrigin{0, 0};
+    ClientToScreen(window, &clientOrigin);
+    const int clientTop = clientOrigin.y - windowRect.top;
+    if (clientTop <= 0) return;
+    HDC dc = GetWindowDC(window);
+    if (!dc) return;
+    RECT boundary{0, clientTop - 1, windowRect.right - windowRect.left, clientTop};
+    HBRUSH black = CreateSolidBrush(RGB(0, 0, 0));
+    FillRect(dc, &boundary, black);
+    DeleteObject(black);
+    ReleaseDC(window, dc);
+}
+
+void ApplyDarkTitleBar(HWND window) {
+    if (!window) return;
+    HMODULE dwm = LoadLibraryW(L"dwmapi.dll");
+    if (!dwm) return;
+    auto setAttribute = reinterpret_cast<DwmSetWindowAttributeFn>(
+        GetProcAddress(dwm, "DwmSetWindowAttribute"));
+    if (setAttribute) {
+        constexpr DWORD kDwmwaUseImmersiveDarkMode = 20;
+        const BOOL enabled = TRUE;
+        setAttribute(window, kDwmwaUseImmersiveDarkMode, &enabled, sizeof(enabled));
+    }
+    FreeLibrary(dwm);
+    SetWindowPos(window, nullptr, 0, 0, 0, 0,
+                 SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+}
 
 BOOL CALLBACK FindSecondaryMonitor(HMONITOR monitor, HDC, LPRECT, LPARAM data) {
     MONITORINFO info{sizeof(MONITORINFO)};
@@ -79,6 +127,25 @@ bool g_selecting = false;
 bool g_selectionActive = false;
 POINT g_selectionStart{};
 POINT g_selectionEnd{};
+HBITMAP g_pasteBitmap = nullptr;
+HBITMAP g_internalClipboardBitmap = nullptr;
+UINT g_pasteWidth = 0;
+UINT g_pasteHeight = 0;
+int g_pasteX = 0;
+int g_pasteY = 0;
+bool g_pasteMoving = false;
+POINT g_pasteDragStart{};
+POINT g_pasteStart{};
+HFONT g_uiFont = nullptr;
+std::list<std::wstring> g_menuLabels;
+bool g_ignoreNextContextMenu = false;
+bool g_englishUi = false;
+HWND g_languageButton = nullptr;
+HWND g_exifWindow = nullptr;
+HWND g_exifText = nullptr;
+HWND g_exifCopyButton = nullptr;
+HWND g_helpWindow = nullptr;
+HWND g_helpText = nullptr;
 
 enum class LoadResult { success, fileNotFound, accessDenied, unsupportedFormat, decodeFailed };
 LoadResult LoadImageFile(const wchar_t* path);
@@ -122,6 +189,9 @@ void ReadExif(IWICBitmapFrameDecode* frame) {
     reader->Release();
 }
 
+const wchar_t* Ui(const wchar_t* japanese, const wchar_t* english);
+std::wstring LocalizeNotice(const wchar_t* japanese);
+
 std::wstring MetadataText() {
     if (!g_bitmap) return L"";
     wchar_t buffer[256]{};
@@ -131,16 +201,433 @@ std::wstring MetadataText() {
 }
 
 std::wstring ExifText() {
-    if (g_exifMake.empty() && g_exifModel.empty() && g_exifDateTime.empty()) return L"EXIF: なし";
+    if (g_exifMake.empty() && g_exifModel.empty() && g_exifDateTime.empty()) return Ui(L"EXIF: なし", L"EXIF: none");
     std::wstring text = L"EXIF: ";
-    if (!g_exifMake.empty()) text += L"メーカー=" + g_exifMake + L"  ";
-    if (!g_exifModel.empty()) text += L"機種=" + g_exifModel + L"  ";
-    if (!g_exifDateTime.empty()) text += L"撮影日時=" + g_exifDateTime;
+    if (!g_exifMake.empty()) text += Ui(L"メーカー=", L"Make=") + g_exifMake + L"  ";
+    if (!g_exifModel.empty()) text += Ui(L"機種=", L"Model=") + g_exifModel + L"  ";
+    if (!g_exifDateTime.empty()) text += Ui(L"撮影日時=", L"Taken=") + g_exifDateTime;
     return text;
 }
 
+void EnableDarkTheme(HWND window) {
+    HMODULE theme = LoadLibraryW(L"uxtheme.dll");
+    if (theme) {
+        using SetPreferredAppMode = int(WINAPI*)(int);
+        using AllowDarkModeForWindow = BOOL(WINAPI*)(HWND, BOOL);
+        using FlushMenuThemes = void(WINAPI*)();
+        auto setPreferredAppMode = reinterpret_cast<SetPreferredAppMode>(
+            GetProcAddress(theme, MAKEINTRESOURCEA(135)));
+        auto allowWindow = reinterpret_cast<AllowDarkModeForWindow>(
+            GetProcAddress(theme, MAKEINTRESOURCEA(133)));
+        auto flushMenuThemes = reinterpret_cast<FlushMenuThemes>(
+            GetProcAddress(theme, MAKEINTRESOURCEA(136)));
+        // AllowDark is the Windows 10+ preferred app mode value.
+        if (setPreferredAppMode) setPreferredAppMode(2);
+        if (allowWindow) allowWindow(window, TRUE);
+        if (flushMenuThemes) flushMenuThemes();
+        SetWindowTheme(window, L"DarkMode_Explorer", nullptr);
+        FreeLibrary(theme);
+    }
+    ApplyDarkTitleBar(window);
+    InvalidateRect(window, nullptr, TRUE);
+}
+
+BOOL CALLBACK NormalizeDarkMenuPopup(HWND popup, LPARAM) {
+    wchar_t className[64]{};
+    if (GetClassNameW(popup, className, ARRAYSIZE(className)) == 0 ||
+        wcscmp(className, L"#32768") != 0) return TRUE;
+    HMODULE theme = LoadLibraryW(L"uxtheme.dll");
+    if (theme) {
+        using AllowDarkModeForWindow = BOOL(WINAPI*)(HWND, BOOL);
+        auto allowWindow = reinterpret_cast<AllowDarkModeForWindow>(
+            GetProcAddress(theme, MAKEINTRESOURCEA(133)));
+        if (allowWindow) allowWindow(popup, TRUE);
+        FreeLibrary(theme);
+    }
+    SetWindowTheme(popup, L"DarkMode_Explorer", nullptr);
+    LONG_PTR windowStyle = GetWindowLongPtrW(popup, GWL_STYLE);
+    windowStyle &= ~static_cast<LONG_PTR>(WS_BORDER);
+    SetWindowLongPtrW(popup, GWL_STYLE, windowStyle);
+    LONG_PTR extendedStyle = GetWindowLongPtrW(popup, GWL_EXSTYLE);
+    extendedStyle &= ~(WS_EX_CLIENTEDGE | WS_EX_WINDOWEDGE);
+    SetWindowLongPtrW(popup, GWL_EXSTYLE, extendedStyle);
+    // SetWindowPos(SWP_FRAMECHANGED)はTrackPopupMenuの入力ループを
+    // 中断することがあるため使わず、非クライアント枠だけ再描画する。
+    RedrawWindow(popup, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE | RDW_UPDATENOW);
+    return TRUE;
+}
+
+void DrawDarkButton(const DRAWITEMSTRUCT* draw) {
+    if (!draw) return;
+    const bool pressed = (draw->itemState & ODS_SELECTED) != 0;
+    const bool disabled = (draw->itemState & ODS_DISABLED) != 0;
+    HBRUSH background = CreateSolidBrush(disabled ? RGB(48, 50, 54) :
+                                         (pressed ? RGB(25, 100, 88) : RGB(35, 55, 62)));
+    FillRect(draw->hDC, &draw->rcItem, background);
+    DeleteObject(background);
+    HPEN border = CreatePen(PS_SOLID, 1, disabled ? RGB(90, 92, 96) : RGB(70, 190, 165));
+    HGDIOBJ oldPen = SelectObject(draw->hDC, border);
+    HGDIOBJ oldBrush = SelectObject(draw->hDC, GetStockObject(HOLLOW_BRUSH));
+    RoundRect(draw->hDC, draw->rcItem.left, draw->rcItem.top, draw->rcItem.right,
+              draw->rcItem.bottom, 10, 10);
+    SelectObject(draw->hDC, oldBrush);
+    SelectObject(draw->hDC, oldPen);
+    DeleteObject(border);
+    SetBkMode(draw->hDC, TRANSPARENT);
+    SetTextColor(draw->hDC, disabled ? RGB(150, 154, 158) : RGB(240, 255, 250));
+    HFONT oldFont = g_uiFont ? static_cast<HFONT>(SelectObject(draw->hDC, g_uiFont)) : nullptr;
+    wchar_t label[64]{};
+    GetWindowTextW(draw->hwndItem, label, ARRAYSIZE(label));
+    RECT textRect = draw->rcItem;
+    DrawTextW(draw->hDC, label, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    if (oldFont) SelectObject(draw->hDC, oldFont);
+}
+
+void DrawQuickLanguageButton(const DRAWITEMSTRUCT* draw) {
+    if (!draw) return;
+    const bool pressed = (draw->itemState & ODS_SELECTED) != 0;
+    const bool disabled = (draw->itemState & ODS_DISABLED) != 0;
+    HBRUSH background = CreateSolidBrush(disabled ? RGB(31, 34, 40) :
+                                         (pressed ? RGB(25, 53, 60) : RGB(22, 24, 28)));
+    FillRect(draw->hDC, &draw->rcItem, background);
+    DeleteObject(background);
+    HPEN border = CreatePen(PS_SOLID, 1, disabled ? RGB(52, 56, 64) :
+                            (pressed ? RGB(0, 240, 255) : RGB(42, 45, 51)));
+    HGDIOBJ oldPen = SelectObject(draw->hDC, border);
+    HGDIOBJ oldBrush = SelectObject(draw->hDC, GetStockObject(HOLLOW_BRUSH));
+    RoundRect(draw->hDC, draw->rcItem.left, draw->rcItem.top, draw->rcItem.right,
+              draw->rcItem.bottom, 6, 6);
+    SelectObject(draw->hDC, oldBrush);
+    SelectObject(draw->hDC, oldPen);
+    DeleteObject(border);
+    SetBkMode(draw->hDC, TRANSPARENT);
+    wchar_t label[64]{};
+    GetWindowTextW(draw->hwndItem, label, ARRAYSIZE(label));
+    const wchar_t* iconText = L"🌐";
+    const wchar_t* labelText = wcsstr(label, L"🌐 ") == label ? label + 2 : label;
+    HFONT iconFont = CreateFontW(-11, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+                                 DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                 CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI Emoji");
+    HFONT textFont = CreateFontW(-11, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE,
+                                 DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                 CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+    SIZE iconSize{};
+    SIZE labelSize{};
+    HGDIOBJ oldFont = iconFont ? SelectObject(draw->hDC, iconFont) : nullptr;
+    GetTextExtentPoint32W(draw->hDC, iconText, 2, &iconSize);
+    if (oldFont) SelectObject(draw->hDC, oldFont);
+    oldFont = textFont ? SelectObject(draw->hDC, textFont) : nullptr;
+    GetTextExtentPoint32W(draw->hDC, labelText, static_cast<int>(wcslen(labelText)), &labelSize);
+    const int gap = 3;
+    const int totalWidth = iconSize.cx + gap + labelSize.cx;
+    const int left = (draw->rcItem.left + draw->rcItem.right - totalWidth) / 2;
+    RECT iconRect{left, draw->rcItem.top, left + iconSize.cx, draw->rcItem.bottom};
+    RECT labelRect{left + iconSize.cx + gap, draw->rcItem.top, left + totalWidth, draw->rcItem.bottom};
+    SetTextColor(draw->hDC, disabled ? RGB(80, 120, 124) : RGB(0, 240, 255));
+    if (iconFont) {
+        SelectObject(draw->hDC, iconFont);
+        DrawTextW(draw->hDC, iconText, 2, &iconRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+    }
+    SetTextColor(draw->hDC, disabled ? RGB(120, 125, 132) : RGB(243, 244, 246));
+    if (textFont) {
+        SelectObject(draw->hDC, textFont);
+        DrawTextW(draw->hDC, labelText, -1, &labelRect, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+    }
+    if (oldFont) SelectObject(draw->hDC, oldFont);
+    if (iconFont) DeleteObject(iconFont);
+    if (textFont) DeleteObject(textFont);
+}
+
+bool HandleDarkButtonDraw(UINT message, LPARAM lParam) {
+    if (message != WM_DRAWITEM || !lParam) return false;
+    auto* draw = reinterpret_cast<DRAWITEMSTRUCT*>(lParam);
+    if (draw->CtlType != ODT_BUTTON) return false;
+    DrawDarkButton(draw);
+    return true;
+}
+
+void PrepareDarkMenu(HMENU menu) {
+    if (!menu) return;
+    static HBRUSH popupBackground = CreateSolidBrush(RGB(18, 22, 24));
+    MENUINFO menuInfo{sizeof(menuInfo)};
+    menuInfo.fMask = MIM_BACKGROUND;
+    menuInfo.hbrBack = popupBackground;
+    SetMenuInfo(menu, &menuInfo);
+    const int count = GetMenuItemCount(menu);
+    for (int index = 0; index < count; ++index) {
+        MENUITEMINFOW info{sizeof(info)};
+        info.fMask = MIIM_FTYPE | MIIM_ID | MIIM_DATA | MIIM_SUBMENU | MIIM_STRING;
+        wchar_t buffer[256]{};
+        info.dwTypeData = buffer;
+        info.cch = ARRAYSIZE(buffer);
+        if (!GetMenuItemInfoW(menu, static_cast<UINT>(index), TRUE, &info)) continue;
+        if (info.hSubMenu) PrepareDarkMenu(info.hSubMenu);
+        if (info.fType & MFT_SEPARATOR) {
+            MENUITEMINFOW separator{sizeof(separator)};
+            separator.fMask = MIIM_FTYPE | MIIM_DATA;
+            separator.fType = MFT_SEPARATOR | MFT_OWNERDRAW;
+            separator.dwItemData = 0;
+            SetMenuItemInfoW(menu, static_cast<UINT>(index), TRUE, &separator);
+            continue;
+        }
+        g_menuLabels.emplace_back(buffer);
+        MENUITEMINFOW ownerDraw{sizeof(ownerDraw)};
+        ownerDraw.fMask = MIIM_FTYPE | MIIM_DATA;
+        ownerDraw.fType = MFT_OWNERDRAW;
+        ownerDraw.dwItemData = reinterpret_cast<ULONG_PTR>(&g_menuLabels.back());
+        SetMenuItemInfoW(menu, static_cast<UINT>(index), TRUE, &ownerDraw);
+    }
+}
+
+void DrawDarkMenuItem(const DRAWITEMSTRUCT* draw) {
+    if (!draw || draw->CtlType != ODT_MENU) return;
+    const auto* label = reinterpret_cast<const std::wstring*>(draw->itemData);
+    if (!label) {
+        HBRUSH background = CreateSolidBrush(RGB(18, 22, 24));
+        FillRect(draw->hDC, &draw->rcItem, background);
+        DeleteObject(background);
+        RECT separator = draw->rcItem;
+        separator.top = (separator.top + separator.bottom) / 2;
+        separator.bottom = separator.top + 1;
+        HBRUSH line = CreateSolidBrush(RGB(55, 63, 66));
+        FillRect(draw->hDC, &separator, line);
+        DeleteObject(line);
+        return;
+    }
+    const bool selected = (draw->itemState & ODS_SELECTED) != 0;
+    const bool disabled = (draw->itemState & ODS_DISABLED) != 0;
+    const COLORREF background = selected ? RGB(25, 53, 60) : RGB(18, 22, 24);
+    HBRUSH brush = CreateSolidBrush(background);
+    FillRect(draw->hDC, &draw->rcItem, brush);
+    DeleteObject(brush);
+    SetBkMode(draw->hDC, TRANSPARENT);
+    SetTextColor(draw->hDC, disabled ? RGB(120, 125, 128) : kDarkText);
+    HFONT oldFont = g_uiFont ? static_cast<HFONT>(SelectObject(draw->hDC, g_uiFont)) : nullptr;
+    RECT text = draw->rcItem;
+    text.left += 10;
+    DrawTextW(draw->hDC, label->c_str(), -1, &text, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+    if (oldFont) SelectObject(draw->hDC, oldFont);
+}
+
+void MeasureDarkMenuItem(MEASUREITEMSTRUCT* measure) {
+    if (!measure || measure->CtlType != ODT_MENU) return;
+    const auto* label = reinterpret_cast<const std::wstring*>(measure->itemData);
+    if (!label) {
+        measure->itemWidth = 1;
+        measure->itemHeight = 1;
+        return;
+    }
+    HDC dc = GetDC(nullptr);
+    SIZE size{};
+    HFONT oldFont = g_uiFont ? static_cast<HFONT>(SelectObject(dc, g_uiFont)) : nullptr;
+    GetTextExtentPoint32W(dc, label->c_str(), static_cast<int>(label->size()), &size);
+    if (oldFont) SelectObject(dc, oldFont);
+    ReleaseDC(nullptr, dc);
+    measure->itemWidth = static_cast<UINT>(size.cx + 28);
+    measure->itemHeight = static_cast<UINT>(std::max<LONG>(26, size.cy + 8));
+}
+
+void CopyExifTextToClipboard(HWND owner) {
+    const std::wstring text = ExifText();
+    if (!OpenClipboard(owner)) return;
+    EmptyClipboard();
+    const SIZE_T bytes = (text.size() + 1) * sizeof(wchar_t);
+    HGLOBAL data = GlobalAlloc(GMEM_MOVEABLE, bytes);
+    if (data) {
+        void* target = GlobalLock(data);
+        if (target) {
+            memcpy(target, text.c_str(), bytes);
+            GlobalUnlock(data);
+            if (!SetClipboardData(CF_UNICODETEXT, data)) GlobalFree(data);
+        } else {
+            GlobalFree(data);
+        }
+    }
+    CloseClipboard();
+}
+
+LRESULT CALLBACK ExifWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (HandleDarkButtonDraw(message, lParam)) return TRUE;
+    if (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLOREDIT || message == WM_CTLCOLORBTN) {
+        HDC dc = reinterpret_cast<HDC>(wParam);
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkColor(dc, RGB(0, 0, 0));
+        SetBkMode(dc, OPAQUE);
+        static HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+        return reinterpret_cast<LRESULT>(brush);
+    }
+    if (message == WM_COMMAND && LOWORD(wParam) == kCommandCopyExif) {
+        CopyExifTextToClipboard(window);
+        SetWindowTextW(g_exifCopyButton, Ui(L"コピー済み", L"Copied"));
+        return 0;
+    }
+    if (message == WM_CLOSE) {
+        ShowWindow(window, SW_HIDE);
+        return 0;
+    }
+    if (message == WM_DESTROY) {
+        g_exifWindow = nullptr;
+        g_exifText = nullptr;
+        g_exifCopyButton = nullptr;
+        return 0;
+    }
+    return DefWindowProcW(window, message, wParam, lParam);
+}
+
+std::wstring ReadUtf8File(const std::wstring& path) {
+    HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
+                              FILE_ATTRIBUTE_NORMAL, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return L"";
+    LARGE_INTEGER size{};
+    std::wstring result;
+    if (GetFileSizeEx(file, &size) && size.QuadPart > 0 && size.QuadPart < 16 * 1024 * 1024) {
+        std::string bytes(static_cast<size_t>(size.QuadPart), '\0');
+        DWORD read = 0;
+        if (ReadFile(file, bytes.data(), static_cast<DWORD>(bytes.size()), &read, nullptr) && read > 0) {
+            const int count = MultiByteToWideChar(CP_UTF8, 0, bytes.data(), static_cast<int>(read), nullptr, 0);
+            if (count > 0) {
+                result.resize(count);
+                MultiByteToWideChar(CP_UTF8, 0, bytes.data(), static_cast<int>(read), result.data(), count);
+            }
+        }
+    }
+    CloseHandle(file);
+    return result;
+}
+
+std::wstring RenderHelpText(const std::wstring& markdown) {
+    std::wstring rendered;
+    size_t start = 0;
+    while (start <= markdown.size()) {
+        const size_t end = markdown.find(L'\n', start);
+        std::wstring line = markdown.substr(start, end == std::wstring::npos ? end : end - start);
+        if (!line.empty() && line.back() == L'\r') line.pop_back();
+
+        if (line.rfind(L"### ", 0) == 0) line.erase(0, 4);
+        else if (line.rfind(L"## ", 0) == 0) line.erase(0, 3);
+        else if (line.rfind(L"# ", 0) == 0) line.erase(0, 2);
+        if (line.rfind(L"- ", 0) == 0) line.replace(0, 2, L"• ");
+
+        for (size_t pos = 0; (pos = line.find(L"**", pos)) != std::wstring::npos;) {
+            line.erase(pos, 2);
+        }
+        for (size_t pos = 0; (pos = line.find(L"__", pos)) != std::wstring::npos;) {
+            line.erase(pos, 2);
+        }
+        for (size_t pos = 0; (pos = line.find(L'`', pos)) != std::wstring::npos;) {
+            line.erase(pos, 1);
+        }
+
+        size_t linkStart = 0;
+        while ((linkStart = line.find(L'[', linkStart)) != std::wstring::npos) {
+            const size_t labelEnd = line.find(L']', linkStart + 1);
+            const size_t urlStart = labelEnd == std::wstring::npos ? std::wstring::npos : line.find(L'(', labelEnd + 1);
+            const size_t urlEnd = urlStart == std::wstring::npos ? std::wstring::npos : line.find(L')', urlStart + 1);
+            if (labelEnd == std::wstring::npos || urlStart != labelEnd + 1 || urlEnd == std::wstring::npos) break;
+            line.erase(urlStart, urlEnd - urlStart + 1);
+            line.erase(labelEnd, 1);
+            line.erase(linkStart, 1);
+            linkStart += 1;
+        }
+
+        rendered += line;
+        if (end == std::wstring::npos) break;
+        rendered += L"\r\n";
+        start = end + 1;
+    }
+    return rendered;
+}
+
+LRESULT CALLBACK HelpWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLOREDIT || message == WM_CTLCOLORBTN) {
+        HDC dc = reinterpret_cast<HDC>(wParam);
+        SetTextColor(dc, RGB(255, 255, 255));
+        SetBkColor(dc, RGB(0, 0, 0));
+        SetBkMode(dc, OPAQUE);
+        static HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+        return reinterpret_cast<LRESULT>(brush);
+    }
+    if (message == WM_CLOSE) {
+        ShowWindow(window, SW_HIDE);
+        return 0;
+    }
+    if (message == WM_SIZE && g_helpText) {
+        const int width = std::max(0, LOWORD(lParam) - 24);
+        const int height = std::max(0, HIWORD(lParam) - 24);
+        MoveWindow(g_helpText, 12, 12, width, height, TRUE);
+        return 0;
+    }
+    if (message == WM_DESTROY) {
+        g_helpWindow = nullptr;
+        g_helpText = nullptr;
+        return 0;
+    }
+    return DefWindowProcW(window, message, wParam, lParam);
+}
+
+void PlaceExifWindow(HWND owner) {
+    if (!owner || !g_exifWindow) return;
+    RECT ownerRect{};
+    GetWindowRect(owner, &ownerRect);
+    RECT workArea{};
+    HMONITOR monitor = MonitorFromWindow(owner, MONITOR_DEFAULTTONEAREST);
+    MONITORINFO monitorInfo{sizeof(MONITORINFO)};
+    if (monitor && GetMonitorInfoW(monitor, &monitorInfo)) workArea = monitorInfo.rcWork;
+    else SystemParametersInfoW(SPI_GETWORKAREA, 0, &workArea, 0);
+
+    constexpr int width = 440;
+    constexpr int height = 150;
+    constexpr int gap = 12;
+    int x = ownerRect.right + gap;
+    int y = std::max(workArea.top + 8, ownerRect.top + 40);
+    if (x + width > workArea.right) x = ownerRect.left - width - gap;
+    if (x < workArea.left) x = workArea.left + 8;
+    if (y + height > workArea.bottom) y = std::max(workArea.top + 8, workArea.bottom - height - 8);
+    SetWindowPos(g_exifWindow, HWND_TOP, x, y, width, height,
+                 SWP_SHOWWINDOW | SWP_NOACTIVATE);
+}
+
+void UpdateExifWindow(HWND owner) {
+    if (!owner) return;
+    if (!g_bitmap) {
+        if (g_exifWindow) ShowWindow(g_exifWindow, SW_HIDE);
+        return;
+    }
+    if (!g_exifWindow) {
+        WNDCLASSW klass{};
+        klass.hInstance = GetModuleHandleW(nullptr);
+        klass.lpfnWndProc = ExifWindowProc;
+        klass.lpszClassName = L"QuickImageViewExifWindow";
+        klass.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        klass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
+        RegisterClassW(&klass);
+        g_exifWindow = CreateWindowExW(WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE, klass.lpszClassName,
+                                       Ui(L"EXIF情報", L"EXIF information"),
+                                       WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_BORDER,
+                                       0, 0, 440, 150, owner, nullptr, klass.hInstance, nullptr);
+        if (!g_exifWindow) return;
+        EnableDarkTheme(g_exifWindow);
+        g_exifText = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY |
+                                   WS_VSCROLL | WS_BORDER,
+                                   12, 12, 400, 62, g_exifWindow, nullptr, klass.hInstance, nullptr);
+        g_exifCopyButton = CreateWindowW(L"BUTTON", Ui(L"EXIFをコピー", L"Copy EXIF"),
+                                          WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+                                         12, 84, 130, 30, g_exifWindow,
+                                         reinterpret_cast<HMENU>(static_cast<INT_PTR>(kCommandCopyExif)),
+                                         klass.hInstance, nullptr);
+        if (g_uiFont) {
+            SendMessageW(g_exifText, WM_SETFONT, reinterpret_cast<WPARAM>(g_uiFont), TRUE);
+            SendMessageW(g_exifCopyButton, WM_SETFONT, reinterpret_cast<WPARAM>(g_uiFont), TRUE);
+        }
+    }
+    SetWindowTextW(g_exifWindow, Ui(L"EXIF情報", L"EXIF information"));
+    SetWindowTextW(g_exifText, ExifText().c_str());
+    SetWindowTextW(g_exifCopyButton, Ui(L"EXIFをコピー", L"Copy EXIF"));
+    PlaceExifWindow(owner);
+}
+
 void UpdateWindowTitle(HWND window) {
-    std::wstring title = L"QuickImageView 0.1.0";
+    std::wstring title = L"QuickImageView 1.0.0";
     if (!g_fileName.empty()) title += L" - " + g_fileName;
     if (g_bitmap) {
         wchar_t dimensions[64]{};
@@ -153,6 +640,116 @@ void LoadImageIntoWindow(HWND window, const wchar_t* path);
 double FitScale(HWND window);
 void ClampPan(HWND window);
 bool SamePath(const wchar_t* first, const wchar_t* second);
+
+POINT CurrentClientCursor(HWND window, LPARAM fallback) {
+    // WM_*BUTTON/WM_MOUSEMOVEのlParamは対象ウィンドウのクライアント座標。
+    // GetCursorPos()を優先すると、合成入力や高速ドラッグで別イベントの
+    // カーソル位置を拾い、選択範囲や貼り付け移動がずれる。
+    const POINT eventPoint{GET_X_LPARAM(fallback), GET_Y_LPARAM(fallback)};
+    RECT client{};
+    GetClientRect(window, &client);
+    if (eventPoint.x >= 0 && eventPoint.y >= 0 &&
+        eventPoint.x < client.right && eventPoint.y < client.bottom) return eventPoint;
+    POINT point{};
+    if (GetCursorPos(&point) && ScreenToClient(window, &point)) return point;
+    return eventPoint;
+}
+
+const wchar_t* Ui(const wchar_t* japanese, const wchar_t* english) {
+    return g_englishUi ? english : japanese;
+}
+
+std::wstring LocalizeNotice(const wchar_t* japanese) {
+    if (!japanese) return L"";
+    struct NoticePair { const wchar_t* japanese; const wchar_t* english; };
+    static const NoticePair pairs[] = {
+        {L"Undoしました。再適用するにはRedoしてください。", L"Undo completed. Use Redo to apply it again."},
+        {L"Redoしました。", L"Redo completed."},
+        {L"リサイズしました。保存するには右クリックしてください。", L"Resized. Right-click to save."},
+        {L"右へ90度回転しました。保存するには右クリックしてください。", L"Rotated right 90 degrees. Right-click to save."},
+        {L"180度回転しました。保存するには右クリックしてください。", L"Rotated 180 degrees. Right-click to save."},
+        {L"左へ90度回転しました。保存するには右クリックしてください。", L"Rotated left 90 degrees. Right-click to save."},
+        {L"左右反転しました。保存するには右クリックしてください。", L"Mirrored horizontally. Right-click to save."},
+        {L"上下反転しました。保存するには右クリックしてください。", L"Flipped vertically. Right-click to save."},
+        {L"フルカラーへ変換しました。保存するには右クリックしてください。", L"Converted to full color. Right-click to save."},
+        {L"256色へ変換しました。保存するには右クリックしてください。", L"Converted to 256 colors. Right-click to save."},
+        {L"グレースケールへ変換しました。保存するには右クリックしてください。", L"Converted to grayscale. Right-click to save."}
+    };
+    for (const auto& pair : pairs) {
+        if (wcscmp(japanese, pair.japanese) == 0) return Ui(pair.japanese, pair.english);
+    }
+    return japanese;
+}
+
+HICON CreateAppIcon() {
+    constexpr int size = 32;
+    BITMAPV5HEADER header{};
+    header.bV5Size = sizeof(header);
+    header.bV5Width = size;
+    header.bV5Height = -size;
+    header.bV5Planes = 1;
+    header.bV5BitCount = 32;
+    header.bV5Compression = BI_BITFIELDS;
+    header.bV5RedMask = 0x00FF0000;
+    header.bV5GreenMask = 0x0000FF00;
+    header.bV5BlueMask = 0x000000FF;
+    header.bV5AlphaMask = 0xFF000000;
+    void* pixels = nullptr;
+    HDC screen = GetDC(nullptr);
+    HBITMAP color = CreateDIBSection(screen, reinterpret_cast<BITMAPINFO*>(&header), DIB_RGB_COLORS, &pixels, nullptr, 0);
+    ReleaseDC(nullptr, screen);
+    if (!color || !pixels) return LoadIconW(nullptr, IDI_APPLICATION);
+    auto* data = static_cast<DWORD*>(pixels);
+    for (int y = 0; y < size; ++y) {
+        for (int x = 0; x < size; ++x) {
+            const int dx = x - 15;
+            const int dy = y - 15;
+            DWORD pixel = 0;
+            if (dx * dx + dy * dy <= 14 * 14) {
+                pixel = 0xFF30BEA0;
+                if (y > 16 && y < 27 && x > 5 && x < 27 && (y - 16) > std::abs(x - 16) / 2) pixel = 0xFFFFFFFF;
+            }
+            data[y * size + x] = pixel;
+        }
+    }
+    HBITMAP mask = CreateBitmap(size, size, 1, 1, nullptr);
+    ICONINFO info{};
+    info.fIcon = TRUE;
+    info.hbmColor = color;
+    info.hbmMask = mask;
+    HICON icon = CreateIconIndirect(&info);
+    DeleteObject(color);
+    DeleteObject(mask);
+    return icon ? icon : LoadIconW(nullptr, IDI_APPLICATION);
+}
+
+RECT ImageViewport(HWND window) {
+    RECT viewport{};
+    GetClientRect(window, &viewport);
+    viewport.top = std::min(viewport.bottom, viewport.top + kInfoBarHeight);
+    viewport.bottom = std::max(viewport.top, viewport.bottom - kStatusBarHeight);
+    return viewport;
+}
+
+void ClearPasteOverlay() {
+    if (g_pasteBitmap) DeleteObject(g_pasteBitmap);
+    g_pasteBitmap = nullptr;
+    g_pasteWidth = 0;
+    g_pasteHeight = 0;
+    g_pasteX = 0;
+    g_pasteY = 0;
+    g_pasteMoving = false;
+}
+
+void ClearInternalClipboardBitmap() {
+    if (g_internalClipboardBitmap) DeleteObject(g_internalClipboardBitmap);
+    g_internalClipboardBitmap = nullptr;
+}
+
+void ClampPastePosition() {
+    g_pasteX = std::clamp(g_pasteX, 0, std::max(0, static_cast<int>(g_imageWidth) - static_cast<int>(g_pasteWidth)));
+    g_pasteY = std::clamp(g_pasteY, 0, std::max(0, static_cast<int>(g_imageHeight) - static_cast<int>(g_pasteHeight)));
+}
 
 std::wstring FileNameFromPath(const wchar_t* path) {
     const wchar_t* slash = wcsrchr(path, L'\\');
@@ -227,7 +824,7 @@ bool ReplaceBitmapFromSource(IWICBitmapSource* source, const wchar_t* notice) {
         g_panX = 0;
         g_panY = 0;
         g_selectionActive = false;
-        g_notice = notice;
+        g_notice = LocalizeNotice(notice);
         success = true;
     } while (false);
     if (replacement) DeleteObject(replacement);
@@ -236,8 +833,80 @@ bool ReplaceBitmapFromSource(IWICBitmapSource* source, const wchar_t* notice) {
     return success;
 }
 
+HBITMAP CopyBitmapRect(HBITMAP bitmap, RECT rect);
+
+HGLOBAL CopyBitmapAsDib(HBITMAP bitmap) {
+    if (!bitmap) return nullptr;
+    BITMAP details{};
+    if (!GetObjectW(bitmap, sizeof(details), &details) || details.bmWidth <= 0 || details.bmHeight <= 0) return nullptr;
+    const SIZE_T pixelCount = static_cast<SIZE_T>(details.bmWidth) * static_cast<SIZE_T>(details.bmHeight);
+    if (pixelCount > (static_cast<SIZE_T>(-1) - sizeof(BITMAPINFOHEADER)) / 4) return nullptr;
+    const SIZE_T pixelBytes = pixelCount * 4;
+    const SIZE_T totalBytes = sizeof(BITMAPINFOHEADER) + pixelBytes;
+    HGLOBAL data = GlobalAlloc(GMEM_MOVEABLE, totalBytes);
+    if (!data) return nullptr;
+    auto* header = static_cast<BITMAPINFOHEADER*>(GlobalLock(data));
+    if (!header) {
+        GlobalFree(data);
+        return nullptr;
+    }
+    *header = BITMAPINFOHEADER{};
+    header->biSize = sizeof(BITMAPINFOHEADER);
+    header->biWidth = details.bmWidth;
+    header->biHeight = -details.bmHeight;
+    header->biPlanes = 1;
+    header->biBitCount = 32;
+    header->biCompression = BI_RGB;
+    HDC screen = GetDC(nullptr);
+    const int copiedLines = screen ? GetDIBits(screen, bitmap, 0, static_cast<UINT>(details.bmHeight),
+                                                header + 1, reinterpret_cast<BITMAPINFO*>(header), DIB_RGB_COLORS) : 0;
+    if (screen) ReleaseDC(nullptr, screen);
+    GlobalUnlock(data);
+    if (copiedLines != details.bmHeight) {
+        GlobalFree(data);
+        return nullptr;
+    }
+    return data;
+}
+
 HBITMAP CloneBitmap(HBITMAP bitmap) {
-    return bitmap ? static_cast<HBITMAP>(CopyImage(bitmap, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION)) : nullptr;
+    if (!bitmap) return nullptr;
+    BITMAP details{};
+    if (!GetObjectW(bitmap, sizeof(details), &details) || details.bmWidth <= 0 || details.bmHeight <= 0) return nullptr;
+    return CopyBitmapRect(bitmap, RECT{0, 0, details.bmWidth, details.bmHeight});
+}
+
+HBITMAP CopyBitmapRect(HBITMAP bitmap, RECT rect) {
+    if (!bitmap || rect.right <= rect.left || rect.bottom <= rect.top) return nullptr;
+    const int width = rect.right - rect.left;
+    const int height = rect.bottom - rect.top;
+    BITMAPINFO info{};
+    info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    info.bmiHeader.biWidth = width;
+    info.bmiHeader.biHeight = -height;
+    info.bmiHeader.biPlanes = 1;
+    info.bmiHeader.biBitCount = 32;
+    info.bmiHeader.biCompression = BI_RGB;
+    HDC screen = GetDC(nullptr);
+    if (!screen) return nullptr;
+    HDC source = CreateCompatibleDC(screen);
+    HDC target = CreateCompatibleDC(screen);
+    void* pixels = nullptr;
+    HBITMAP copy = CreateDIBSection(screen, &info, DIB_RGB_COLORS, &pixels, nullptr, 0);
+    HGDIOBJ oldSource = source ? SelectObject(source, bitmap) : nullptr;
+    HGDIOBJ oldTarget = target && copy ? SelectObject(target, copy) : nullptr;
+    const bool copied = source && target && copy && pixels && BitBlt(target, 0, 0, width, height, source,
+                                                            rect.left, rect.top, SRCCOPY) != FALSE;
+    if (oldSource) SelectObject(source, oldSource);
+    if (oldTarget) SelectObject(target, oldTarget);
+    if (source) DeleteDC(source);
+    if (target) DeleteDC(target);
+    ReleaseDC(nullptr, screen);
+    if (!copied && copy) {
+        DeleteObject(copy);
+        copy = nullptr;
+    }
+    return copy;
 }
 
 HBITMAP CloneClipboardBitmap() {
@@ -249,18 +918,30 @@ HBITMAP CloneClipboardBitmap() {
     if (format != CF_DIBV5 && format != CF_DIB) return nullptr;
     HGLOBAL data = static_cast<HGLOBAL>(GetClipboardData(format));
     if (!data) return nullptr;
+    const SIZE_T dataSize = GlobalSize(data);
     void* locked = GlobalLock(data);
     if (!locked) return nullptr;
     const auto* header = static_cast<const BITMAPINFOHEADER*>(locked);
-    if (header->biSize < sizeof(BITMAPINFOHEADER) || header->biWidth <= 0 || header->biHeight == 0 ||
-        header->biBitCount == 0) {
+    if (dataSize < sizeof(BITMAPINFOHEADER) ||
+        header->biSize < sizeof(BITMAPINFOHEADER) || header->biSize > dataSize ||
+        header->biWidth <= 0 || header->biHeight == 0 || header->biBitCount == 0 ||
+        header->biBitCount > 32 ||
+        (header->biCompression != BI_RGB && header->biCompression != BI_BITFIELDS)) {
         GlobalUnlock(data);
         return nullptr;
     }
     const size_t headerSize = header->biSize + (header->biBitCount <= 8 ?
         (static_cast<size_t>(1) << header->biBitCount) * sizeof(RGBQUAD) : 0);
+    if (headerSize > dataSize) {
+        GlobalUnlock(data);
+        return nullptr;
+    }
     const BYTE* pixels = static_cast<const BYTE*>(locked) + headerSize;
     HDC screen = GetDC(nullptr);
+    if (!screen) {
+        GlobalUnlock(data);
+        return nullptr;
+    }
     HBITMAP bitmap = CreateDIBitmap(screen, header, CBM_INIT, pixels,
                                     reinterpret_cast<const BITMAPINFO*>(header), DIB_RGB_COLORS);
     ReleaseDC(nullptr, screen);
@@ -302,7 +983,10 @@ bool UndoImage(HWND window) {
     if (current) g_redoStack.push_back(current);
     const bool success = ReplaceBitmapFromHBitmap(target, L"Undoしました。再適用するにはRedoしてください。");
     DeleteObject(target);
-    if (success) InvalidateRect(window, nullptr, FALSE);
+    if (success) {
+        InvalidateRect(window, nullptr, FALSE);
+        UpdateWindow(window);
+    }
     return success;
 }
 
@@ -424,13 +1108,12 @@ bool CropCurrentImage(RECT imageRect) {
 }
 
 RECT SelectionImageRect(HWND window) {
-    RECT client{};
-    GetClientRect(window, &client);
+    const RECT client = ImageViewport(window);
     const double scale = FitScale(window) * g_zoom;
     const int width = std::max(1, static_cast<int>(g_imageWidth * scale));
     const int height = std::max(1, static_cast<int>(g_imageHeight * scale));
-    const int originX = (client.right - client.left - width) / 2 + g_panX;
-    const int originY = (client.bottom - client.top - height) / 2 + g_panY;
+    const int originX = client.left + (client.right - client.left - width) / 2 + g_panX;
+    const int originY = client.top + (client.bottom - client.top - height) / 2 + g_panY;
     const int left = std::clamp(static_cast<int>(std::min(g_selectionStart.x, g_selectionEnd.x)), originX, originX + width);
     const int right = std::clamp(static_cast<int>(std::max(g_selectionStart.x, g_selectionEnd.x)), originX, originX + width);
     const int top = std::clamp(static_cast<int>(std::min(g_selectionStart.y, g_selectionEnd.y)), originY, originY + height);
@@ -442,27 +1125,96 @@ RECT SelectionImageRect(HWND window) {
 bool CopyImageToClipboard(HWND window) {
     if (!g_bitmap || !OpenClipboard(window)) return false;
     EmptyClipboard();
-    HBITMAP copy = CloneBitmap(g_bitmap);
-    const bool success = copy && SetClipboardData(CF_BITMAP, copy) != nullptr;
-    if (!success && copy) DeleteObject(copy);
+    HBITMAP copy = g_selectionActive ? CopyBitmapRect(g_bitmap, SelectionImageRect(window)) : CloneBitmap(g_bitmap);
+    if (!copy) {
+        CloseClipboard();
+        return false;
+    }
+    HBITMAP internalCopy = CloneBitmap(copy);
+    if (!internalCopy) {
+        DeleteObject(copy);
+        CloseClipboard();
+        return false;
+    }
+    ClearInternalClipboardBitmap();
+    g_internalClipboardBitmap = internalCopy;
+    HGLOBAL dib = CopyBitmapAsDib(copy);
+    const bool success = SetClipboardData(CF_BITMAP, copy) != nullptr;
+    if (success) {
+        copy = nullptr;
+        if (!dib || !SetClipboardData(CF_DIB, dib)) {
+            if (dib) GlobalFree(dib);
+        }
+    }
+    if (copy) DeleteObject(copy);
     CloseClipboard();
-    if (success) g_notice = L"画像をクリップボードへコピーしました。";
+    if (success) g_notice = g_selectionActive ? Ui(L"選択範囲をクリップボードへコピーしました。", L"The selected area was copied to the clipboard.")
+                                               : Ui(L"画像をクリップボードへコピーしました。", L"The image was copied to the clipboard.");
     return success;
 }
 
 bool PasteImageFromClipboard(HWND window) {
-    if (!OpenClipboard(window)) return false;
-    HBITMAP copy = CloneClipboardBitmap();
-    CloseClipboard();
-    if (!copy) return false;
+    HBITMAP copy = nullptr;
+    if (g_internalClipboardBitmap) {
+        // アプリ内コピーはWindowsクリップボードのロック状態に依存させない。
+        copy = CloneBitmap(g_internalClipboardBitmap);
+    } else if (OpenClipboard(window)) {
+        // 内部コピーがない場合だけ、他アプリのクリップボードを読む。
+        copy = CloneClipboardBitmap();
+        CloseClipboard();
+    }
+    if (!copy || !g_bitmap) {
+        if (copy) DeleteObject(copy);
+        g_notice = Ui(L"貼り付ける画像を取得できませんでした。", L"The image could not be retrieved for pasting.");
+        InvalidateRect(window, nullptr, FALSE);
+        return false;
+    }
+    BITMAP details{};
+    if (!GetObjectW(copy, sizeof(details), &details) || details.bmWidth <= 0 || details.bmHeight <= 0) {
+        DeleteObject(copy);
+        return false;
+    }
+    ClearPasteOverlay();
+    g_pasteBitmap = copy;
+    g_pasteWidth = static_cast<UINT>(details.bmWidth);
+    g_pasteHeight = static_cast<UINT>(details.bmHeight);
+    g_pasteX = (static_cast<int>(g_imageWidth) - static_cast<int>(g_pasteWidth)) / 2;
+    g_pasteY = (static_cast<int>(g_imageHeight) - static_cast<int>(g_pasteHeight)) / 2;
+    ClampPastePosition();
+    g_selectionActive = false;
+    g_notice = Ui(L"貼り付け画像を左ドラッグで移動し、右クリックのOKで確定してください。",
+                  L"Drag the pasted image with the left button, then choose OK from the right-click menu.");
+    InvalidateRect(window, nullptr, FALSE);
+    UpdateWindow(window);
+    return true;
+}
+
+bool CommitPasteOverlay(HWND window) {
+    if (!g_bitmap || !g_pasteBitmap) return false;
     RecordUndoState();
-    const bool success = ReplaceBitmapFromHBitmap(copy, L"クリップボードから貼り付けました。保存するには右クリックしてください。");
-    DeleteObject(copy);
-    if (!success && !g_undoStack.empty()) {
+    HDC screen = GetDC(nullptr);
+    HDC target = CreateCompatibleDC(screen);
+    HDC source = CreateCompatibleDC(screen);
+    HGDIOBJ oldTarget = target ? SelectObject(target, g_bitmap) : nullptr;
+    HGDIOBJ oldSource = source ? SelectObject(source, g_pasteBitmap) : nullptr;
+    const bool success = target && source && BitBlt(target, g_pasteX, g_pasteY,
+                                                     g_pasteWidth, g_pasteHeight,
+                                                     source, 0, 0, SRCCOPY) != FALSE;
+    if (oldTarget) SelectObject(target, oldTarget);
+    if (oldSource) SelectObject(source, oldSource);
+    if (target) DeleteDC(target);
+    if (source) DeleteDC(source);
+    ReleaseDC(nullptr, screen);
+    if (success) {
+        ClearPasteOverlay();
+    g_notice = Ui(L"貼り付けを確定しました。保存するには右クリックしてください。",
+                  L"The paste was committed. Right-click to save.");
+    } else if (!g_undoStack.empty()) {
         DeleteObject(g_undoStack.back());
         g_undoStack.pop_back();
     }
     InvalidateRect(window, nullptr, FALSE);
+    UpdateWindow(window);
     return success;
 }
 
@@ -476,9 +1228,22 @@ struct ResizeDialogState {
     bool accepted = false;
 };
 
+LRESULT DarkDialogColor(WPARAM wParam) {
+    HDC dc = reinterpret_cast<HDC>(wParam);
+    SetTextColor(dc, RGB(255, 255, 255));
+    SetBkColor(dc, RGB(0, 0, 0));
+    SetBkMode(dc, OPAQUE);
+    static HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
+    return reinterpret_cast<LRESULT>(brush);
+}
+
 INT_PTR CALLBACK ResizeDialogProc(HWND dialog, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (HandleDarkButtonDraw(message, lParam)) return TRUE;
+    if (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLOREDIT || message == WM_CTLCOLORBTN ||
+        message == WM_CTLCOLORLISTBOX || message == WM_CTLCOLORDLG) return DarkDialogColor(wParam);
     auto* state = reinterpret_cast<ResizeDialogState*>(GetWindowLongPtrW(dialog, DWLP_USER));
     if (message == WM_INITDIALOG) {
+        EnableDarkTheme(dialog);
         state = reinterpret_cast<ResizeDialogState*>(lParam);
         SetWindowLongPtrW(dialog, DWLP_USER, reinterpret_cast<LONG_PTR>(state));
         wchar_t value[32]{};
@@ -548,8 +1313,12 @@ bool ParseBoundedUnsigned(const wchar_t* text, unsigned long maximum, unsigned l
 }
 
 INT_PTR CALLBACK QualityDialogProc(HWND dialog, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (HandleDarkButtonDraw(message, lParam)) return TRUE;
+    if (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLOREDIT || message == WM_CTLCOLORBTN ||
+        message == WM_CTLCOLORLISTBOX || message == WM_CTLCOLORDLG) return DarkDialogColor(wParam);
     auto* state = reinterpret_cast<QualityDialogState*>(GetWindowLongPtrW(dialog, DWLP_USER));
     if (message == WM_INITDIALOG) {
+        EnableDarkTheme(dialog);
         state = reinterpret_cast<QualityDialogState*>(lParam);
         SetWindowLongPtrW(dialog, DWLP_USER, reinterpret_cast<LONG_PTR>(state));
         wchar_t value[32]{};
@@ -602,8 +1371,12 @@ void UpdateSaveOptionsControls(HWND dialog) {
 }
 
 INT_PTR CALLBACK SaveOptionsDialogProc(HWND dialog, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (HandleDarkButtonDraw(message, lParam)) return TRUE;
+    if (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLOREDIT || message == WM_CTLCOLORBTN ||
+        message == WM_CTLCOLORLISTBOX || message == WM_CTLCOLORDLG) return DarkDialogColor(wParam);
     auto* state = reinterpret_cast<SaveOptionsState*>(GetWindowLongPtrW(dialog, DWLP_USER));
     if (message == WM_INITDIALOG) {
+        EnableDarkTheme(dialog);
         state = reinterpret_cast<SaveOptionsState*>(lParam);
         SetWindowLongPtrW(dialog, DWLP_USER, reinterpret_cast<LONG_PTR>(state));
         const wchar_t* formats[] = {L"JPEG", L"PNG", L"TIFF", L"BMP", L"GIF", L"WebP", L"HEIC/HEIF"};
@@ -824,7 +1597,7 @@ bool RunEditSelfTest(const wchar_t* inputPath) {
     const RECT crop{0, 0, static_cast<LONG>(std::max(1u, g_imageWidth - 1)), static_cast<LONG>(std::max(1u, g_imageHeight - 1))};
     RecordUndoState();
     if (!CropCurrentImage(crop)) return false;
-    if (!CopyImageToClipboard(nullptr) || !PasteImageFromClipboard(nullptr)) return false;
+    if (!CopyImageToClipboard(nullptr) || !PasteImageFromClipboard(nullptr) || !CommitPasteOverlay(nullptr)) return false;
     g_jpegQuality = 50;
     g_compressionLevel = 1;
     wchar_t temporaryPath[MAX_PATH]{};
@@ -914,14 +1687,19 @@ void ConvertWithSaveDialog(HWND window) {
         }
     }
     if (SamePath(g_sourcePath.c_str(), outputPath)) {
-        g_notice = L"原本と同じ場所には保存できません。原本は変更していません。";
+        g_notice = Ui(L"原本と同じ場所には保存できません。原本は変更していません。",
+                      L"The source path cannot be used. The original was not changed.");
         InvalidateRect(window, nullptr, FALSE);
         return;
     }
     if (ConvertImageFile(outputPath)) {
-        g_notice = L"別ファイルとして保存しました。原本は変更していません。";
+        LoadImageIntoWindow(window, outputPath);
+        g_notice = Ui(L"別ファイルとして保存し、保存先ファイルを再読み込みしました。原本は変更していません。",
+                      L"Saved as a separate file and reloaded it. The original was not changed.");
+        UpdateWindowTitle(window);
     } else {
-        g_notice = L"保存できませんでした。既存ファイルへの上書きは禁止されています。";
+        g_notice = Ui(L"保存できませんでした。既存ファイルへの上書きは禁止されています。",
+                      L"The file was not saved. Overwriting an existing file is not allowed.");
     }
     InvalidateRect(window, nullptr, FALSE);
 }
@@ -938,6 +1716,9 @@ void ReleaseImage() {
     g_panY = 0;
     g_panning = false;
     g_panMoved = false;
+    g_selectionActive = false;
+    ClearPasteOverlay();
+    ClearInternalClipboardBitmap();
     g_fileName.clear();
     g_sourcePath.clear();
     g_formatName.clear();
@@ -952,10 +1733,10 @@ void ReleaseImage() {
 
 const wchar_t* LoadErrorMessage(LoadResult result) {
     switch (result) {
-    case LoadResult::fileNotFound: return L"ファイルが見つかりません。パスを確認してください。";
-    case LoadResult::accessDenied: return L"ファイルを読み取る権限がありません。原本は変更していません。";
-    case LoadResult::unsupportedFormat: return L"対応していない画像形式です。原本は変更していません。";
-    case LoadResult::decodeFailed: return L"画像データを読み込めませんでした。原本は変更していません。";
+    case LoadResult::fileNotFound: return Ui(L"ファイルが見つかりません。パスを確認してください。", L"The file was not found. Check the path.");
+    case LoadResult::accessDenied: return Ui(L"ファイルを読み取る権限がありません。原本は変更していません。", L"The file cannot be read. The original was not changed.");
+    case LoadResult::unsupportedFormat: return Ui(L"対応していない画像形式です。原本は変更していません。", L"This image format is not supported. The original was not changed.");
+    case LoadResult::decodeFailed: return Ui(L"画像データを読み込めませんでした。原本は変更していません。", L"The image data could not be decoded. The original was not changed.");
     default: return L"";
     }
 }
@@ -966,9 +1747,10 @@ void LoadImageIntoWindow(HWND window, const wchar_t* path) {
     if (result != LoadResult::success) {
         g_status = LoadErrorMessage(result);
     }
-    std::wstring title = L"QuickImageView 0.1.0";
+    std::wstring title = L"QuickImageView 1.0.0";
     if (result == LoadResult::success) title += L" - " + g_fileName;
     SetWindowTextW(window, title.c_str());
+    UpdateExifWindow(window);
     InvalidateRect(window, nullptr, TRUE);
 }
 
@@ -992,22 +1774,6 @@ void ExecuteEditCommand(HWND window, UINT command) {
     }
     if (!g_bitmap) return;
     switch (command) {
-    case kCommandResize50:
-        RecordUndoState();
-        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth / 2), std::max(1u, g_imageHeight / 2));
-        break;
-    case kCommandResize75:
-        RecordUndoState();
-        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth * 3 / 4), std::max(1u, g_imageHeight * 3 / 4));
-        break;
-    case kCommandResize125:
-        RecordUndoState();
-        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth * 5 / 4), std::max(1u, g_imageHeight * 5 / 4));
-        break;
-    case kCommandResize200:
-        RecordUndoState();
-        ResizeCurrentImageForDisplay(window, std::max(1u, g_imageWidth * 2), std::max(1u, g_imageHeight * 2));
-        break;
     case kCommandResizeCustom: {
         UINT width = 100;
         UINT height = 100;
@@ -1061,34 +1827,34 @@ void ExecuteEditCommand(HWND window, UINT command) {
         break;
     case kCommandQuality50:
         g_jpegQuality = 50;
-        g_notice = L"JPEG品質を50に設定しました。";
+        g_notice = Ui(L"JPEG品質を50に設定しました。", L"JPEG quality set to 50.");
         break;
     case kCommandQuality75:
         g_jpegQuality = 75;
-        g_notice = L"JPEG品質を75に設定しました。";
+        g_notice = Ui(L"JPEG品質を75に設定しました。", L"JPEG quality set to 75.");
         break;
     case kCommandQuality90:
         g_jpegQuality = 90;
-        g_notice = L"JPEG品質を90に設定しました。";
+        g_notice = Ui(L"JPEG品質を90に設定しました。", L"JPEG quality set to 90.");
         break;
     case kCommandQualityCustom: {
         UINT quality = g_jpegQuality;
         if (!ShowQualityDialog(window, &quality)) break;
         g_jpegQuality = quality;
-        g_notice = L"指定したJPEG品質を設定しました。";
+        g_notice = Ui(L"指定したJPEG品質を設定しました。", L"Custom JPEG quality applied.");
         break;
     }
     case kCommandCompression1:
         g_compressionLevel = 1;
-        g_notice = L"圧縮レベルを1に設定しました。";
+        g_notice = Ui(L"圧縮レベルを1に設定しました。", L"PNG compression level set to 1.");
         break;
     case kCommandCompression5:
         g_compressionLevel = 5;
-        g_notice = L"圧縮レベルを5に設定しました。";
+        g_notice = Ui(L"圧縮レベルを5に設定しました。", L"PNG compression level set to 5.");
         break;
     case kCommandCompression9:
         g_compressionLevel = 9;
-        g_notice = L"圧縮レベルを9に設定しました。";
+        g_notice = Ui(L"圧縮レベルを9に設定しました。", L"PNG compression level set to 9.");
         break;
     default:
         return;
@@ -1110,96 +1876,194 @@ void OpenImageDialog(HWND window) {
     if (GetOpenFileNameW(&dialog)) LoadImageIntoWindow(window, path);
 }
 
+void OpenHelp(HWND window) {
+    wchar_t modulePath[MAX_PATH * 4]{};
+    if (!GetModuleFileNameW(nullptr, modulePath, ARRAYSIZE(modulePath))) return;
+    PathRemoveFileSpecW(modulePath);
+    const std::wstring fileName = g_englishUi ? L"help.md" : L"help_jp.md";
+    std::wstring helpPath = std::wstring(modulePath) + L"\\" + fileName;
+    if (GetFileAttributesW(helpPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        helpPath = std::wstring(modulePath) + L"\\help.md";
+    }
+    if (GetFileAttributesW(helpPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        MessageBoxW(window, Ui(L"ヘルプファイルが見つかりません。", L"The help file was not found."),
+                    L"QuickImageView", MB_OK | MB_ICONWARNING);
+        return;
+    }
+    const std::wstring contents = ReadUtf8File(helpPath);
+    if (contents.empty()) {
+        MessageBoxW(window, Ui(L"ヘルプを読み込めません。", L"The help file could not be read."),
+                    L"QuickImageView", MB_OK | MB_ICONWARNING);
+        return;
+    }
+    if (!g_helpWindow) {
+        WNDCLASSW klass{};
+        klass.hInstance = GetModuleHandleW(nullptr);
+        klass.lpfnWndProc = HelpWindowProc;
+        klass.lpszClassName = L"QuickImageViewHelpWindow";
+        klass.hCursor = LoadCursor(nullptr, IDC_ARROW);
+        klass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
+        RegisterClassW(&klass);
+        g_helpWindow = CreateWindowExW(WS_EX_TOOLWINDOW, klass.lpszClassName,
+                                       Ui(L"QuickImageView ヘルプ", L"QuickImageView Help"),
+                                       WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+                                       CW_USEDEFAULT, CW_USEDEFAULT, 760, 620,
+                                       window, nullptr, klass.hInstance, nullptr);
+        if (g_helpWindow) {
+            EnableDarkTheme(g_helpWindow);
+             g_helpText = CreateWindowW(L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_VSCROLL |
+                                        ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | ES_WANTRETURN,
+                                        12, 12, 720, 540, g_helpWindow, nullptr, klass.hInstance, nullptr);
+            if (g_uiFont) SendMessageW(g_helpText, WM_SETFONT, reinterpret_cast<WPARAM>(g_uiFont), TRUE);
+        }
+    }
+    if (g_helpWindow && g_helpText) {
+        SetWindowTextW(g_helpWindow, Ui(L"QuickImageView ヘルプ", L"QuickImageView Help"));
+        const std::wstring rendered = RenderHelpText(contents);
+        SetWindowTextW(g_helpText, rendered.c_str());
+        ShowWindow(g_helpWindow, SW_SHOWNORMAL);
+        SetForegroundWindow(g_helpWindow);
+    }
+}
+
+void OpenExifWindow(HWND window) {
+    if (!g_bitmap) {
+        MessageBoxW(window, Ui(L"画像を開いてからEXIF情報を表示してください。", L"Open an image before viewing EXIF information."),
+                    L"QuickImageView", MB_OK | MB_ICONINFORMATION);
+        return;
+    }
+    UpdateExifWindow(window);
+    if (g_exifWindow) {
+        ShowWindow(g_exifWindow, SW_SHOWNOACTIVATE);
+        SetWindowPos(g_exifWindow, HWND_TOP, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW | SWP_NOACTIVATE);
+    }
+}
+
 void BuildMenu(HWND window) {
     HMENU menu = CreateMenu();
     HMENU fileMenu = CreatePopupMenu();
-    AppendMenuW(fileMenu, MF_STRING, kCommandOpen, L"ファイルを開く\tCtrl+O");
+    AppendMenuW(fileMenu, MF_STRING, kCommandOpen, Ui(L"ファイルを開く\tCtrl+O", L"Open image\tCtrl+O"));
     AppendMenuW(fileMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(fileMenu, MF_STRING, kCommandExit, L"終了");
-    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(fileMenu), L"ファイル");
+    AppendMenuW(fileMenu, MF_STRING, kCommandExit, Ui(L"終了", L"Exit"));
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(fileMenu), Ui(L"ファイル", L"File"));
     HMENU editMenu = CreatePopupMenu();
-    AppendMenuW(editMenu, MF_STRING, kCommandResize50, L"リサイズ 50%\tCtrl+1");
-    AppendMenuW(editMenu, MF_STRING, kCommandResize75, L"リサイズ 75%\tCtrl+2");
-    AppendMenuW(editMenu, MF_STRING, kCommandResize125, L"リサイズ 125%\tCtrl+3");
-    AppendMenuW(editMenu, MF_STRING, kCommandResize200, L"リサイズ 200%\tCtrl+4");
-    AppendMenuW(editMenu, MF_STRING, kCommandResizeCustom, L"リサイズを指定...");
-    AppendMenuW(editMenu, MF_STRING, kCommandCrop, L"選択範囲を切り抜く");
+    AppendMenuW(editMenu, MF_STRING, kCommandResizeCustom, Ui(L"リサイズを指定...", L"Custom resize..."));
+    AppendMenuW(editMenu, MF_STRING, kCommandCrop, Ui(L"選択範囲を切り抜く", L"Crop selection"));
     AppendMenuW(editMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(editMenu, MF_STRING, kCommandRotate90, L"右へ90度回転");
-    AppendMenuW(editMenu, MF_STRING, kCommandRotate180, L"180度回転");
-    AppendMenuW(editMenu, MF_STRING, kCommandRotate270, L"左へ90度回転");
-    AppendMenuW(editMenu, MF_STRING, kCommandFlipHorizontal, L"ミラー（左右反転 / Mirror）");
-    AppendMenuW(editMenu, MF_STRING, kCommandFlipVertical, L"上下反転");
+    AppendMenuW(editMenu, MF_STRING, kCommandRotate90, Ui(L"右へ90度回転", L"Rotate right 90°"));
+    AppendMenuW(editMenu, MF_STRING, kCommandRotate180, Ui(L"180度回転", L"Rotate 180°"));
+    AppendMenuW(editMenu, MF_STRING, kCommandRotate270, Ui(L"左へ90度回転", L"Rotate left 90°"));
+    AppendMenuW(editMenu, MF_STRING, kCommandFlipHorizontal, Ui(L"ミラー（左右反転 / Mirror）", L"Mirror horizontally"));
+    AppendMenuW(editMenu, MF_STRING, kCommandFlipVertical, Ui(L"上下反転", L"Flip vertically"));
     HMENU colorMenu = CreatePopupMenu();
-    AppendMenuW(colorMenu, MF_STRING, kCommandColorFull, L"フルカラー");
-    AppendMenuW(colorMenu, MF_STRING, kCommandColor256, L"256色");
-    AppendMenuW(colorMenu, MF_STRING, kCommandColorGray, L"グレースケール");
-    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(colorMenu), L"色変換");
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorFull, Ui(L"フルカラー", L"Full color"));
+    AppendMenuW(colorMenu, MF_STRING, kCommandColor256, Ui(L"256色", L"256 colors"));
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorGray, Ui(L"グレースケール", L"Grayscale"));
+    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(colorMenu), Ui(L"色変換", L"Color mode"));
     AppendMenuW(editMenu, MF_SEPARATOR, 0, nullptr);
     HMENU qualityMenu = CreatePopupMenu();
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality50, L"50");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality75, L"75");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality90, L"90");
-    AppendMenuW(qualityMenu, MF_STRING, kCommandQualityCustom, L"指定...");
-    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), L"JPEG品質");
+    AppendMenuW(qualityMenu, MF_STRING, kCommandQualityCustom, Ui(L"指定...", L"Custom..."));
+    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), Ui(L"JPEG品質", L"JPEG quality"));
     HMENU compressionMenu = CreatePopupMenu();
-    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, L"1（低圧縮）");
-    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression5, L"5（標準）");
-    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression9, L"9（高圧縮）");
-    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(compressionMenu), L"PNG圧縮");
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, Ui(L"1（低圧縮）", L"1 (low)"));
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression5, Ui(L"5（標準）", L"5 (normal)"));
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression9, Ui(L"9（高圧縮）", L"9 (high)"));
+    AppendMenuW(editMenu, MF_POPUP, reinterpret_cast<UINT_PTR>(compressionMenu), Ui(L"PNG圧縮", L"PNG compression"));
     AppendMenuW(editMenu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(editMenu, MF_STRING, kCommandClipboardCopy, L"画像をコピー");
-    AppendMenuW(editMenu, MF_STRING, kCommandClipboardPaste, L"画像を貼り付け");
-    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(editMenu), L"編集");
+    AppendMenuW(editMenu, MF_STRING, kCommandClipboardCopy, Ui(L"画像をコピー", L"Copy image"));
+    AppendMenuW(editMenu, MF_STRING, kCommandClipboardPaste, Ui(L"画像を貼り付け", L"Paste image"));
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(editMenu), Ui(L"編集", L"Edit"));
+    HMENU helpMenu = CreatePopupMenu();
+    AppendMenuW(helpMenu, MF_STRING, kCommandOpenExif, Ui(L"EXIF情報", L"EXIF information"));
+    AppendMenuW(helpMenu, MF_STRING, kCommandHelp, Ui(L"ヘルプ", L"Help"));
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(helpMenu), Ui(L"ヘルプ", L"Help"));
+    PrepareDarkMenu(menu);
+    static HBRUSH menuBarBrush = CreateSolidBrush(RGB(10, 12, 16));
+    MENUINFO menuBarInfo{sizeof(menuBarInfo)};
+    menuBarInfo.fMask = MIM_BACKGROUND;
+    menuBarInfo.hbrBack = menuBarBrush;
+    SetMenuInfo(menu, &menuBarInfo);
     SetMenu(window, menu);
+}
+
+void ToggleLanguage(HWND window) {
+    g_englishUi = !g_englishUi;
+    HMENU oldMenu = GetMenu(window);
+    BuildMenu(window);
+    if (oldMenu) DestroyMenu(oldMenu);
+    SetWindowTextW(g_languageButton, g_englishUi ? L"🌐 日本語" : L"🌐 English");
+    UpdateExifWindow(window);
+    if (g_helpWindow && IsWindowVisible(g_helpWindow)) OpenHelp(window);
+    g_notice = Ui(L"表示言語を日本語に切り替えました。", L"Display language changed to English.");
+    DrawMenuBar(window);
+    InvalidateRect(window, nullptr, FALSE);
 }
 
 void ShowImageContextMenu(HWND window, int x, int y) {
     if (!g_bitmap) return;
     HMENU menu = CreatePopupMenu();
-    AppendMenuW(menu, MF_STRING, 1, L"別形式で保存...");
+    AppendMenuW(menu, MF_STRING, 1, Ui(L"別形式で保存...", L"Save as..."));
     HMENU resizeMenu = CreatePopupMenu();
-    AppendMenuW(resizeMenu, MF_STRING, kCommandResize50, L"50%");
-    AppendMenuW(resizeMenu, MF_STRING, kCommandResize75, L"75%");
-    AppendMenuW(resizeMenu, MF_STRING, kCommandResize125, L"125%");
-    AppendMenuW(resizeMenu, MF_STRING, kCommandResize200, L"200%");
-    AppendMenuW(resizeMenu, MF_STRING, kCommandResizeCustom, L"指定...");
-    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(resizeMenu), L"リサイズ");
-    AppendMenuW(menu, MF_STRING, kCommandResizeCustom, L"リサイズを指定...");
-    AppendMenuW(menu, MF_STRING | (g_selectionActive ? 0 : MF_GRAYED), kCommandCrop, L"選択範囲を切り抜く");
-    AppendMenuW(menu, MF_STRING, kCommandRotate90, L"右へ90度回転");
-    AppendMenuW(menu, MF_STRING, kCommandRotate180, L"180度回転");
-    AppendMenuW(menu, MF_STRING, kCommandRotate270, L"左へ90度回転");
-    AppendMenuW(menu, MF_STRING, kCommandFlipHorizontal, L"ミラー（左右反転 / Mirror）");
-    AppendMenuW(menu, MF_STRING, kCommandFlipVertical, L"上下反転");
+    AppendMenuW(resizeMenu, MF_STRING, kCommandResizeCustom, Ui(L"指定...", L"Custom..."));
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(resizeMenu), Ui(L"リサイズ", L"Resize"));
+    AppendMenuW(menu, MF_STRING, kCommandResizeCustom, Ui(L"リサイズを指定...", L"Custom resize..."));
+    AppendMenuW(menu, MF_STRING | (g_selectionActive ? 0 : MF_GRAYED), kCommandCrop,
+                Ui(L"選択範囲を切り抜く", L"Crop selection"));
+    AppendMenuW(menu, MF_STRING, kCommandRotate90, Ui(L"右へ90度回転", L"Rotate right 90°"));
+    AppendMenuW(menu, MF_STRING, kCommandRotate180, Ui(L"180度回転", L"Rotate 180°"));
+    AppendMenuW(menu, MF_STRING, kCommandRotate270, Ui(L"左へ90度回転", L"Rotate left 90°"));
+    AppendMenuW(menu, MF_STRING, kCommandFlipHorizontal, Ui(L"ミラー（左右反転）", L"Mirror horizontally"));
+    AppendMenuW(menu, MF_STRING, kCommandFlipVertical, Ui(L"上下反転", L"Flip vertically"));
     HMENU colorMenu = CreatePopupMenu();
-    AppendMenuW(colorMenu, MF_STRING, kCommandColorFull, L"フルカラー");
-    AppendMenuW(colorMenu, MF_STRING, kCommandColor256, L"256色");
-    AppendMenuW(colorMenu, MF_STRING, kCommandColorGray, L"グレースケール");
-    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(colorMenu), L"色変換");
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorFull, Ui(L"フルカラー", L"Full color"));
+    AppendMenuW(colorMenu, MF_STRING, kCommandColor256, Ui(L"256色", L"256 colors"));
+    AppendMenuW(colorMenu, MF_STRING, kCommandColorGray, Ui(L"グレースケール", L"Grayscale"));
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(colorMenu), Ui(L"色変換", L"Color mode"));
     HMENU qualityMenu = CreatePopupMenu();
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality50, L"50");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality75, L"75");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQuality90, L"90");
     AppendMenuW(qualityMenu, MF_STRING, kCommandQualityCustom, L"指定...");
-    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), L"JPEG品質");
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(qualityMenu), Ui(L"JPEG品質", L"JPEG quality"));
     HMENU compressionMenu = CreatePopupMenu();
-    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, L"1（低圧縮）");
-    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression5, L"5（標準）");
-    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression9, L"9（高圧縮）");
-    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(compressionMenu), L"PNG圧縮");
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression1, Ui(L"1（低圧縮）", L"1 (low)"));
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression5, Ui(L"5（標準）", L"5 (normal)"));
+    AppendMenuW(compressionMenu, MF_STRING, kCommandCompression9, Ui(L"9（高圧縮）", L"9 (high)"));
+    AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(compressionMenu), Ui(L"PNG圧縮", L"PNG compression"));
     AppendMenuW(menu, MF_SEPARATOR, 0, nullptr);
-    AppendMenuW(menu, MF_STRING, kCommandClipboardCopy, L"画像をコピー");
-    AppendMenuW(menu, MF_STRING, kCommandClipboardPaste, L"画像を貼り付け");
+    AppendMenuW(menu, MF_STRING, kCommandClipboardCopy, Ui(L"画像をコピー", L"Copy image"));
+    AppendMenuW(menu, MF_STRING, kCommandClipboardPaste, Ui(L"画像を貼り付け", L"Paste image"));
+    PrepareDarkMenu(menu);
     const int command = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, 0, window, nullptr);
     DestroyMenu(menu);
     if (command == 1) ConvertWithSaveDialog(window);
-    else SendMessageW(window, WM_COMMAND, command, 0);
+    else if (command == kCommandOpenExif) OpenExifWindow(window);
+    else if (command == kCommandHelp) OpenHelp(window);
+    else if (command != 0) SendMessageW(window, WM_COMMAND, command, 0);
+}
+
+void ShowPasteContextMenu(HWND window, int x, int y) {
+    if (!g_pasteBitmap) return;
+    HMENU menu = CreatePopupMenu();
+    AppendMenuW(menu, MF_STRING, kCommandPasteCommit, L"OK");
+    AppendMenuW(menu, MF_STRING, kCommandPasteRetry, Ui(L"やり直し", L"Retry"));
+    PrepareDarkMenu(menu);
+    const int command = TrackPopupMenu(menu, TPM_RETURNCMD | TPM_NONOTIFY, x, y, 0, window, nullptr);
+    DestroyMenu(menu);
+    if (command == kCommandPasteCommit) CommitPasteOverlay(window);
+    else if (command == kCommandPasteRetry) {
+        g_notice = Ui(L"貼り付け画像を左ドラッグで移動して、右クリックのOKで確定してください。",
+                       L"Drag the pasted image with the left button, then choose OK with the right button.");
+        InvalidateRect(window, nullptr, FALSE);
+    }
 }
 
 double FitScale(HWND window) {
-    RECT client{};
-    GetClientRect(window, &client);
+    const RECT client = ImageViewport(window);
     const int width = client.right - client.left;
     const int height = client.bottom - client.top;
     if (!g_imageWidth || !g_imageHeight || width <= 0 || height <= 0) return 1.0;
@@ -1209,8 +2073,7 @@ double FitScale(HWND window) {
 
 void ClampPan(HWND window) {
     if (!g_bitmap) return;
-    RECT client{};
-    GetClientRect(window, &client);
+    const RECT client = ImageViewport(window);
     const double scale = FitScale(window) * g_zoom;
     const double imageWidth = g_imageWidth * scale;
     const double imageHeight = g_imageHeight * scale;
@@ -1306,22 +2169,25 @@ void Paint(HWND window, HDC dc) {
     RECT client{};
     GetClientRect(window, &client);
     FillRect(dc, &client, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+    HGDIOBJ oldFont = g_uiFont ? SelectObject(dc, g_uiFont) : nullptr;
     if (!g_bitmap) {
         SetTextColor(dc, RGB(210, 210, 210));
         SetBkMode(dc, TRANSPARENT);
         DrawTextW(dc, g_status.c_str(), -1, &client,
                   DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+        if (oldFont) SelectObject(dc, oldFont);
         return;
     }
 
-    const int clientWidth = client.right - client.left;
-    const int clientHeight = client.bottom - client.top;
+    const RECT viewport = ImageViewport(window);
+    const int clientWidth = viewport.right - viewport.left;
+    const int clientHeight = viewport.bottom - viewport.top;
     const double fitScale = FitScale(window);
     const double scale = fitScale * g_zoom;
     const int width = std::max(1, static_cast<int>(g_imageWidth * scale));
     const int height = std::max(1, static_cast<int>(g_imageHeight * scale));
-    const int x = (clientWidth - width) / 2 + g_panX;
-    const int y = (clientHeight - height) / 2 + g_panY;
+    const int x = viewport.left + (clientWidth - width) / 2 + g_panX;
+    const int y = viewport.top + (clientHeight - height) / 2 + g_panY;
     HDC source = CreateCompatibleDC(dc);
     HGDIOBJ old = SelectObject(source, g_bitmap);
     SetStretchBltMode(dc, HALFTONE);
@@ -1329,12 +2195,12 @@ void Paint(HWND window, HDC dc) {
                static_cast<int>(g_imageWidth), static_cast<int>(g_imageHeight), SRCCOPY);
     SelectObject(source, old);
     DeleteDC(source);
-    SetTextColor(dc, RGB(230, 230, 230));
+    RECT infoBackground{0, 0, client.right, kInfoBarHeight};
+    FillRect(dc, &infoBackground, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+    SetTextColor(dc, RGB(255, 255, 255));
     SetBkMode(dc, TRANSPARENT);
-    RECT metadata{12, 10, client.right - 12, 34};
+    RECT metadata{12, 10, client.right - 70, 34};
     DrawTextW(dc, MetadataText().c_str(), -1, &metadata, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
-    RECT exif{12, 34, client.right - 12, 58};
-    DrawTextW(dc, ExifText().c_str(), -1, &exif, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
     if (g_selecting || g_selectionActive) {
         RECT selection{std::min(g_selectionStart.x, g_selectionEnd.x), std::min(g_selectionStart.y, g_selectionEnd.y),
                        std::max(g_selectionStart.x, g_selectionEnd.x), std::max(g_selectionStart.y, g_selectionEnd.y)};
@@ -1345,18 +2211,76 @@ void Paint(HWND window, HDC dc) {
         SelectObject(dc, oldBrush);
         SelectObject(dc, oldPen);
         DeleteObject(pen);
+        const RECT selectedImage = SelectionImageRect(window);
+        wchar_t selectionSize[64]{};
+        swprintf_s(selectionSize, L"%ld×%ld", selectedImage.right - selectedImage.left,
+                   selectedImage.bottom - selectedImage.top);
+        RECT sizeLabel{selection.left + 3, std::max(viewport.top, selection.top - 22), selection.right, selection.top};
+        SetTextColor(dc, RGB(255, 220, 80));
+        DrawTextW(dc, selectionSize, -1, &sizeLabel, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
+        SetTextColor(dc, RGB(255, 255, 255));
+    }
+    if (g_pasteBitmap) {
+        HDC paste = CreateCompatibleDC(dc);
+        HGDIOBJ oldPaste = SelectObject(paste, g_pasteBitmap);
+        const int pasteX = x + static_cast<int>(std::lround(g_pasteX * scale));
+        const int pasteY = y + static_cast<int>(std::lround(g_pasteY * scale));
+        const int pasteWidth = std::max(1, static_cast<int>(std::lround(g_pasteWidth * scale)));
+        const int pasteHeight = std::max(1, static_cast<int>(std::lround(g_pasteHeight * scale)));
+        SetStretchBltMode(dc, HALFTONE);
+        StretchBlt(dc, pasteX, pasteY, pasteWidth, pasteHeight, paste, 0, 0,
+                   static_cast<int>(g_pasteWidth), static_cast<int>(g_pasteHeight), SRCCOPY);
+        SelectObject(paste, oldPaste);
+        DeleteDC(paste);
+        HPEN pen = CreatePen(PS_DASH, 1, RGB(120, 220, 255));
+        HGDIOBJ oldPen = SelectObject(dc, pen);
+        HGDIOBJ oldBrush = SelectObject(dc, GetStockObject(HOLLOW_BRUSH));
+        Rectangle(dc, pasteX, pasteY, pasteX + pasteWidth, pasteY + pasteHeight);
+        SelectObject(dc, oldBrush);
+        SelectObject(dc, oldPen);
+        DeleteObject(pen);
     }
     if (!g_notice.empty()) {
-        SetTextColor(dc, RGB(150, 230, 160));
-        RECT notice{12, client.bottom - 34, client.right - 12, client.bottom - 10};
+        RECT statusBackground{0, client.bottom - kStatusBarHeight, client.right, client.bottom};
+        FillRect(dc, &statusBackground, static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH)));
+        SetTextColor(dc, RGB(255, 255, 255));
+        RECT notice{12, client.bottom - kStatusBarHeight + 8, client.right - 12, client.bottom - 8};
         DrawTextW(dc, g_notice.c_str(), -1, &notice, DT_LEFT | DT_SINGLELINE | DT_NOPREFIX);
     }
+    if (oldFont) SelectObject(dc, oldFont);
 }
 
 LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
     switch (message) {
+    case WM_NCPAINT:
+    case WM_NCACTIVATE: {
+        const LRESULT result = DefWindowProcW(window, message, wParam, lParam);
+        PaintDarkMenuBoundary(window);
+        return result;
+    }
+    case WM_CTLCOLORSTATIC:
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORBTN: {
+        HDC dc = reinterpret_cast<HDC>(wParam);
+        SetTextColor(dc, kDarkText);
+        SetBkColor(dc, kDarkSurface);
+        SetBkMode(dc, OPAQUE);
+        static HBRUSH brush = CreateSolidBrush(kDarkSurface);
+        return reinterpret_cast<LRESULT>(brush);
+    }
     case WM_CREATE:
         DragAcceptFiles(window, TRUE);
+        g_status = Ui(L"画像ファイルを指定して起動してください。", L"Pass an image file to QuickImageView.");
+        g_uiFont = CreateFontW(-12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET,
+                               OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+                               DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+        g_languageButton = CreateWindowW(L"BUTTON", L"🌐 English", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+                                         0, 0, 84, 26, window,
+                                         reinterpret_cast<HMENU>(static_cast<INT_PTR>(kCommandToggleLanguage)),
+                                         GetModuleHandleW(nullptr), nullptr);
+        SendMessageW(g_languageButton, WM_SETFONT, reinterpret_cast<WPARAM>(g_uiFont), TRUE);
+        EnableDarkTheme(window);
+        UpdateExifWindow(window);
         return 0;
     case WM_DROPFILES: {
         HDROP drop = reinterpret_cast<HDROP>(wParam);
@@ -1365,8 +2289,9 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         if (count > 0 && DragQueryFileW(drop, 0, path, ARRAYSIZE(path)) > 0) {
             const bool shouldOpen = !g_bitmap ||
                 MessageBoxW(window,
-                            L"現在開いている画像を閉じて、ドロップした画像を開きますか？",
-                            L"画像を開く確認", MB_YESNO | MB_ICONQUESTION) == IDYES;
+                            Ui(L"現在開いている画像を閉じて、ドロップした画像を開きますか？",
+                               L"Close the current image and open the dropped image?"),
+                            Ui(L"画像を開く確認", L"Open image"), MB_YESNO | MB_ICONQUESTION) == IDYES;
             if (shouldOpen) LoadImageIntoWindow(window, path);
         }
         DragFinish(drop);
@@ -1375,18 +2300,58 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
     case WM_COMMAND:
         if (LOWORD(wParam) == kCommandOpen) OpenImageDialog(window);
         else if (LOWORD(wParam) == kCommandExit) DestroyWindow(window);
+        else if (LOWORD(wParam) == kCommandHelp) OpenHelp(window);
+        else if (LOWORD(wParam) == kCommandOpenExif) OpenExifWindow(window);
+        else if (LOWORD(wParam) == kCommandToggleLanguage) ToggleLanguage(window);
         else if (LOWORD(wParam) == 1) ConvertWithSaveDialog(window);
-        else if (LOWORD(wParam) >= kCommandResize50 && LOWORD(wParam) <= kCommandCompression9) ExecuteEditCommand(window, LOWORD(wParam));
+        else if ((LOWORD(wParam) >= kCommandResizeCustom && LOWORD(wParam) <= kCommandFlipVertical) ||
+                 (LOWORD(wParam) >= kCommandQuality50 && LOWORD(wParam) <= kCommandColorGray) ||
+                 (LOWORD(wParam) >= kCommandCompression1 && LOWORD(wParam) <= kCommandCompression9)) {
+            ExecuteEditCommand(window, LOWORD(wParam));
+        }
+        else if (LOWORD(wParam) == kCommandPasteCommit) CommitPasteOverlay(window);
+        else if (LOWORD(wParam) == kCommandPasteRetry && g_pasteBitmap) {
+            g_notice = Ui(L"貼り付け画像を左ドラッグで移動して、右クリックのOKで確定してください。",
+                           L"Drag the pasted image with the left button, then choose OK with the right button.");
+            InvalidateRect(window, nullptr, FALSE);
+        }
         return 0;
+    case WM_DRAWITEM:
+        if (lParam && reinterpret_cast<DRAWITEMSTRUCT*>(lParam)->CtlType == ODT_MENU) {
+            DrawDarkMenuItem(reinterpret_cast<DRAWITEMSTRUCT*>(lParam));
+            return TRUE;
+        }
+        if (wParam == kCommandToggleLanguage) {
+            DrawQuickLanguageButton(reinterpret_cast<DRAWITEMSTRUCT*>(lParam));
+            return TRUE;
+        }
+        break;
+    case WM_MEASUREITEM:
+        if (lParam && reinterpret_cast<MEASUREITEMSTRUCT*>(lParam)->CtlType == ODT_MENU) {
+            MeasureDarkMenuItem(reinterpret_cast<MEASUREITEMSTRUCT*>(lParam));
+            return TRUE;
+        }
+        break;
     case WM_KEYDOWN:
         if (wParam == 'O' && (GetKeyState(VK_CONTROL) & 0x8000)) OpenImageDialog(window);
         else if (wParam == 'C' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandClipboardCopy);
         else if (wParam == 'V' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandClipboardPaste);
         else if (wParam == 'Z' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandUndo);
         else if (wParam == 'Y' && (GetKeyState(VK_CONTROL) & 0x8000)) ExecuteEditCommand(window, kCommandRedo);
-        else if ((GetKeyState(VK_CONTROL) & 0x8000) && wParam >= '1' && wParam <= '4') {
-            ExecuteEditCommand(window, kCommandResize50 + (wParam - '1'));
-        }
+        return 0;
+    case WM_ENTERIDLE:
+        // メニューのネストした入力ループ中にポップアップのスタイルを
+        // 変更すると、TrackPopupMenuの入力を奪って操作不能になる。
+        // ウィンドウ枠・位置は変更せず、Windowsのダークテーマだけを適用する。
+        if (wParam == MSGF_MENU) EnumThreadWindows(GetCurrentThreadId(), NormalizeDarkMenuPopup, 0);
+        return 0;
+    case WM_CHAR:
+        // 一部の入力方式・UI自動化ではCtrlキーの状態がWM_KEYDOWNで取得できないため、
+        // Windowsが生成する制御文字も同じショートカットとして扱う。
+        if (wParam == 0x03) ExecuteEditCommand(window, kCommandClipboardCopy);      // Ctrl+C
+        else if (wParam == 0x16) ExecuteEditCommand(window, kCommandClipboardPaste); // Ctrl+V
+        else if (wParam == 0x1A) ExecuteEditCommand(window, kCommandUndo);           // Ctrl+Z
+        else if (wParam == 0x19) ExecuteEditCommand(window, kCommandRedo);           // Ctrl+Y
         return 0;
     case WM_PAINT: {
         PAINTSTRUCT paint{};
@@ -1409,6 +2374,8 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
     case WM_ERASEBKGND:
         return 1;
     case WM_SIZE:
+        if (g_languageButton) MoveWindow(g_languageButton, std::max(8, LOWORD(lParam) - 96), 14, 84, 26, TRUE);
+        if (g_exifWindow && IsWindowVisible(g_exifWindow)) PlaceExifWindow(window);
         ClampPan(window);
         InvalidateRect(window, nullptr, FALSE);
         return 0;
@@ -1423,16 +2390,15 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
             ScreenToClient(window, &cursor);
             const double oldScale = FitScale(window) * oldZoom;
             const double newScale = FitScale(window) * g_zoom;
-            RECT client{};
-            GetClientRect(window, &client);
-            const double oldOriginX = (client.right - client.left - g_imageWidth * oldScale) / 2.0 + g_panX;
-            const double oldOriginY = (client.bottom - client.top - g_imageHeight * oldScale) / 2.0 + g_panY;
+            const RECT client = ImageViewport(window);
+            const double oldOriginX = client.left + (client.right - client.left - g_imageWidth * oldScale) / 2.0 + g_panX;
+            const double oldOriginY = client.top + (client.bottom - client.top - g_imageHeight * oldScale) / 2.0 + g_panY;
             const double imageX = (cursor.x - oldOriginX) / oldScale;
             const double imageY = (cursor.y - oldOriginY) / oldScale;
             const double newOriginX = cursor.x - imageX * newScale;
             const double newOriginY = cursor.y - imageY * newScale;
-            g_panX = static_cast<int>(newOriginX - (client.right - client.left - g_imageWidth * newScale) / 2.0);
-            g_panY = static_cast<int>(newOriginY - (client.bottom - client.top - g_imageHeight * newScale) / 2.0);
+            g_panX = static_cast<int>(newOriginX - client.left - (client.right - client.left - g_imageWidth * newScale) / 2.0);
+            g_panY = static_cast<int>(newOriginY - client.top - (client.bottom - client.top - g_imageHeight * newScale) / 2.0);
             ClampPan(window);
         }
         InvalidateRect(window, nullptr, FALSE);
@@ -1440,22 +2406,29 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
     }
     case WM_LBUTTONDOWN:
         if (g_bitmap) {
-            const POINT point{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-            g_selecting = true;
-            g_selectionActive = false;
-            g_selectionStart = point;
-            g_selectionEnd = point;
+            const POINT point = CurrentClientCursor(window, lParam);
+            if (g_pasteBitmap) {
+                g_pasteMoving = true;
+                g_pasteDragStart = point;
+                g_pasteStart = POINT{g_pasteX, g_pasteY};
+            } else {
+                g_selecting = true;
+                g_selectionActive = false;
+                g_selectionStart = point;
+                g_selectionEnd = point;
+            }
             SetCapture(window);
         }
         return 0;
     case WM_LBUTTONUP: {
-        const POINT point{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        const POINT point = CurrentClientCursor(window, lParam);
         if (g_selecting) {
             g_selectionEnd = point;
             g_selectionActive = std::abs(g_selectionEnd.x - g_selectionStart.x) > 4 &&
                                 std::abs(g_selectionEnd.y - g_selectionStart.y) > 4;
         }
         g_selecting = false;
+        g_pasteMoving = false;
         g_panning = false;
         if (GetCapture() == window) ReleaseCapture();
         g_panMoved = false;
@@ -1475,23 +2448,38 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         g_panMoved = false;
         return 0;
     case WM_RBUTTONUP: {
-        if (g_bitmap) {
-            POINT screenPoint{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
-            ClientToScreen(window, &screenPoint);
-            ShowImageContextMenu(window, screenPoint.x, screenPoint.y);
-        }
+        if (!g_bitmap) return 0;
+        POINT screenPoint{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+        ClientToScreen(window, &screenPoint);
+        g_ignoreNextContextMenu = true;
+        if (g_pasteBitmap) ShowPasteContextMenu(window, screenPoint.x, screenPoint.y);
+        else ShowImageContextMenu(window, screenPoint.x, screenPoint.y);
         return 0;
     }
     case WM_CONTEXTMENU: {
+        if (g_ignoreNextContextMenu) {
+            g_ignoreNextContextMenu = false;
+            return 0;
+        }
         const int x = GET_X_LPARAM(lParam);
         const int y = GET_Y_LPARAM(lParam);
-        ShowImageContextMenu(window, x, y);
+        if (g_pasteBitmap) ShowPasteContextMenu(window, x, y);
+        else ShowImageContextMenu(window, x, y);
         return 0;
     }
     case WM_MOUSEMOVE:
         if (g_selecting) {
-            g_selectionEnd = POINT{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            g_selectionEnd = CurrentClientCursor(window, lParam);
             InvalidateRect(window, nullptr, FALSE);
+        } else if (g_pasteMoving && g_pasteBitmap) {
+            const POINT current{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
+            const double scale = FitScale(window) * g_zoom;
+            if (scale > 0.0) {
+                g_pasteX = g_pasteStart.x + static_cast<int>(std::lround((current.x - g_pasteDragStart.x) / scale));
+                g_pasteY = g_pasteStart.y + static_cast<int>(std::lround((current.y - g_pasteDragStart.y) / scale));
+                ClampPastePosition();
+                InvalidateRect(window, nullptr, FALSE);
+            }
         } else if (g_panning) {
             const POINT current{GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam)};
             g_panX += current.x - g_lastPanPoint.x;
@@ -1505,14 +2493,22 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
     case WM_CAPTURECHANGED:
         g_panning = false;
         g_selecting = false;
+        g_pasteMoving = false;
         return 0;
     case WM_DESTROY:
+        if (g_exifWindow) DestroyWindow(g_exifWindow);
+        if (g_helpWindow) DestroyWindow(g_helpWindow);
         ReleaseImage();
+        if (g_uiFont) {
+            DeleteObject(g_uiFont);
+            g_uiFont = nullptr;
+        }
         PostQuitMessage(0);
         return 0;
     default:
         return DefWindowProcW(window, message, wParam, lParam);
     }
+    return 0;
 }
 }
 
@@ -1558,7 +2554,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     std::wstring uiTestFile = uiTestHidden && argumentCount >= 3 ? arguments[2] : L"";
     if (arguments) LocalFree(arguments);
     if (commandLine && wcscmp(commandLine, L"--help") == 0) {
-        MessageBoxW(nullptr, L"QuickImageView 0.1.0\n画像ファイルを引数に指定してください。",
+        MessageBoxW(nullptr, Ui(L"QuickImageView 1.0.0\n画像ファイルを引数に指定してください。",
+                                L"QuickImageView 1.0.0\nPass an image file as an argument."),
                     L"QuickImageView", MB_OK | MB_ICONINFORMATION);
         return 0;
     }
@@ -1580,6 +2577,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     windowClass.lpfnWndProc = WindowProc;
     windowClass.lpszClassName = kClassName;
     windowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    windowClass.hIcon = LoadIconW(instance, MAKEINTRESOURCEW(IDI_QUICKIMAGEVIEW));
+    if (!windowClass.hIcon) windowClass.hIcon = CreateAppIcon();
     windowClass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
     RegisterClassW(&windowClass);
 
@@ -1591,7 +2590,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     const int windowY = uiTestHidden && hasSecondary ? secondaryWorkArea.top + 40 : CW_USEDEFAULT;
     const int windowWidth = uiTestHidden && hasSecondary ? std::min(1200, static_cast<int>(secondaryWorkArea.right - secondaryWorkArea.left - 80)) : 960;
     const int windowHeight = uiTestHidden && hasSecondary ? std::min(800, static_cast<int>(secondaryWorkArea.bottom - secondaryWorkArea.top - 80)) : 720;
-    HWND window = CreateWindowExW(extendedStyle, kClassName, L"QuickImageView 0.1.0",
+    HWND window = CreateWindowExW(extendedStyle, kClassName, L"QuickImageView 1.0.0",
                                   WS_OVERLAPPEDWINDOW, windowX, windowY,
                                   windowWidth, windowHeight, nullptr, nullptr, instance, nullptr);
     if (!window) {
@@ -1599,7 +2598,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
         return 1;
     }
     BuildMenu(window);
-    if (filePath && *filePath && g_bitmap) SetWindowTextW(window, (L"QuickImageView 0.1.0 - " + g_fileName).c_str());
+    if (filePath && *filePath && g_bitmap) SetWindowTextW(window, (L"QuickImageView 1.0.0 - " + g_fileName).c_str());
     ShowWindow(window, uiTestHidden ? SW_SHOW : showCommand);
     UpdateWindow(window);
     if (uiTestHidden) {

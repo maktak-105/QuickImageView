@@ -1,165 +1,241 @@
 # QuickImageView
 
-[日本語版 README](README_jp.md)
+[Japanese README](README_jp.md)
 
-Windows向けの軽量画像ビューアー・画像編集アプリです。以下を実装対象とします。
+QuickImageView is a lightweight Windows image viewer and editor. The following
+requirements are the single source scope for the 72-item baseline and the
+additional completion and distribution checks. A requirement is not complete
+until the integrated UI/release verification records evidence for it.
 
-## 表示と基本操作
+<p align="center"><img src="assets/QuickImageView-gui-en.png" alt="QuickImageView English UI" width="720"></p>
 
-- コマンドラインまたはファイルメニューから画像を開いて表示する
-- 起動後に画像ファイルをウィンドウへドラッグ＆ドロップして開く（画像表示中は確認後に現在の画像を閉じて開く）
-- Windowsで利用可能な画像をWIC経由で読み込む
-- ウィンドウ内に画像をフィット表示する
-- マウスホイールで拡大・縮小する
-- 中ドラッグでパンする
-- 拡大・縮小・パン中も画像をちらつかせず滑らかに描画する
-- 左ドラッグで範囲を選択する
-- 選択範囲を表示し、右クリックメニューから切り抜く
-- ファイル名、画像寸法、形式、ファイルサイズを表示する
-- EXIFが存在する場合、メーカー、機種、撮影日時など代表的な情報を表示する
+The release ZIP and MSI include the executable, Japanese and English README,
+history, help, MIT License, libwebp COPYING/PATENTS, and the Japanese license
+notice. MSI registration and each image-extension association are independent
+optional features; all associations are unselected by default.
 
-## リサイズ
+The repository root keeps the canonical README and history files. `document/`
+keeps specifications, help sources, and document sources. `dist/documents/`
+contains only the two distribution README files; the build gathers history,
+help, licenses, and third-party notices into `dist/binary/`.
 
-- 編集メニューおよび右クリックメニューからリサイズ指定ダイアログを開く
-- 任意の正のパーセントを指定する
-- 任意の正のピクセル幅・高さを指定する
-- アスペクト比固定オプションを表示する
-- アスペクト比固定は初期状態でONにする
-- リサイズ後は画像データだけでなく、画面上の表示サイズにも結果を反映する
-- 拡大表示中にリサイズしても、リサイズ後の寸法変化が画面に反映される
+## View and basic operation
 
-## 画像編集
+- Open and display an image from the command line or the File menu
+- Open an image by dragging it onto the window after startup; when an image is already displayed, confirm before replacing it
+- Load images available to Windows through WIC
+- Fit the image inside the window
+- Zoom in and out with the mouse wheel
+- Pan with a middle-button drag
+- Render smoothly without flicker while zooming or panning
+- Select a region with a left-button drag
+- Show the selected pixel size at the upper-left of the selection
+- Display the selection and crop it from the context menu
+- Display the file name, image dimensions, format, and file size
+- Display representative EXIF fields such as make, model, and capture date when present
+- Display file information, EXIF information, and operation messages in black-background, white-text information bars
+- Use the Windows standard Segoe UI font for application text
+- Switch between Japanese and English with the upper-right button
+- Display EXIF information in a floating window that does not overlap the image
+- Display EXIF make, model, capture date, and other available text directly in the EXIF window
+- Copy the EXIF text to the clipboard from the EXIF window
+- Display an explicit “no EXIF” state in the floating window when no EXIF exists
+- Verify EXIF through UI controls and clipboard contents, not OCR
 
-- 90度、180度、270度回転する
-- 左右反転（ミラー）する
-- 上下反転する
-- フルカラーへ変換する
-- 256色へ変換する
-- グレースケールへ変換する
-- `Ctrl+Z` でUndoする
-- `Ctrl+Y` でRedoする
-- Undo／Redoをメニュー項目として表示しない
-- 編集前の画像状態をUndo用に保持する
-- 新しい編集を行った場合、Redo履歴を破棄する
+## Resize
 
-## クリップボード
+- Open the resize dialog from the Edit menu and the context menu
+- Specify any positive percentage
+- Specify any positive pixel width and height
+- Show an aspect-ratio lock option
+- Enable the aspect-ratio lock by default
+- Reflect resize results in both image data and the on-screen display size
+- Reflect the new dimensions on screen when resizing while zoomed in
 
-- 編集メニューから画像をコピーする
-- 右クリックメニューから画像をコピーする
-- `Ctrl+C` で画像をコピーする
-- 編集メニューから画像を貼り付ける
-- 右クリックメニューから画像を貼り付ける
-- `Ctrl+V` で画像を貼り付ける
-- Windowsの画像クリップボード形式を扱う
-- `CF_BITMAP`、`CF_DIB`、`CF_DIBV5`を扱う
-- 貼り付けた画像を現在の画像として表示する
-- 貼り付け前の状態をUndoできる
+## Image editing
 
-## 保存と変換
+- Rotate by 90, 180, or 270 degrees
+- Mirror horizontally
+- Flip vertically
+- Convert to full color
+- Convert to 256 colors
+- Convert to grayscale
+- Undo with `Ctrl+Z`
+- Redo with `Ctrl+Y`
+- Do not expose Undo/Redo as menu items
+- Preserve the pre-edit image state for Undo
+- Discard the Redo history when a new edit is made
 
-- 原本を変更、削除、上書きしない
-- 名前を付けて保存する前に保存オプションを表示する
-- 保存先フォルダーの選択前に、保存形式を選択する
-- JPEG品質を指定する
-- JPEG品質は固定候補だけでなく任意の値を指定できる
-- PNG圧縮レベルを指定する
-- WebP品質を指定する
-- HEIC/HEIF品質を指定する
-- 保存形式に応じて使用可能な品質・圧縮オプションだけを有効にする
-- 保存形式に応じた拡張子フィルターを表示する
-- 拡張子が省略された場合、選択した形式の拡張子を補う
-- JPEG、PNG、TIFF、BMP、GIFへ保存・変換する
-- WindowsのWICコーデックが利用可能な場合、WebPへ保存・変換する
-- WindowsのWICコーデックが利用可能な場合、HEIC/HEIFへ保存・変換する
-- 同一パスへの保存を拒否する
-- 既存ファイルへの上書きを拒否する
-- 変換元ファイルを変更しないことを保証する
+## Clipboard
 
-コマンドライン変換の形式は次のとおりです。
+- Copy the image from the Edit menu
+- Copy the image from the context menu
+- Copy the image with `Ctrl+C`
+- Copy only the selected area when a selection is active
+- Paste an image from the Edit menu
+- Paste an image from the context menu
+- Paste an image with `Ctrl+V`
+- Handle Windows image clipboard formats
+- Handle `CF_BITMAP`, `CF_DIB`, and `CF_DIBV5`
+- Place a pasted image as an original-scale overlay on the source image
+- Move the pasted image within the source image and use context-menu OK to commit or Retry to continue moving it
+- Display the committed paste as the current image
+- Undo the state from before the paste
 
-```powershell
-.\build\QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
-```
+## Save and convert
 
-## Windows連携
+- Do not modify, delete, or overwrite the source image
+- Show save options before Save As
+- Select the output format before selecting the destination folder
+- Specify JPEG quality
+- Allow arbitrary JPEG quality values, not only fixed presets
+- Specify PNG compression level
+- Specify WebP quality
+- Specify HEIC/HEIF quality
+- Enable only the quality and compression options available for the selected format
+- Show the extension filter for the selected format
+- Add the selected format's extension when the file name has none
+- Save and convert to JPEG, PNG, TIFF, BMP, and GIF
+- Save and convert to WebP when the Windows WIC codec is available
+- Save and convert to HEIC/HEIF when the Windows WIC codec is available
+- Reject saving to the same path
+- Reject overwriting an existing file
+- Guarantee that the source file is unchanged by conversion
+- After a successful conversion, reload the destination file without a confirmation prompt and show it as the current image
 
-- インストール時に画像ファイルの右クリックメニューへ登録できる
-- 右クリックメニュー登録は現在のユーザー（HKCU）に限定する
-- 登録コマンドはインストール先のQuickImageView.exeを指す
-- Windows 11では「その他のオプションを表示」内から利用できる
-- 登録なしでインストールできるオプションを用意する
-- アンインストール時はQuickImageView専用の登録だけを削除する
-- 他のアプリケーションの登録を削除しない
-- インストールした実行ファイルを起動して画像を開ける
-
-## 実装しない機能
-
-以下は対象外です。
-
-- Explorerのサムネイル表示用シェル拡張
-- フォルダー内画像の前後移動
-- スライドショー
-- 印刷
-- EXIF・メタデータの編集
-- 画像ファイルの原本への直接保存
-- 過去の検査結果、作業ログ、ループ履歴の保存
-
-## ビルド環境
-
-- Windows 10またはWindows 11
-- CMake 3.20以上
-- MinGW-w64 C++17ツールチェーン
-- PowerShell 7.6.5以降
-
-WICを利用するため、通常のビルドに追加の画像処理SDKは必要ありません。WebP、HEIC、HEIFはWindowsに対応コーデックがインストールされている場合に利用できます。
-
-## ビルド
+The command-line conversion form is:
 
 ```powershell
-cmake -S . -B build -G "MinGW Makefiles"
-cmake --build build
+ .\dist\binary\QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
 ```
 
-または、次を実行します。
+## Windows integration
+
+- Allow registration in the image context menu during installation
+- Limit context-menu registration to the current user (HKCU)
+- Point the registration command to the installed QuickImageView.exe
+- Make it available under “Show more options” on Windows 11
+- Provide an installation option with no registration
+- Remove only QuickImageView's own registration during uninstall
+- Do not remove registrations belonging to other applications
+- Open an image by launching the installed executable
+
+## Completion and distribution checks
+
+- Display the entire application with the required dark theme
+- Display the title bar with the required dark theme
+- Display the menu bar and menu items with the required dark theme
+- Display the Japanese/English switch as a dedicated dark UI control
+- Open the EXIF window from the application menu
+- Open the bundled help from the application Help menu
+- Open both Japanese and English help
+- Keep help content synchronized with implemented behavior
+- Keep the English and Japanese README requirements, constraints, and procedures synchronized
+- Keep the English and Japanese specifications synchronized
+- Keep the English and Japanese distribution READMEs synchronized
+- Keep the English and Japanese histories synchronized
+- Include MIT License and libwebp COPYING/PATENTS in the distribution
+- Document supported formats and the Windows-side WIC codec dependency
+- Generate the MSI from the Release executable
+- Include the executable, help, bilingual documents, and licenses in the MSI
+- Make MSI Explorer registration optional
+- Make MSI file associations optional per extension
+- Install the MSI with no associations selected by default
+- Open images and bundled help from the installed executable
+- Remove only QuickImageView's own registrations during uninstall
+- QuickImageViewのアイコンを実行ファイルとインストール済みアプリへ適用する
+- Quickアプリのテンプレートに沿ったフォルダー構成を維持する
+- 日英切替後にメニュー、情報帯、ダイアログ、ヘルプの表示言語を切り替える
+- アプリ内ヘルプの導線を実装し、インストール後のEXEからヘルプを開ける
+- 英日README、仕様、ヘルプ、配布文書、履歴の参照先ファイルを配布物に揃える
+- 配布用READMEに取得URL、SHA-256、免責事項、インストール手順を記載する
+- 日本語ライセンス文書を配布物とMSIへ同梱する
+- `dist/documents/`には配布用の日英READMEだけを置き、履歴・ライセンス・libwebp文書はビルド時に`dist/binary/`へ集約する
+- MSIの画像拡張子関連付けを各拡張子の独立したFeatureとして選択できる
+- ダークテーマをダイアログ、情報帯、ステータスバーにも適用する
+- 旧EXIF情報帯を画像本体の表示へ残さず、フローティング表示へ移行する
+- 日英UIの実スクリーンショットを`assets/`へ同梱する
+
+## Out of scope
+
+The following are out of scope.
+
+- Explorer thumbnail shell extensions
+- Previous/next navigation through a folder
+- Slide shows
+- Printing
+- EXIF or metadata editing
+- Direct saving over the source image
+- Persisting historical verification results, work logs, or loop history
+
+## Build environment
+
+- Windows 10 or Windows 11
+- CMake 3.20 or later
+- MinGW-w64 C++17 toolchain
+- PowerShell 7.6.5 or later
+
+No additional image-processing SDK is required for the normal build because it uses WIC. WebP, HEIC, and HEIF are available only when the corresponding Windows codecs are installed.
+
+QuickImageView can open BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media
+Photo, DDS, WebP, HEIC, and HEIF when the corresponding WIC decoder is present.
+The Open dialog exposes JPG/JPEG, PNG, TIFF, BMP, GIF, WebP, HEIC, and HEIF.
+
+## Build
+
+```powershell
+cmake -S . -B dist/binary -G "MinGW Makefiles"
+cmake --build dist/binary
+```
+
+Alternatively, run:
 
 ```powershell
 .\build.bat
 ```
 
-## 起動
+## Run
 
 ```powershell
-.\build\QuickImageView.exe C:\path\to\image.png
+.\dist\binary\QuickImageView.exe C:\path\to\image.png
 ```
 
-## インストール
+## PowerShell installation
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-右クリックメニュー登録を行わない場合:
+To register the optional context menu, pass `-RegisterContextMenu`:
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -NoRegisterContextMenu
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -RegisterContextMenu
 ```
 
-## アンインストール
+## Uninstall
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ```
 
-## 配布パッケージ作成
+## Create a distribution package
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1
 ```
 
-既定の出力先は `dist/binary/` です。
+The default output directory is `dist/binary/`.
 
-## ライセンス
+## License
 
-MIT Licenseです。詳細は [LICENSE](LICENSE) を参照してください。
+QuickImageView is distributed under the MIT License. See [LICENSE](LICENSE).
 
-WebP保存にはlibwebp 1.6.0を使用します。第三者ライセンスと特許ライセンスは [document/third_party_licenses.md](document/third_party_licenses.md) および `third_party/libwebp-1.6.0/` を参照してください。
+WebP encoding uses libwebp 1.6.0. See [document/third_party_licenses.md](document/third_party_licenses.md), [document/third_party_licenses_jp.md](document/third_party_licenses_jp.md), and `third_party/libwebp-1.6.0/` for third-party license and patent notices.
+
+## Verification status
+
+The repository is not release-complete until the single integrated verification
+ledger covers the 72 baseline features together with the completion and
+distribution requirements above. The current checkout still has pending UI,
+help, document, and MSI verification; this README does not declare those items
+as passed.

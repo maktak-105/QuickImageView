@@ -14,11 +14,11 @@ README.mdに記載した実装対象機能を、固定操作台帳の全件に�
 実行入口:
 
 ```powershell
-python .\tests\run_loop.py
+python .\python\tests\run_loop.py
 ```
 
 ## 検査順
 
 ビルド → インストール → インストール済みアプリの全UI検査 → CLI・静的・関数・変数補助検査。
 
-README.mdの機能を変更した場合だけ、`tests/rebuild_catalog.ps1`で`tests/operations.json`を再構築する。
+README.mdの機能を変更した場合だけ、`python/tests/rebuild_catalog.py`で`python/tests/operations.json`を再構築する。
