@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   package:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt 6
@@ -25,7 +25,7 @@ jobs:
           arch: win64_msvc2022_64
           modules: qtimageformats qtshadertools
       - name: Configure
-        run: cmake -S . -B build/ci -G "Visual Studio 17 2022" -DQt6_DIR="$env:Qt6_DIR" -DQUICKIMAGEVIEW_BUILD_QT=ON
+        run: cmake -S . -B build/ci -G "Visual Studio 17 2022" -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DQUICKIMAGEVIEW_BUILD_QT=ON
       - name: Build
         run: cmake --build build/ci --config Release --target QuickImageView QuickImageViewQt qiv_controller_tests qiv_qml_tests
       - name: Test
