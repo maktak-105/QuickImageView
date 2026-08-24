@@ -12,17 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S . -B build -G "Visual Studio 17 2022"
+        run: cmake -S . -B build/native -G "Visual Studio 17 2022"
       - name: Build
-        run: cmake --build build --config Release
+        run: cmake --build build/native --config Release
       - name: Test
-        run: ctest --test-dir build -C Release --output-on-failure
+        run: ctest --test-dir build/native -C Release --output-on-failure
       - name: Assemble package
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Force dist\binary | Out-Null
-          Copy-Item build\Release\QuickImageView.exe dist\binary\QuickImageView.exe
-          Compress-Archive -Path dist\binary\QuickImageView.exe,dist\documents\* -DestinationPath QuickImageView-binary.zip -Force
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\package
+          Compress-Archive -Path .\build\package\* -DestinationPath QuickImageView-binary.zip -Force
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:

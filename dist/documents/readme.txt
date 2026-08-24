@@ -1,4 +1,4 @@
-QuickImageView - Distribution package v1.0.0
+QuickImageView - Distribution package v2.1.0
 
 This document describes the package contents and current documented behavior. It
 is not a UI-test result; untested requirements must not be treated as complete.
@@ -48,10 +48,21 @@ EXIF and saving:
 - Existing destination files are not overwritten without confirmation.
 - WebP output is included. HEIC/HEIF availability depends on installed codecs.
 
+Supported formats and codecs:
+- BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, DDS,
+  WebP, HEIC, and HEIF.
+- BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS use
+  Windows Imaging Component (WIC) decoders.
+- WebP input uses the Windows WIC WebP decoder and depends on that codec.
+- WebP output uses statically linked libwebp 1.6.0 included in QuickImageView;
+  no separate libwebp installation is required.
+- HEIC and HEIF input/output depend on the Windows WIC codecs installed on the
+  computer.
+
 Language, theme, and Windows integration:
 - The upper-right button shows a cyan globe and English or 日本語; click it to
   switch language.
-- The menu order is File, Edit, Help. Help > Help opens the bundled help.
+- The menu order is File, Edit, Help. Help > Help opens the bundled help and Help > About opens the version dialog.
 - The client area, buttons, menus, and menu popups use the dark theme.
 - The PowerShell installer registers the context menu under the current user
   (HKCU). MSI context-menu and extension associations are independent optional
@@ -63,7 +74,7 @@ Distribution files
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt
-- help.md / help_jp.md
+- Help is embedded in QuickImageView.exe in English and Japanese.
 - libwebp-COPYING / libwebp-PATENTS
 
 LICENSE_jp.txt is sourced from document/LICENSE_jp.txt and is included in the binary package and MSI.

@@ -2,11 +2,11 @@
 
 [日本語版 distribution_jp.md](distribution_jp.md)
 
-This document describes the current source-tree distribution procedure. It does not
-mark the 72 baseline requirements or any additional request as UI-tested.
+This document describes how to build, install, and remove the current QuickImageView distribution.
 
-The ZIP and MSI distribution files include the executable, bilingual README,
-history, help, MIT License, Japanese license notice, and libwebp COPYING/PATENTS.
+The ZIP and MSI distribution files include the executable with embedded bilingual
+help, bilingual README, history, MIT License, Japanese license notice, and
+libwebp COPYING/PATENTS.
 The MSI exposes the Explorer context menu and each supported image extension as
 independent optional features; all are unselected by default. The PowerShell
 installer remains a per-user HKCU installation.
@@ -14,9 +14,9 @@ installer remains a per-user HKCU installation.
 ## Build
 
 ```powershell
-cmake -S . -B dist/binary -G "MinGW Makefiles"
-cmake --build dist/binary --parallel 2
-ctest --test-dir dist/binary --output-on-failure
+cmake -S . -B build/native -G "MinGW Makefiles"
+cmake --build build/native --parallel 2
+ctest --test-dir build/native --output-on-failure
 ```
 
 ## Install

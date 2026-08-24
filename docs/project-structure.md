@@ -21,11 +21,12 @@ QuickImageView/
 │   ├── binary/              ビルド・配布パッケージ成果物
 │   │   └── QuickImageView.exe
 │   └── documents/           配布README（日英）のみ
-├── build_native.py          CMakeビルドラッパー（出力先はdist/binary/）
-├── build.bat                ビルドラッパー
+├── build-tools/             ビルド・ヘルプ埋め込みスクリプト
+├── build/                   CMake中間生成物（Git管理外）
+├── build.bat                ビルド入口
 └── CMakeLists.txt           CMake定義
 ```
 
-ルートの`README.md`、`README_jp.md`、`history.md`、`history_jp.md`が正式なREADME・履歴原本である。`document/help.md`と`document/help_jp.md`はアプリ内ヘルプのビルド入力で、ビルド時に`dist/binary/`へコピーする。`dist/documents/`は配布READMEの原本だけを置く。libwebpのライセンス原本は`third_party/libwebp-1.6.0/COPYING`と`PATENTS`で、配布時の識別名は`dist/binary/libwebp-COPYING`と`libwebp-PATENTS`とする。
+ルートの`README.md`、`README_jp.md`、`history.md`、`history_jp.md`が正式なREADME・履歴原本である。`resources/help/help.md`と`help_jp.md`はアプリ内ヘルプのビルド入力で、ビルド時にEXEへ埋め込む。`dist/documents/`には配布用README、履歴、ライセンス、第三者通知を置き、`dist/binary/`にはバイナリだけを置く。libwebpのライセンス原本は`third_party/libwebp-1.6.0/COPYING`と`PATENTS`である。
 
-`dist/binary/`内のCMake中間生成物とMSI stagingはGit管理対象外とする。`dist/`直下には`binary/`と`documents/`だけを置き、ソース・文書・検査コードをビルド生成物と混在させない。
+`build/`内のCMake中間生成物とMSI stagingはGit管理対象外とする。`dist/`直下には`binary/`と`documents/`だけを置き、ソース・文書・検査コードをビルド生成物と混在させない。

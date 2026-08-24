@@ -15,9 +15,10 @@ notice. MSI registration and each image-extension association are independent
 optional features; all associations are unselected by default.
 
 The repository root keeps the canonical README and history files. `document/`
-keeps specifications, help sources, and document sources. `dist/documents/`
-contains only the two distribution README files; the build gathers history,
-help, licenses, and third-party notices into `dist/binary/`.
+keeps specifications and developer documents. `resources/help/` keeps the
+bilingual help sources that are embedded into the executable. `dist/documents/`
+contains the distribution README, history, license, and third-party notice
+files; `dist/binary/` contains binaries only.
 
 ## View and basic operation
 
@@ -128,6 +129,7 @@ The command-line conversion form is:
 - Display the Japanese/English switch as a dedicated dark UI control
 - Open the EXIF window from the application menu
 - Open the bundled help from the application Help menu
+- Open the dark About dialog from Help > About
 - Open both Japanese and English help
 - Keep help content synchronized with implemented behavior
 - Keep the English and Japanese README requirements, constraints, and procedures synchronized
@@ -150,7 +152,7 @@ The command-line conversion form is:
 - 英日README、仕様、ヘルプ、配布文書、履歴の参照先ファイルを配布物に揃える
 - 配布用READMEに取得URL、SHA-256、免責事項、インストール手順を記載する
 - 日本語ライセンス文書を配布物とMSIへ同梱する
-- `dist/documents/`には配布用の日英READMEだけを置き、履歴・ライセンス・libwebp文書はビルド時に`dist/binary/`へ集約する
+- `dist/documents/`には配布用README、履歴、ライセンス、libwebp文書を集約し、`dist/binary/`にはバイナリだけを置く
 - MSIの画像拡張子関連付けを各拡張子の独立したFeatureとして選択できる
 - ダークテーマをダイアログ、情報帯、ステータスバーにも適用する
 - 旧EXIF情報帯を画像本体の表示へ残さず、フローティング表示へ移行する
@@ -184,8 +186,9 @@ The Open dialog exposes JPG/JPEG, PNG, TIFF, BMP, GIF, WebP, HEIC, and HEIF.
 ## Build
 
 ```powershell
-cmake -S . -B dist/binary -G "MinGW Makefiles"
-cmake --build dist/binary
+cmake -S . -B build/native -G "MinGW Makefiles"
+cmake --build build/native
+ctest --test-dir build/native --output-on-failure
 ```
 
 Alternatively, run:
@@ -224,7 +227,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1
 ```
 
-The default output directory is `dist/binary/`.
+The default package output directory is `build/package/`; final binaries remain in `dist/binary/`.
 
 ## License
 

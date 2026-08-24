@@ -1,6 +1,6 @@
 # QuickImageView Help
 
-[日本語版 help_jp.md](help_jp.md)
+Version 2.1.0
 
 ## Open and view
 
@@ -24,6 +24,12 @@ Choose **Save as another format** from the right-click menu. QuickImageView neve
 
 Use the upper-right globe button labeled `English` / `日本語` to switch menus, dialogs, information bars, EXIF, and help. The MSI offers optional Explorer context-menu registration and optional associations for JPEG, PNG, TIFF, BMP/GIF, WebP, and HEIC/HEIF. Leave these options unchecked if you do not want to change Windows integration.
 
+## About and version information
+
+Open **Help > About** to view QuickImageView version 2.1.0, the development environment, author information, and the creator badge. The dialog is a dark modal card and closes with **OK** or the close button.
+
 ## Formats and codecs
 
-Built-in Windows WIC codecs handle common formats such as BMP, GIF, JPEG, PNG and TIFF. WebP and HEIC/HEIF availability depends on codecs installed on the computer. See [spec.md](spec.md) for the complete list.
+QuickImageView supports BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, DDS, WebP, HEIC, and HEIF when the corresponding decoder is available.
+
+Windows Imaging Component (WIC) provides the standard decoders for BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS. WebP input uses the Windows WIC WebP decoder, so opening WebP depends on that codec being available. WebP output uses the statically linked libwebp 1.6.0 included in QuickImageView and does not require a separate libwebp installation. HEIC and HEIF input/output depend on the Windows WIC codecs installed on the computer.

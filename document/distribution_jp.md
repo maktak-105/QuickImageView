@@ -2,16 +2,16 @@
 
 [English version distribution.md](distribution.md)
 
-この文書は現在のソースツリーにおける配布手順です。72件の正式ベースラインや追加案件を、UI検査済みとは判定しません。
+この文書は現在のQuickImageViewをビルド、インストール、アンインストールする手順です。
 
-ZIPとMSIには、実行ファイル、日英README・履歴・ヘルプ、MIT License、日本語ライセンス文書、libwebpのCOPYING・PATENTSを同梱します。MSIではExplorer右クリック登録と対応拡張子ごとの関連付けを独立した任意機能として選択でき、既定ではすべて未選択です。PowerShellインストーラーは現在のユーザー（HKCU）へのインストールです。
+ZIPとMSIには、日英ヘルプを埋め込んだ実行ファイル、日英README・履歴、MIT License、日本語ライセンス文書、libwebpのCOPYING・PATENTSを同梱します。MSIではExplorer右クリック登録と対応拡張子ごとの関連付けを独立した任意機能として選択でき、既定ではすべて未選択です。PowerShellインストーラーは現在のユーザー（HKCU）へのインストールです。
 
 ## ビルド
 
 ```powershell
-cmake -S . -B dist/binary -G "MinGW Makefiles"
-cmake --build dist/binary --parallel 2
-ctest --test-dir dist/binary --output-on-failure
+cmake -S . -B build/native -G "MinGW Makefiles"
+cmake --build build/native --parallel 2
+ctest --test-dir build/native --output-on-failure
 ```
 
 ## インストール

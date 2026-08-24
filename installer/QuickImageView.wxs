@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="QuickImageView" Language="1041" Version="1.0.0" Manufacturer="maktak-105" UpgradeCode="B3BCB430-7744-4878-A2C8-4B85E3312437">
+  <Product Id="*" Name="QuickImageView" Language="1041" Version="2.1.0" Manufacturer="maktak-105" UpgradeCode="B3BCB430-7744-4878-A2C8-4B85E3312437">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
     <MajorUpgrade DowngradeErrorMessage="A newer version of QuickImageView is already installed." />
     <MediaTemplate EmbedCab="yes" />
@@ -19,10 +19,10 @@
           <File Id="HistoryJa" Source="$(var.SourceDir)\history_jp.txt" />
           <File Id="License" Source="$(var.SourceDir)\LICENSE.txt" />
           <File Id="LicenseJa" Source="$(var.SourceDir)\LICENSE_jp.txt" />
-          <File Id="HelpEn" Source="$(var.SourceDir)\help.md" />
-          <File Id="HelpJa" Source="$(var.SourceDir)\help_jp.md" />
           <File Id="LibwebpLicense" Source="$(var.SourceDir)\libwebp-COPYING" />
           <File Id="LibwebpPatents" Source="$(var.SourceDir)\libwebp-PATENTS" />
+          <File Id="ThirdPartyNoticesEn" Source="$(var.SourceDir)\third_party_licenses.md" />
+          <File Id="ThirdPartyNoticesJa" Source="$(var.SourceDir)\third_party_licenses_jp.md" />
         </Component>
         <Component Id="ContextMenu" Guid="4D0ED4A9-6954-426D-B894-46E65DB64560" Win64="yes">
           <RegistryKey Root="HKCU" Key="Software\Classes\SystemFileAssociations\image\shell\QuickImageView" Action="createAndRemoveOnUninstall">

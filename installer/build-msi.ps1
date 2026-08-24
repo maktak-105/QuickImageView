@@ -1,8 +1,8 @@
 [CmdletBinding()]
-param([string]$OutputPath = "$(Join-Path $PSScriptRoot '..\dist\binary\QuickImageView-1.0.0-x64.msi')")
+param([string]$OutputPath = "$(Join-Path $PSScriptRoot '..\dist\binary\QuickImageView-2.1.0-x64.msi')")
 $ErrorActionPreference = 'Stop'
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$stage = Join-Path $root 'dist\binary\.msi-stage'
+$stage = Join-Path $root 'build\msi-stage'
 $wixBin = @(
     (Get-Command candle.exe -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -ErrorAction SilentlyContinue | Split-Path -Parent),
     'C:\Program Files (x86)\WiX Toolset v3.11\bin',

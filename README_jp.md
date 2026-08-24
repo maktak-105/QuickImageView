@@ -113,6 +113,7 @@ Windows向けの軽量画像ビューアー・画像編集アプリです。日�
 - 日英切替ボタンをダークな専用UIとして表示する
 - EXIF情報ウィンドウをアプリのメニューから開ける
 - アプリのヘルプメニューから同梱ヘルプを開ける
+- ヘルプ > バージョン情報からダークテーマのAbout画面を開ける
 - 日本語ヘルプと英語ヘルプをそれぞれ開ける
 - ヘルプの説明が実装済み機能と一致する
 - 英語READMEと日本語READMEの機能・制約・手順が同期している
@@ -144,9 +145,9 @@ Windows Imaging Component（WIC）の対応デコーダーが利用できる場�
 ## ビルドと検査
 
 ```powershell
-cmake -S . -B dist/binary -G "MinGW Makefiles"
-cmake --build dist/binary
-ctest --test-dir dist/binary --output-on-failure
+cmake -S . -B build/native -G "MinGW Makefiles"
+cmake --build build/native
+ctest --test-dir build/native --output-on-failure
 python .\python\tests\run_loop.py
 ```
 
@@ -154,4 +155,4 @@ python .\python\tests\run_loop.py
 
 ## ライセンス
 
-QuickImageViewはMIT Licenseで配布します。原本ライセンスと第三者通知はルート、`document/`、`third_party/`を参照してください。`dist/documents/`は配布用READMEだけを置き、ビルド時に履歴・ライセンス・ヘルプを`dist/binary/`へ集約します。
+QuickImageViewはMIT Licenseで配布します。原本ライセンスと第三者通知はルート、`document/`、`third_party/`を参照してください。ヘルプ原稿は`resources/help/`に置き、ビルド時にEXEへ埋め込みます。`dist/documents/`には配布用README、履歴、ライセンス、libwebp文書を集約し、`dist/binary/`にはバイナリだけを置きます。配布パッケージの作業先は`build/package/`です。

@@ -1,6 +1,6 @@
 # QuickImageView ヘルプ
 
-[English help.md](help.md)
+バージョン 2.1.0
 
 ## 開く・表示する
 
@@ -24,6 +24,12 @@
 
 右上の地球アイコン付き `English` / `日本語` ボタンでメニュー、ダイアログ、情報帯、EXIF、ヘルプの表示言語を切り替えます。MSIではExplorer右クリックメニューと、JPEG、PNG、TIFF、BMP/GIF、WebP、HEIC/HEIFの関連付けを任意で選択できます。Windows連携を変更したくない場合は未選択のままにしてください。
 
+## バージョン情報
+
+**ヘルプ > バージョン情報**を開くと、QuickImageView Ver. 2.1.0、開発環境、制作者情報、作者ワッペンを確認できます。画面はダークテーマのモーダルカードで、**OK**または閉じるボタンで終了します。
+
 ## 対応形式とコーデック
 
-BMP、GIF、JPEG、PNG、TIFFなどはWindows標準のWICコーデックで扱います。WebP、HEIC/HEIFの可否はPCに導入されているコーデックに依存します。全一覧は[spec_jp.md](spec_jp.md)を確認してください。
+QuickImageViewは、対応するデコーダーが利用できる場合、BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDS、WebP、HEIC、HEIFを扱えます。
+
+BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDSの標準デコーダーにはWindows Imaging Component（WIC）を使用します。WebPの読込はWindowsのWIC WebPデコーダーを使用するため、デコーダーの有無に依存します。WebPの保存はQuickImageViewに静的リンクされたlibwebp 1.6.0を使用するため、別途libwebpをインストールする必要はありません。HEICとHEIFの読込・保存は、PCに導入されたWindows WICコーデックに依存します。

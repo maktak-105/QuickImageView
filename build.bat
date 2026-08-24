@@ -1,2 +1,2 @@
 @echo off
-python "%~dp0build_native.py" %*
+python "%~dp0build-tools\build_native.py" %*

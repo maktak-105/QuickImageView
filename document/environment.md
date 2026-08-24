@@ -5,13 +5,13 @@
 - Windows 10/11 64-bit
 - CMake 3.20+
 - MinGW-w64 C++17 toolchain
-- Python 3 for loop verification scripts
+- Python 3.13 for optional test and utility scripts
 
 Build and test:
 
 ```powershell
 .\build.bat
-ctest --test-dir dist/binary --output-on-failure
+ctest --test-dir build/native --output-on-failure
 ```
 
-The MinGW runtime is statically linked. Verify with `objdump -p dist/binary/QuickImageView.exe`.
+The MinGW runtime is statically linked. The executable is written to `dist/binary/QuickImageView.exe`.

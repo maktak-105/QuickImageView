@@ -2,7 +2,7 @@
 
 [日本語版 spec_jp.md](spec_jp.md)
 
-QuickImageView is a Windows image viewer implemented with C++17, Win32, and Windows Imaging Component.
+QuickImageView is a Windows image viewer and editor implemented with C++17, Win32, Windows Imaging Component, and CMake. This document covers version 2.1.0.
 
 ## Preserved existing behavior
 
@@ -17,7 +17,7 @@ QuickImageView is a Windows image viewer implemented with C++17, Win32, and Wind
 - Convert to a new file without overwriting the original.
 - Resize using user-specified positive percentage or pixel dimensions, crop, rotate, mirror, and convert color modes; a fixed preset list is not the requirement.
 - Undo/redo edits and copy/paste images through the Windows clipboard.
-- Apply user-specified JPEG quality and PNG compression; WebP and HEIC/HEIF use installed WIC codecs. Quality is not restricted to a fixed candidate list.
+- Apply user-specified JPEG quality and PNG compression; WebP output uses bundled libwebp and WebP input uses the Windows WIC decoder. HEIC/HEIF use installed WIC codecs. Quality is not restricted to a fixed candidate list.
 - Install and optionally register an Explorer context-menu entry.
 - Provide independent MSI features for the context menu and each supported extension, disabled by default.
 - Include the executable, bilingual help, distribution documents, MIT License, and libwebp notices in the MSI.
@@ -31,21 +31,12 @@ QuickImageView is a Windows image viewer implemented with C++17, Win32, and Wind
 - Information and status bars use a black background and white text.
 - The application uses Windows Segoe UI without installing a private font.
 - The Japanese/English switch updates menus, dialogs, information bars, EXIF, and help.
+- Help > About opens a dark modal card showing version 2.1.0, development environment, author, and the official creator badge.
 
 ## Supported image formats
 
-QuickImageView opens BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, DDS, WebP, HEIC and HEIF when the corresponding Windows Imaging Component (WIC) decoder is present. Windows includes the WIC decoders for BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo and DDS. WebP and HEIF/HEIC availability depends on installed codecs. The current Open dialog lists JPG/JPEG, PNG, TIFF, BMP, GIF, WebP, HEIC and HEIF.
+QuickImageView opens BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, DDS, WebP, HEIC and HEIF when the corresponding decoder is present. Windows includes WIC decoders for BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo and DDS. WebP input uses the Windows WIC WebP decoder, WebP output uses bundled libwebp 1.6.0, and HEIC/HEIF depend on installed WIC codecs. The current Open dialog lists JPG/JPEG, PNG, TIFF, BMP, GIF, WebP, HEIC and HEIF.
 
 - The original image is never overwritten or deleted.
 - Existing output files are rejected.
 - UI and Explorer behavior is tested by `python/tests/ui_test.py` using pywinauto/uiautomation against the installed application.
-
-## Verification
-
-Run the single completion command:
-
-```powershell
-python .\python\tests\run_loop.py
-```
-
-It validates the goal and invariant contracts, performs a clean build, runs CTest, executes data-backed edit self-tests, drives the build UI, installs to a temporary directory, compares SHA-256 hashes, and drives the installed UI. Any failed gate means the work is incomplete.

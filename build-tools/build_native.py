@@ -1,11 +1,10 @@
-"""Quick app build wrapper for the native CMake project."""
+"""Build QuickImageView with disposable intermediates and a single binary output."""
 from pathlib import Path
 import subprocess
-import sys
-import shutil
 
-ROOT = Path(__file__).resolve().parent
-BUILD = ROOT / "dist" / "binary"
+ROOT = Path(__file__).resolve().parents[1]
+BUILD = ROOT / "build" / "native"
+DIST = ROOT / "dist" / "binary"
 
 def run(*args: str) -> None:
     result = subprocess.run(args, cwd=ROOT)
@@ -14,5 +13,5 @@ def run(*args: str) -> None:
 
 run("cmake", "-S", ".", "-B", str(BUILD), "-G", "MinGW Makefiles", "-DCMAKE_BUILD_TYPE=Release")
 run("cmake", "--build", str(BUILD), "--clean-first")
-shutil.copy2(ROOT / "document" / "help.md", BUILD / "help.md")
-shutil.copy2(ROOT / "document" / "help_jp.md", BUILD / "help_jp.md")
+if not (DIST / "QuickImageView.exe").is_file():
+    raise SystemExit(f"Build output not found: {DIST / 'QuickImageView.exe'}")

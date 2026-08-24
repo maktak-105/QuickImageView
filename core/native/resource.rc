@@ -1,11 +1,14 @@
 #include <windows.h>
 #include "resource.h"
 
-IDI_QUICKIMAGEVIEW ICON "../../assets/QuickImageView-icon.ico"
+IDI_QUICKIMAGEVIEW ICON "../../resources/icons/QuickImageView.ico"
+IDR_HELP_EN RCDATA "../../resources/help/help.md"
+IDR_HELP_JP RCDATA "../../resources/help/help_jp.md"
+IDR_CREATOR_BADGE RCDATA "../../assets/maktak105-V04-01.jpg"
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION 2,1,0,0
+ PRODUCTVERSION 2,1,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -22,12 +25,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "maktak-105"
             VALUE "FileDescription", "QuickImageView"
-            VALUE "FileVersion", "1.0.0"
+            VALUE "FileVersion", "2.1.0"
             VALUE "InternalName", "QuickImageView"
             VALUE "LegalCopyright", "Copyright (c) 2026 maktak-105 (GitHub: https://github.com/maktak-105)"
             VALUE "OriginalFilename", "QuickImageView.exe"
             VALUE "ProductName", "QuickImageView"
-            VALUE "ProductVersion", "1.0.0"
+            VALUE "ProductVersion", "2.1.0"
         END
     END
     BLOCK "VarFileInfo"

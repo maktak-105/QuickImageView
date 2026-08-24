@@ -48,6 +48,7 @@ constexpr UINT kCommandToggleLanguage = 1200;
 constexpr UINT kCommandCopyExif = 1210;
 constexpr UINT kCommandOpenExif = 1211;
 constexpr UINT kCommandHelp = 1220;
+constexpr UINT kCommandAbout = 1221;
 constexpr int kInfoBarHeight = 34;
 constexpr int kStatusBarHeight = 34;
 constexpr COLORREF kDarkBackground = RGB(18, 22, 24);
@@ -146,6 +147,9 @@ HWND g_exifText = nullptr;
 HWND g_exifCopyButton = nullptr;
 HWND g_helpWindow = nullptr;
 HWND g_helpText = nullptr;
+HWND g_aboutWindow = nullptr;
+HWND g_aboutOwner = nullptr;
+HBITMAP g_aboutBadge = nullptr;
 
 enum class LoadResult { success, fileNotFound, accessDenied, unsupportedFormat, decodeFailed };
 LoadResult LoadImageFile(const wchar_t* path);
@@ -495,18 +499,98 @@ std::wstring ReadUtf8File(const std::wstring& path) {
     return result;
 }
 
+std::wstring ReadUtf8Resource(int resourceId) {
+    HRSRC resource = FindResourceW(nullptr, MAKEINTRESOURCEW(resourceId), RT_RCDATA);
+    if (!resource) return L"";
+    HGLOBAL loaded = LoadResource(nullptr, resource);
+    const DWORD size = SizeofResource(nullptr, resource);
+    const char* bytes = loaded ? static_cast<const char*>(LockResource(loaded)) : nullptr;
+    if (!bytes || size == 0) return L"";
+    const int count = MultiByteToWideChar(CP_UTF8, 0, bytes, static_cast<int>(size), nullptr, 0);
+    if (count <= 0) return L"";
+    std::wstring result(count, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, bytes, static_cast<int>(size), result.data(), count);
+    return result;
+}
+
+HBITMAP LoadBitmapResource(int resourceId) {
+    HRSRC resource = FindResourceW(nullptr, MAKEINTRESOURCEW(resourceId), RT_RCDATA);
+    if (!resource) return nullptr;
+    HGLOBAL loaded = LoadResource(nullptr, resource);
+    const DWORD size = SizeofResource(nullptr, resource);
+    const BYTE* bytes = loaded ? static_cast<const BYTE*>(LockResource(loaded)) : nullptr;
+    if (!bytes || size == 0) return nullptr;
+
+    IWICImagingFactory* factory = nullptr;
+    IWICStream* stream = nullptr;
+    IWICBitmapDecoder* decoder = nullptr;
+    IWICBitmapFrameDecode* frame = nullptr;
+    IWICFormatConverter* converter = nullptr;
+    HBITMAP bitmap = nullptr;
+    do {
+        if (FAILED(CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
+                                    IID_PPV_ARGS(&factory)))) break;
+        if (FAILED(factory->CreateStream(&stream)) ||
+            FAILED(stream->InitializeFromMemory(const_cast<BYTE*>(bytes), size))) break;
+        if (FAILED(factory->CreateDecoderFromStream(stream, nullptr, WICDecodeMetadataCacheOnLoad,
+                                                    &decoder))) break;
+        if (FAILED(decoder->GetFrame(0, &frame)) || FAILED(factory->CreateFormatConverter(&converter)) ||
+            FAILED(converter->Initialize(frame, GUID_WICPixelFormat32bppPBGRA,
+                                         WICBitmapDitherTypeNone, nullptr, 0.0,
+                                         WICBitmapPaletteTypeCustom))) break;
+        UINT width = 0;
+        UINT height = 0;
+        if (FAILED(converter->GetSize(&width, &height)) || width == 0 || height == 0) break;
+        BITMAPINFO info{};
+        info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        info.bmiHeader.biWidth = static_cast<LONG>(width);
+        info.bmiHeader.biHeight = -static_cast<LONG>(height);
+        info.bmiHeader.biPlanes = 1;
+        info.bmiHeader.biBitCount = 32;
+        info.bmiHeader.biCompression = BI_RGB;
+        void* pixels = nullptr;
+        HDC screen = GetDC(nullptr);
+        bitmap = CreateDIBSection(screen, &info, DIB_RGB_COLORS, &pixels, nullptr, 0);
+        ReleaseDC(nullptr, screen);
+        if (!bitmap || FAILED(converter->CopyPixels(nullptr, width * 4, width * height * 4,
+                                                    static_cast<BYTE*>(pixels)))) {
+            if (bitmap) DeleteObject(bitmap);
+            bitmap = nullptr;
+        }
+    } while (false);
+    if (converter) converter->Release();
+    if (frame) frame->Release();
+    if (decoder) decoder->Release();
+    if (stream) stream->Release();
+    if (factory) factory->Release();
+    return bitmap;
+}
+
 std::wstring RenderHelpText(const std::wstring& markdown) {
     std::wstring rendered;
+    bool previousHeading = false;
     size_t start = 0;
     while (start <= markdown.size()) {
         const size_t end = markdown.find(L'\n', start);
         std::wstring line = markdown.substr(start, end == std::wstring::npos ? end : end - start);
         if (!line.empty() && line.back() == L'\r') line.pop_back();
 
+        if (line.empty() && previousHeading) {
+            previousHeading = false;
+            if (end == std::wstring::npos) break;
+            start = end + 1;
+            continue;
+        }
+
+        const bool heading = line.rfind(L"### ", 0) == 0 || line.rfind(L"## ", 0) == 0 ||
+                             line.rfind(L"# ", 0) == 0;
         if (line.rfind(L"### ", 0) == 0) line.erase(0, 4);
         else if (line.rfind(L"## ", 0) == 0) line.erase(0, 3);
         else if (line.rfind(L"# ", 0) == 0) line.erase(0, 2);
-        if (line.rfind(L"- ", 0) == 0) line.replace(0, 2, L"• ");
+        if (line.rfind(L"- ", 0) == 0) line.replace(0, 2, L"    • ");
+        if (!line.empty() && !heading && line.rfind(L"    • ", 0) != 0) line = L"    " + line;
+        if (heading && !line.empty()) line += L"\r\n";
+        previousHeading = heading;
 
         for (size_t pos = 0; (pos = line.find(L"**", pos)) != std::wstring::npos;) {
             line.erase(pos, 2);
@@ -627,7 +711,7 @@ void UpdateExifWindow(HWND owner) {
 }
 
 void UpdateWindowTitle(HWND window) {
-    std::wstring title = L"QuickImageView 1.0.0";
+    std::wstring title = L"QuickImageView 2.1.0";
     if (!g_fileName.empty()) title += L" - " + g_fileName;
     if (g_bitmap) {
         wchar_t dimensions[64]{};
@@ -1747,7 +1831,7 @@ void LoadImageIntoWindow(HWND window, const wchar_t* path) {
     if (result != LoadResult::success) {
         g_status = LoadErrorMessage(result);
     }
-    std::wstring title = L"QuickImageView 1.0.0";
+    std::wstring title = L"QuickImageView 2.1.0";
     if (result == LoadResult::success) title += L" - " + g_fileName;
     SetWindowTextW(window, title.c_str());
     UpdateExifWindow(window);
@@ -1876,23 +1960,139 @@ void OpenImageDialog(HWND window) {
     if (GetOpenFileNameW(&dialog)) LoadImageIntoWindow(window, path);
 }
 
-void OpenHelp(HWND window) {
-    wchar_t modulePath[MAX_PATH * 4]{};
-    if (!GetModuleFileNameW(nullptr, modulePath, ARRAYSIZE(modulePath))) return;
-    PathRemoveFileSpecW(modulePath);
-    const std::wstring fileName = g_englishUi ? L"help.md" : L"help_jp.md";
-    std::wstring helpPath = std::wstring(modulePath) + L"\\" + fileName;
-    if (GetFileAttributesW(helpPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        helpPath = std::wstring(modulePath) + L"\\help.md";
+constexpr int kAboutAppName = 5001;
+constexpr int kAboutVersion = 5002;
+constexpr int kAboutEnvironment = 5003;
+constexpr int kAboutAuthor = 5004;
+
+void UpdateAboutTexts() {
+    if (!g_aboutWindow) return;
+    SetWindowTextW(GetDlgItem(g_aboutWindow, kAboutAppName), L"QuickImageView");
+    SetWindowTextW(GetDlgItem(g_aboutWindow, kAboutVersion), L"Ver. 2.1.0");
+    SetWindowTextW(GetDlgItem(g_aboutWindow, kAboutEnvironment),
+                   Ui(L"【開発環境】\r\n・C++17 (MinGW-w64 / g++)\r\n・Win32 API / Windows Imaging Component\r\n・CMake / libwebp 1.6.0",
+                      L"[Development environment]\r\n・C++17 (MinGW-w64 / g++)\r\n・Win32 API / Windows Imaging Component\r\n・CMake / libwebp 1.6.0"));
+    SetWindowTextW(GetDlgItem(g_aboutWindow, kAboutAuthor),
+                   Ui(L"【制作者】\r\nGitHub: maktak-105", L"[Author]\r\nGitHub: maktak-105"));
+    SetWindowTextW(GetDlgItem(g_aboutWindow, IDOK), L"OK");
+}
+
+LRESULT CALLBACK AboutWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
+    if (HandleDarkButtonDraw(message, lParam)) return TRUE;
+    if (message == WM_CTLCOLORSTATIC || message == WM_CTLCOLOREDIT || message == WM_CTLCOLORBTN) {
+        return DarkDialogColor(wParam);
     }
-    if (GetFileAttributesW(helpPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        MessageBoxW(window, Ui(L"ヘルプファイルが見つかりません。", L"The help file was not found."),
-                    L"QuickImageView", MB_OK | MB_ICONWARNING);
+    if (message == WM_CREATE) {
+        g_aboutBadge = LoadBitmapResource(IDR_CREATOR_BADGE);
+        CreateWindowW(L"STATIC", L"QuickImageView", WS_CHILD | WS_VISIBLE | SS_CENTER,
+                      24, 24, 332, 30, window, reinterpret_cast<HMENU>(kAboutAppName),
+                      GetModuleHandleW(nullptr), nullptr);
+        CreateWindowW(L"STATIC", L"Ver. 2.1.0", WS_CHILD | WS_VISIBLE | SS_CENTER,
+                      24, 58, 332, 24, window, reinterpret_cast<HMENU>(kAboutVersion),
+                      GetModuleHandleW(nullptr), nullptr);
+        CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE,
+                      24, 100, 332, 72, window, reinterpret_cast<HMENU>(kAboutEnvironment),
+                      GetModuleHandleW(nullptr), nullptr);
+        CreateWindowW(L"STATIC", L"", WS_CHILD | WS_VISIBLE,
+                      24, 360, 332, 44, window, reinterpret_cast<HMENU>(kAboutAuthor),
+                      GetModuleHandleW(nullptr), nullptr);
+        CreateWindowW(L"BUTTON", L"OK", WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_OWNERDRAW,
+                      24, 438, 72, 30, window, reinterpret_cast<HMENU>(IDOK),
+                      GetModuleHandleW(nullptr), nullptr);
+        if (g_uiFont) {
+            for (const int id : {kAboutAppName, kAboutVersion, kAboutEnvironment, kAboutAuthor, IDOK}) {
+                SendMessageW(GetDlgItem(window, id), WM_SETFONT, reinterpret_cast<WPARAM>(g_uiFont), TRUE);
+            }
+        }
+        UpdateAboutTexts();
+        return 0;
+    }
+    if (message == WM_PAINT) {
+        PAINTSTRUCT paint{};
+        HDC dc = BeginPaint(window, &paint);
+        RECT client{};
+        GetClientRect(window, &client);
+        HBRUSH background = CreateSolidBrush(RGB(15, 18, 24));
+        FillRect(dc, &client, background);
+        DeleteObject(background);
+        if (g_aboutBadge) {
+            BITMAP source{};
+            GetObjectW(g_aboutBadge, sizeof(source), &source);
+            HDC memory = CreateCompatibleDC(dc);
+            HGDIOBJ old = SelectObject(memory, g_aboutBadge);
+            SetStretchBltMode(dc, HALFTONE);
+            StretchBlt(dc, 105, 180, 170, 170, memory, 0, 0, source.bmWidth, source.bmHeight, SRCCOPY);
+            SelectObject(memory, old);
+            DeleteDC(memory);
+        }
+        EndPaint(window, &paint);
+        return 0;
+    }
+    if (message == WM_COMMAND && LOWORD(wParam) == IDOK) {
+        DestroyWindow(window);
+        return 0;
+    }
+    if (message == WM_CLOSE) {
+        DestroyWindow(window);
+        return 0;
+    }
+    if (message == WM_DESTROY) {
+        if (g_aboutBadge) {
+            DeleteObject(g_aboutBadge);
+            g_aboutBadge = nullptr;
+        }
+        g_aboutWindow = nullptr;
+        if (g_aboutOwner) {
+            EnableWindow(g_aboutOwner, TRUE);
+            SetForegroundWindow(g_aboutOwner);
+            g_aboutOwner = nullptr;
+        }
+        return 0;
+    }
+    return DefWindowProcW(window, message, wParam, lParam);
+}
+
+void OpenAbout(HWND owner) {
+    if (g_aboutWindow) {
+        UpdateAboutTexts();
+        ShowWindow(g_aboutWindow, SW_SHOWNORMAL);
+        SetForegroundWindow(g_aboutWindow);
         return;
     }
-    const std::wstring contents = ReadUtf8File(helpPath);
+    WNDCLASSW klass{};
+    klass.hInstance = GetModuleHandleW(nullptr);
+    klass.lpfnWndProc = AboutWindowProc;
+    klass.lpszClassName = L"QuickImageViewAboutWindow";
+    klass.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    klass.hbrBackground = static_cast<HBRUSH>(GetStockObject(BLACK_BRUSH));
+    RegisterClassW(&klass);
+    g_aboutOwner = owner;
+    EnableWindow(owner, FALSE);
+    RECT ownerRect{};
+    GetWindowRect(owner, &ownerRect);
+    const int width = 380;
+    const int height = 510;
+    const int x = ownerRect.left + ((ownerRect.right - ownerRect.left) - width) / 2;
+    const int y = ownerRect.top + ((ownerRect.bottom - ownerRect.top) - height) / 2;
+    g_aboutWindow = CreateWindowExW(WS_EX_DLGMODALFRAME | WS_EX_TOOLWINDOW,
+                                   klass.lpszClassName, Ui(L"QuickImageView バージョン情報", L"QuickImageView About"),
+                                   WS_POPUP | WS_CAPTION | WS_SYSMENU,
+                                   x, y, width, height, owner, nullptr, klass.hInstance, nullptr);
+    if (!g_aboutWindow) {
+        EnableWindow(owner, TRUE);
+        g_aboutOwner = nullptr;
+        return;
+    }
+    EnableDarkTheme(g_aboutWindow);
+    UpdateAboutTexts();
+    ShowWindow(g_aboutWindow, SW_SHOWNORMAL);
+    SetForegroundWindow(g_aboutWindow);
+}
+
+void OpenHelp(HWND window) {
+    const std::wstring contents = ReadUtf8Resource(g_englishUi ? IDR_HELP_EN : IDR_HELP_JP);
     if (contents.empty()) {
-        MessageBoxW(window, Ui(L"ヘルプを読み込めません。", L"The help file could not be read."),
+        MessageBoxW(window, Ui(L"埋め込みヘルプを読み込めません。", L"The embedded help could not be read."),
                     L"QuickImageView", MB_OK | MB_ICONWARNING);
         return;
     }
@@ -1980,6 +2180,7 @@ void BuildMenu(HWND window) {
     HMENU helpMenu = CreatePopupMenu();
     AppendMenuW(helpMenu, MF_STRING, kCommandOpenExif, Ui(L"EXIF情報", L"EXIF information"));
     AppendMenuW(helpMenu, MF_STRING, kCommandHelp, Ui(L"ヘルプ", L"Help"));
+    AppendMenuW(helpMenu, MF_STRING, kCommandAbout, Ui(L"バージョン情報", L"About"));
     AppendMenuW(menu, MF_POPUP, reinterpret_cast<UINT_PTR>(helpMenu), Ui(L"ヘルプ", L"Help"));
     PrepareDarkMenu(menu);
     static HBRUSH menuBarBrush = CreateSolidBrush(RGB(10, 12, 16));
@@ -1998,6 +2199,7 @@ void ToggleLanguage(HWND window) {
     SetWindowTextW(g_languageButton, g_englishUi ? L"🌐 日本語" : L"🌐 English");
     UpdateExifWindow(window);
     if (g_helpWindow && IsWindowVisible(g_helpWindow)) OpenHelp(window);
+    if (g_aboutWindow && IsWindowVisible(g_aboutWindow)) UpdateAboutTexts();
     g_notice = Ui(L"表示言語を日本語に切り替えました。", L"Display language changed to English.");
     DrawMenuBar(window);
     InvalidateRect(window, nullptr, FALSE);
@@ -2301,6 +2503,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
         if (LOWORD(wParam) == kCommandOpen) OpenImageDialog(window);
         else if (LOWORD(wParam) == kCommandExit) DestroyWindow(window);
         else if (LOWORD(wParam) == kCommandHelp) OpenHelp(window);
+        else if (LOWORD(wParam) == kCommandAbout) OpenAbout(window);
         else if (LOWORD(wParam) == kCommandOpenExif) OpenExifWindow(window);
         else if (LOWORD(wParam) == kCommandToggleLanguage) ToggleLanguage(window);
         else if (LOWORD(wParam) == 1) ConvertWithSaveDialog(window);
@@ -2498,6 +2701,7 @@ LRESULT CALLBACK WindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lPa
     case WM_DESTROY:
         if (g_exifWindow) DestroyWindow(g_exifWindow);
         if (g_helpWindow) DestroyWindow(g_helpWindow);
+        if (g_aboutWindow) DestroyWindow(g_aboutWindow);
         ReleaseImage();
         if (g_uiFont) {
             DeleteObject(g_uiFont);
@@ -2554,8 +2758,8 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     std::wstring uiTestFile = uiTestHidden && argumentCount >= 3 ? arguments[2] : L"";
     if (arguments) LocalFree(arguments);
     if (commandLine && wcscmp(commandLine, L"--help") == 0) {
-        MessageBoxW(nullptr, Ui(L"QuickImageView 1.0.0\n画像ファイルを引数に指定してください。",
-                                L"QuickImageView 1.0.0\nPass an image file as an argument."),
+        MessageBoxW(nullptr, Ui(L"QuickImageView 2.1.0\n画像ファイルを引数に指定してください。",
+                                L"QuickImageView 2.1.0\nPass an image file as an argument."),
                     L"QuickImageView", MB_OK | MB_ICONINFORMATION);
         return 0;
     }
@@ -2590,7 +2794,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
     const int windowY = uiTestHidden && hasSecondary ? secondaryWorkArea.top + 40 : CW_USEDEFAULT;
     const int windowWidth = uiTestHidden && hasSecondary ? std::min(1200, static_cast<int>(secondaryWorkArea.right - secondaryWorkArea.left - 80)) : 960;
     const int windowHeight = uiTestHidden && hasSecondary ? std::min(800, static_cast<int>(secondaryWorkArea.bottom - secondaryWorkArea.top - 80)) : 720;
-    HWND window = CreateWindowExW(extendedStyle, kClassName, L"QuickImageView 1.0.0",
+    HWND window = CreateWindowExW(extendedStyle, kClassName, L"QuickImageView 2.1.0",
                                   WS_OVERLAPPEDWINDOW, windowX, windowY,
                                   windowWidth, windowHeight, nullptr, nullptr, instance, nullptr);
     if (!window) {
@@ -2598,7 +2802,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR commandLine, int showCo
         return 1;
     }
     BuildMenu(window);
-    if (filePath && *filePath && g_bitmap) SetWindowTextW(window, (L"QuickImageView 1.0.0 - " + g_fileName).c_str());
+    if (filePath && *filePath && g_bitmap) SetWindowTextW(window, (L"QuickImageView 2.1.0 - " + g_fileName).c_str());
     ShowWindow(window, uiTestHidden ? SW_SHOW : showCommand);
     UpdateWindow(window);
     if (uiTestHidden) {

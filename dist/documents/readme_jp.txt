@@ -1,4 +1,4 @@
-QuickImageView - 配布パッケージ v1.0.0
+QuickImageView - 配布パッケージ v2.1.0
 
 この文書は配布物の内容と現在文書化されている動作を説明するものです。UI検査結果ではないため、未検証の要求を完了済みとして扱わないでください。
 
@@ -43,9 +43,19 @@ EXIFと保存:
 - 既存ファイルは確認なしに上書きしません。WebP出力に対応し、HEIC/HEIFは導入済み
   コーデックに依存します。
 
+対応形式とコーデック:
+- BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDS、
+  WebP、HEIC、HEIFに対応します。
+- BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDSは
+  Windows Imaging Component（WIC）のデコーダーを使用します。
+- WebPの読込はWindows WIC WebPデコーダーを使用するため、そのコーデックに依存します。
+- WebPの保存はQuickImageViewに静的リンクされたlibwebp 1.6.0を使用するため、
+  別途libwebpをインストールする必要はありません。
+- HEICとHEIFの読込・保存は、PCに導入されたWindows WICコーデックに依存します。
+
 言語、テーマ、Windows連携:
 - 右上のボタンは水色の地球儀とEnglishまたは日本語を表示します。押して切り替えます。
-- メニューは「ファイル、編集、ヘルプ」の順です。「ヘルプ > ヘルプ」で同梱ヘルプを開きます。
+- メニューは「ファイル、編集、ヘルプ」の順です。「ヘルプ > ヘルプ」で同梱ヘルプを開き、「ヘルプ > バージョン情報」で版数と作者情報を確認できます。
 - クライアント領域、ボタン、メニュー、メニューポップアップはダークテーマです。
 - PowerShellインストーラーは現在のユーザー（HKCU）に右クリックメニューを登録します。
 - MSIでは右クリックメニューと拡張子関連付けを独立した任意機能として選択でき、既定では未選択です。
@@ -56,10 +66,10 @@ EXIFと保存:
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt
-- help.md / help_jp.md
+- ヘルプはQuickImageView.exeへ英語・日本語で埋め込まれています。
 - libwebp-COPYING / libwebp-PATENTS
 
-LICENSE_jp.txtの原本は`document/LICENSE_jp.txt`で管理し、配布時に`dist/binary`へ集約してMSIにも同梱します。
+LICENSE_jp.txtの原本は`document/LICENSE_jp.txt`で管理し、配布時にパッケージへ集約してMSIにも同梱します。
 
 ライセンス
 ----------

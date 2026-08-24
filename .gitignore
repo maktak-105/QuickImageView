@@ -1,19 +1,17 @@
-dist/CMakeFiles/
-dist/Testing/
-dist/third_party/
-dist/CMakeCache.txt
-dist/CTestTestfile.cmake
-dist/Makefile
-dist/cmake_install.cmake
-dist/feature_*.json
+# CMake and build-tool intermediates
+build/
+
+# Distribution binaries are generated; keep only the directory marker.
+dist/binary/*
+!dist/binary/.gitkeep
+
+# Packaging staging and generated release metadata
+dist/staging/
 dist/*.wixpdb
 dist/*.exe
 dist/*.msi
-dist/.msi-stage/
-dist/binary/.msi-stage/
-dist/binary/*
-!dist/binary/.gitkeep
-dist/staging/
+
+# Local IDE and Python files
 *.user
 *.suo
 *.log

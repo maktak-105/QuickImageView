@@ -5,13 +5,13 @@
 - Windows 10/11 64-bit
 - CMake 3.20以上
 - MinGW-w64 C++17ツールチェーン
-- Loop検証スクリプト用Python 3
+- 任意のテスト・補助スクリプト用Python 3.13
 
 ビルドとテスト:
 
 ```powershell
 .\build.bat
-ctest --test-dir dist/binary --output-on-failure
+ctest --test-dir build/native --output-on-failure
 ```
 
-MinGW runtimeは静的リンクしています。`objdump -p dist/binary/QuickImageView.exe`で確認できます。
+MinGW runtimeは静的リンクしています。実行ファイルは`dist/binary/QuickImageView.exe`へ出力されます。

@@ -735,12 +735,12 @@ def test_features(executable: Path, image: Path, readme: Path, ledger: Path, onl
                     results.append(row(feature, "PASS" if exif_window.exists() else "FAIL", "HelpメニューからEXIFウィンドウを実起動"))
                 elif text in {"アプリのヘルプメニューから同梱ヘルプを開ける", "日本語ヘルプと英語ヘルプをそれぞれ開ける"}:
                     root = readme.parent
-                    help_files = [root / "document" / "help.md", root / "document" / "help_jp.md"]
+                    help_files = [root / "resources" / "help" / "help.md", root / "resources" / "help" / "help_jp.md"]
                     ok = all(path.exists() and path.stat().st_size > 0 for path in help_files)
                     results.append(row(feature, "PASS" if ok else "FAIL", "日英ヘルプ原本の存在と内容を確認"))
                 elif text == "ヘルプの説明が実装済み機能と一致する":
                     root = readme.parent
-                    help_text = (root / "document" / "help.md").read_text(encoding="utf-8")
+                    help_text = (root / "resources" / "help" / "help.md").read_text(encoding="utf-8")
                     lowered = help_text.lower()
                     ok = all(token in lowered for token in ("exif", "clipboard", "webp", "msi"))
                     results.append(row(feature, "PASS" if ok else "FAIL", "ヘルプ本文の実装機能キーワードを確認"))
@@ -773,7 +773,7 @@ def test_features(executable: Path, image: Path, readme: Path, ledger: Path, onl
                     if "スクリーンショット" in text:
                         required += [root / "assets" / "QuickImageView-gui-ja.png", root / "assets" / "QuickImageView-gui-en.png"]
                     elif "MSI" in text:
-                        required += [root / "dist" / "binary" / "QuickImageView-1.0.0-x64.msi", root / "installer" / "QuickImageView.wxs"]
+                        required += [root / "dist" / "binary" / "QuickImageView-2.1.0-x64.msi", root / "installer" / "QuickImageView.wxs"]
                     ok = all(path.exists() and path.stat().st_size > 0 for path in required)
                     results.append(row(feature, "PASS" if ok else "FAIL", "配布物・MSI・スクリーンショットの実ファイルを確認"))
                 else:
