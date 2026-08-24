@@ -45,3 +45,17 @@ powershell -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 
 The uninstaller removes the QuickImageView per-user application directory and its
 own context-menu registration. It does not remove user-created image files.
+
+## Qt Quick preview ZIP
+
+After `build.bat qt`, package the Qt Quick executable and its deployed Qt
+runtime without the legacy executable:
+
+```powershell
+.\scripts\package.ps1 -Qt -OutputDirectory .\build\package-qt -ArchivePath .\build\QuickImageViewQt-v3.1.2-win64.zip
+```
+
+The Qt package uses `QuickImageViewQt.exe`, includes the deployed Qt DLLs and
+plugins, and keeps the unsigned ZIP distribution model. The existing MSI and
+per-user installer continue to target the stable Win32 executable until the
+Qt migration replaces that target deliberately.

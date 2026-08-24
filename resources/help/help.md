@@ -1,35 +1,32 @@
 # QuickImageView Help
-
-Version 2.1.0
+Version 3.1.2
 
 ## Open and view
+Open a local image with **File > Open image**, `Ctrl+O`, or drag and drop. The image is displayed to fit the window.
 
-Open an image with **File > Open image**, `Ctrl+O`, a command-line path, or drag and drop. The viewer fits the image to the window; use the mouse wheel to zoom and the middle mouse button to pan.
+## Rotate, flip, and edit
+Use the **Edit** menu or the image area's context menu to rotate right, 180 degrees, or left by 90 degrees, flip horizontally or vertically, convert color, and resize. Drag with the left mouse button over the image to select a crop rectangle. Changes apply to the displayed image and never modify the original file.
 
-## EXIF information
+## Copy and paste
+Use `Ctrl+C` or **Edit > Copy image** to copy the displayed image to the Windows clipboard. Use `Ctrl+V` or **Edit > Paste image** to paste a clipboard image. Drag the pending paste with the left mouse button, then use the right-click **Commit paste** or **Retry paste** command.
 
-Open **Help > EXIF information** to show the EXIF window beside the image. It uses a black background with white text, displays make, model, and capture date when available, and reports when no EXIF is present. Use **Copy EXIF** to copy the displayed text to the clipboard.
+## Save
+**File > Save as** opens save options before the file picker. JPEG/WebP quality (0-100) and PNG/TIFF compression (0-9) can be set. Saving over the original or an existing output is rejected. HEIC/HEIF saving requires an available Windows WIC encoder.
 
-## Select, copy, and paste
+## EXIF
+**Help > EXIF information** displays WIC-retrieved make, model, and taken date in a floating modal window. Use **Copy EXIF** to copy the text to the clipboard. Images without metadata show `EXIF: none`.
 
-Drag with the left mouse button to select an area. Its pixel size is shown at the upper-left of the selection. `Ctrl+C` copies the selected area, or the full image when no selection is active.
+## Undo and redo
+Use `Ctrl+Z` or **Edit > Undo** to reverse the latest rotation or flip. Use `Ctrl+Y` or **Edit > Redo** to reapply an undone edit.
 
-Paste with `Ctrl+V` or **Edit > Paste image**. The pasted image remains a movable overlay at its original image scale. Drag to move it inside the destination image. Right-click and choose **OK** to merge it, or **Retry** to continue moving it.
+## Help and About
+Use **Help > Help** to open this document. **Help > About** shows QuickImageView Ver. 3.1.2, its development environment, the author, and the creator badge. Both are dark modal views and close with **Close** or **OK**.
 
-## Save safely
-
-Choose **Save as another format** from the right-click menu. QuickImageView never overwrites the source image or an existing destination file. After a successful save, it loads the new file automatically.
-
-## Language and Windows integration
-
-Use the upper-right globe button labeled `English` / `日本語` to switch menus, dialogs, information bars, EXIF, and help. The MSI offers optional Explorer context-menu registration and optional associations for JPEG, PNG, TIFF, BMP/GIF, WebP, and HEIC/HEIF. Leave these options unchecked if you do not want to change Windows integration.
-
-## About and version information
-
-Open **Help > About** to view QuickImageView version 2.1.0, the development environment, author information, and the creator badge. The dialog is a dark modal card and closes with **OK** or the close button.
+## Display language
+Use the globe button in the upper-right labeled `English` / `日本語` to switch the menus, status messages, Help, and About dialog.
 
 ## Formats and codecs
+BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS are read with Windows Imaging Component (WIC). HEIC and HEIF can be read when a compatible Windows WIC codec is installed. WebP is read with libwebp 1.6.0 statically linked into QuickImageView, so no separate libwebp installation is required.
 
-QuickImageView supports BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, DDS, WebP, HEIC, and HEIF when the corresponding decoder is available.
-
-Windows Imaging Component (WIC) provides the standard decoders for BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS. WebP input uses the Windows WIC WebP decoder, so opening WebP depends on that codec being available. WebP output uses the statically linked libwebp 1.6.0 included in QuickImageView and does not require a separate libwebp installation. HEIC and HEIF input/output depend on the Windows WIC codecs installed on the computer.
+## Current migration scope
+This Qt Quick build provides image loading, viewing, rotation, flipping, color conversion, crop, resize, movable paste, Undo/Redo, EXIF viewing/copying, Save as, Help, and About.

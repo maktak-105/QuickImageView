@@ -36,3 +36,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ```
 
 アプリのユーザー領域とQuickImageView専用の右クリック登録だけを削除する。ユーザーが作成した画像ファイルは削除しない。
+
+## Qt Quick版ZIP
+
+`build.bat qt`の後、Qtランタイムを含むQt Quick版ZIPを作成できます。
+
+```powershell
+.\scripts\package.ps1 -Qt -OutputDirectory .\build\package-qt -ArchivePath .\build\QuickImageViewQt-v3.1.2-win64.zip
+```
+
+Qt版パッケージには`QuickImageViewQt.exe`、配布用Qt DLL・プラグイン・QMLモジュールが入り、旧Win32実行ファイルは入りません。署名なしZIPの配布方式を維持します。既存のMSIとユーザー単位インストーラーは、Qt移行完了後に明示的に切り替えるまで安定版Win32実行ファイルを対象とします。
