@@ -105,7 +105,7 @@ private:
     QUrl imageSource_;
     QString imageName_;
     QString sourcePath_;
-    QString exifText_;
+    ImageEngine::ExifFields exifFields_;
     QString statusText_;
     QuickImageProvider* imageProvider_ = nullptr;
     quint64 imageRevision_ = 0;

@@ -65,12 +65,12 @@ bool saveHeifWithWic(const QImage& image, const QString& filePath, QString* erro
 
 } // namespace
 
-QString ImageEngine::exifText(const QString& filePath) {
+ImageEngine::ExifFields ImageEngine::readExif(const QString& filePath) {
     IWICImagingFactory* factory = nullptr;
     IWICBitmapDecoder* decoder = nullptr;
     IWICBitmapFrameDecode* frame = nullptr;
     IWICMetadataQueryReader* reader = nullptr;
-    QStringList fields;
+    ExifFields fields;
     HRESULT result = CoCreateInstance(CLSID_WICImagingFactory, nullptr, CLSCTX_INPROC_SERVER,
                                       IID_PPV_ARGS(&factory));
     if (SUCCEEDED(result)) {
@@ -82,22 +82,35 @@ QString ImageEngine::exifText(const QString& filePath) {
     if (SUCCEEDED(result)) result = frame->GetMetadataQueryReader(&reader);
     if (SUCCEEDED(result)) {
         const wchar_t* roots[] = {L"/app1/ifd/", L"/ifd/"};
-        QString make, model, taken;
         for (const wchar_t* root : roots) {
-            if (make.isEmpty()) make = metadataString(reader, (std::wstring(root) + L"{ushort=271}").c_str());
-            if (model.isEmpty()) model = metadataString(reader, (std::wstring(root) + L"{ushort=272}").c_str());
-            if (taken.isEmpty()) taken = metadataString(reader, (std::wstring(root) + L"{ushort=36867}").c_str());
-            if (taken.isEmpty()) taken = metadataString(reader, (std::wstring(root) + L"{ushort=306}").c_str());
+            if (fields.make.isEmpty()) fields.make = metadataString(reader, (std::wstring(root) + L"{ushort=271}").c_str());
+            if (fields.model.isEmpty()) fields.model = metadataString(reader, (std::wstring(root) + L"{ushort=272}").c_str());
+            if (fields.taken.isEmpty()) fields.taken = metadataString(reader, (std::wstring(root) + L"{ushort=36867}").c_str());
+            if (fields.taken.isEmpty()) fields.taken = metadataString(reader, (std::wstring(root) + L"{ushort=306}").c_str());
         }
-        if (!make.isEmpty()) fields.append(QStringLiteral("メーカー=") + make);
-        if (!model.isEmpty()) fields.append(QStringLiteral("機種=") + model);
-        if (!taken.isEmpty()) fields.append(QStringLiteral("撮影日時=") + taken);
     }
     if (reader) reader->Release();
     if (frame) frame->Release();
     if (decoder) decoder->Release();
     if (factory) factory->Release();
-    return fields.isEmpty() ? QStringLiteral("EXIF: なし") : QStringLiteral("EXIF: ") + fields.join(QStringLiteral("  "));
+    return fields;
+}
+
+QString ImageEngine::formatExifText(const ExifFields& fields, bool english) {
+    if (fields.isEmpty()) {
+        return english ? QStringLiteral("EXIF: none") : QStringLiteral("EXIF: なし");
+    }
+    QStringList parts;
+    if (!fields.make.isEmpty()) {
+        parts.append((english ? QStringLiteral("Make=") : QStringLiteral("メーカー=")) + fields.make);
+    }
+    if (!fields.model.isEmpty()) {
+        parts.append((english ? QStringLiteral("Model=") : QStringLiteral("機種=")) + fields.model);
+    }
+    if (!fields.taken.isEmpty()) {
+        parts.append((english ? QStringLiteral("Taken=") : QStringLiteral("撮影日時=")) + fields.taken);
+    }
+    return QStringLiteral("EXIF: ") + parts.join(QStringLiteral("  "));
 }
 
 QImage ImageEngine::load(const QString& filePath, QString* errorMessage) {

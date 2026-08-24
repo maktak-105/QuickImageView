@@ -7,19 +7,14 @@ from pathlib import Path
 import subprocess
 import sys
 
+from deploy_qt import QT_BINARY, deploy, require_file
+
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "build" / "qt-mingw1310"
-QT_ROOT = Path(os.environ.get("QT_ROOT", r"C:\Qt\6.10.3\mingw_64"))
-MINGW_BIN = Path(os.environ.get("QT_MINGW_BIN", r"C:\Qt\Tools\mingw1310_64\bin"))
+QT_ROOT = Path(os.environ.get("QT_ROOT", r"C:\Users\makta\tools\Qt\6.10.3\mingw_64"))
+MINGW_BIN = Path(os.environ.get("QT_MINGW_BIN", r"C:\Users\makta\tools\Qt\Tools\mingw1310_64\bin"))
 QT_CMAKE = QT_ROOT / "bin" / "qt-cmake.bat"
-QT_DEPLOY = QT_ROOT / "bin" / "windeployqt.exe"
-QT_BINARY = ROOT / "dist" / "binary" / "QuickImageViewQt.exe"
-
-
-def require_file(path: Path, description: str) -> None:
-    if not path.is_file():
-        raise SystemExit(f"{description} was not found: {path}")
 
 
 def run(command: list[str], env: dict[str, str]) -> None:
@@ -30,10 +25,10 @@ def run(command: list[str], env: dict[str, str]) -> None:
 
 require_file(QT_CMAKE, "Qt CMake wrapper")
 require_file(MINGW_BIN / "g++.exe", "Qt MinGW compiler")
-require_file(QT_DEPLOY, "Qt deployment tool")
 
 environment = os.environ.copy()
 environment["PATH"] = str(MINGW_BIN) + os.pathsep + str(QT_ROOT / "bin") + os.pathsep + environment["PATH"]
+environment["QT_ROOT"] = str(QT_ROOT)
 
 run([
     "cmd.exe", "/c", "call", str(QT_CMAKE),
@@ -42,12 +37,10 @@ run([
 ], environment)
 run([
     "cmake", "--build", str(BUILD), "--target",
-    "QuickImageViewQt", "qiv_controller_tests", "qiv_qml_tests", "--parallel", "2",
+    "QuickImageView", "QuickImageViewQt", "qiv_controller_tests", "qiv_qml_tests", "--parallel", "2",
 ], environment)
 run(["ctest", "--test-dir", str(BUILD), "--output-on-failure"], environment)
 
 require_file(QT_BINARY, "Qt build output")
-
-run([
-    str(QT_DEPLOY), "--release", "--qmldir", str(ROOT / "qml"), "--no-translations", str(QT_BINARY),
-], environment)
+deploy()
+sys.exit(0)

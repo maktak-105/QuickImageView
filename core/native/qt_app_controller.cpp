@@ -60,7 +60,8 @@ QString QtAppController::helpText() const {
 }
 
 QString QtAppController::exifText() const {
-    return exifText_;
+    if (!hasImage()) return {};
+    return ImageEngine::formatExifText(exifFields_, english_);
 }
 
 namespace {
@@ -133,7 +134,7 @@ void QtAppController::openImage(const QUrl& fileUrl) {
     imageSource_ = QUrl(QStringLiteral("image://quickimage/current/%1").arg(++imageRevision_));
     imageName_ = info.fileName();
     sourcePath_ = info.absoluteFilePath();
-    exifText_ = ImageEngine::exifText(sourcePath_);
+    exifFields_ = ImageEngine::readExif(sourcePath_);
     statusText_ = localize(QStringLiteral("画像を読み込みました: "), QStringLiteral("Image loaded: ")) + imageName_;
     emit imageChanged();
     emit imageOpened();
@@ -143,8 +144,9 @@ void QtAppController::openImage(const QUrl& fileUrl) {
 }
 
 void QtAppController::copyExif() {
-    if (exifText_.isEmpty()) return;
-    QGuiApplication::clipboard()->setText(exifText_);
+    const QString text = exifText();
+    if (text.isEmpty()) return;
+    QGuiApplication::clipboard()->setText(text);
     statusText_ = localize(QStringLiteral("EXIF情報をコピーしました。"), QStringLiteral("EXIF information copied."));
     emit statusChanged();
 }
@@ -183,7 +185,7 @@ void QtAppController::clearImage() {
     clearPasteState();
     imageName_.clear();
     sourcePath_.clear();
-    exifText_.clear();
+    exifFields_ = {};
     statusText_ = localize(QStringLiteral("画像を閉じました。"), QStringLiteral("Image closed."));
     emit imageChanged();
     emit imageOpened();
@@ -388,6 +390,7 @@ void QtAppController::setEnglish(bool enabled) {
         : localize(QStringLiteral("画像を開いてください。"), QStringLiteral("Open an image to begin."));
     emit languageChanged();
     emit fileInfoChanged();
+    emit exifChanged();
     emit statusChanged();
 }
 

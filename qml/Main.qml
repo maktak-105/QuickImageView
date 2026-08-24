@@ -178,14 +178,25 @@ ApplicationWindow {
     palette.highlight: accentDarkColor
     palette.highlightedText: "#ffffff"
 
-    menuBar: MenuBar {
-        objectName: "mainMenuBar"
-        delegate: DarkMenuBarItem {}
-        background: Rectangle {
-            implicitHeight: 30
-            color: "#0a0c10"
-            border.color: window.borderColor
-        }
+    menuBar: Rectangle {
+        implicitHeight: 32
+        color: "#0a0c10"
+        border.color: window.borderColor
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.rightMargin: 6
+            spacing: 0
+
+            MenuBar {
+                objectName: "mainMenuBar"
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                delegate: DarkMenuBarItem {}
+                background: Rectangle {
+                    implicitHeight: 30
+                    color: "transparent"
+                }
 
         Menu {
             objectName: "fileMenu"
@@ -264,46 +275,31 @@ ApplicationWindow {
                 onTriggered: infoWindow.visible = !infoWindow.visible
             }
         }
-    }
-
-    header: ToolBar {
-        z: 100
-        background: Rectangle { color: "#0d141e"; border.color: window.borderColor }
-        contentItem: RowLayout {
-            anchors.fill: parent
-            anchors.leftMargin: 16
-            anchors.rightMargin: 12
-            spacing: 10
-
-            Label {
-                text: appController.appName
-                color: window.textColor
-                font.bold: true
-                font.pixelSize: 17
             }
-            Label {
-                text: window.text("Qt Quick 移行版", "Qt Quick migration build")
-                color: window.mutedTextColor
-                font.pixelSize: 13
-            }
-            Item { Layout.fillWidth: true }
+
             Button {
                 id: languageButton
                 objectName: "languageToggleButton"
+                Layout.alignment: Qt.AlignVCenter
                 Accessible.name: window.text("Englishに切り替え", "Switch to Japanese")
-                text: appController.english ? "◎ 日本語" : "◎ English"
+                text: appController.english ? "🌐 日本語" : "🌐 English"
+                ToolTip.visible: hovered
+                ToolTip.text: "Toggle Language / 言語切替"
                 onClicked: appController.setEnglish(!appController.english)
                 contentItem: Text {
                     text: languageButton.text
-                    color: window.textColor
+                    color: languageButton.hovered ? "#ffffff" : window.textColor
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
-                    font.bold: true
+                    font.pixelSize: 12
+                    font.weight: Font.DemiBold
                 }
                 background: Rectangle {
-                    radius: 18
-                    color: languageButton.hovered ? "#1c3042" : window.raisedSurfaceColor
-                    border.color: window.borderColor
+                    implicitWidth: 108
+                    implicitHeight: 26
+                    radius: 6
+                    color: languageButton.hovered ? "#1f3d48" : "#161b22"
+                    border.color: languageButton.hovered ? window.accentColor : window.borderColor
                 }
             }
         }
@@ -350,6 +346,7 @@ ApplicationWindow {
     }
 
     // 幅・高さの初期値100は「パーセント」を意味する。Win32版のリサイズダイアログと同じ既定値。
+    // 縦横比ロック中は、変更した側に合わせて他方の表示値も更新する。
     Dialog {
         id: resizeDialog
         objectName: "resizeDialog"
@@ -357,25 +354,98 @@ ApplicationWindow {
         title: window.text("リサイズを指定", "Custom resize")
         anchors.centerIn: Overlay.overlay
         standardButtons: Dialog.Ok | Dialog.Cancel
+        property bool resizeUpdating: false
+        property int lastResizeMode: 0
+
+        function applyAspectFromWidth() {
+            if (resizeUpdating || !resizeLock.checked) return
+            resizeUpdating = true
+            if (resizeMode.currentIndex === 0) {
+                resizeHeight.value = resizeWidth.value
+            } else {
+                const srcW = Math.max(1, appController.imageWidth)
+                const srcH = Math.max(1, appController.imageHeight)
+                resizeHeight.value = Math.max(1, Math.round(resizeWidth.value * srcH / srcW))
+            }
+            resizeUpdating = false
+        }
+
+        function applyAspectFromHeight() {
+            if (resizeUpdating || !resizeLock.checked) return
+            resizeUpdating = true
+            if (resizeMode.currentIndex === 0) {
+                resizeWidth.value = resizeHeight.value
+            } else {
+                const srcW = Math.max(1, appController.imageWidth)
+                const srcH = Math.max(1, appController.imageHeight)
+                resizeWidth.value = Math.max(1, Math.round(resizeHeight.value * srcW / srcH))
+            }
+            resizeUpdating = false
+        }
+
+        function convertResizeMode(previousIndex, nextIndex) {
+            if (previousIndex === nextIndex) return
+            const srcW = Math.max(1, appController.imageWidth)
+            const srcH = Math.max(1, appController.imageHeight)
+            resizeUpdating = true
+            if (previousIndex === 0 && nextIndex === 1) {
+                const widthPx = Math.max(1, Math.round(resizeWidth.value * srcW / 100.0))
+                resizeWidth.value = widthPx
+                resizeHeight.value = resizeLock.checked
+                    ? Math.max(1, Math.round(widthPx * srcH / srcW))
+                    : Math.max(1, Math.round(resizeHeight.value * srcH / 100.0))
+            } else if (previousIndex === 1 && nextIndex === 0) {
+                const widthPct = Math.max(1, Math.round(resizeWidth.value * 100.0 / srcW))
+                resizeWidth.value = widthPct
+                resizeHeight.value = resizeLock.checked
+                    ? widthPct
+                    : Math.max(1, Math.round(resizeHeight.value * 100.0 / srcH))
+            }
+            resizeUpdating = false
+        }
+
         onAboutToShow: {
+            resizeUpdating = true
             resizeWidth.value = 100
             resizeHeight.value = 100
             resizeMode.currentIndex = 0
+            lastResizeMode = 0
             resizeLock.checked = true
+            resizeUpdating = false
         }
         contentItem: GridLayout {
             columns: 2
             rowSpacing: 10
             columnSpacing: 14
             Label { text: window.text("幅", "Width"); color: window.textColor }
-            SpinBox { id: resizeWidth; objectName: "resizeWidthSpinBox"; from: 1; to: 100000; value: 100; editable: true }
+            SpinBox {
+                id: resizeWidth
+                objectName: "resizeWidthSpinBox"
+                from: 1
+                to: 100000
+                value: 100
+                editable: true
+                onValueModified: resizeDialog.applyAspectFromWidth()
+            }
             Label { text: window.text("高さ", "Height"); color: window.textColor }
-            SpinBox { id: resizeHeight; objectName: "resizeHeightSpinBox"; from: 1; to: 100000; value: 100; editable: true }
+            SpinBox {
+                id: resizeHeight
+                objectName: "resizeHeightSpinBox"
+                from: 1
+                to: 100000
+                value: 100
+                editable: true
+                onValueModified: resizeDialog.applyAspectFromHeight()
+            }
             Label { text: window.text("単位", "Mode"); color: window.textColor }
             ComboBox {
                 id: resizeMode
                 objectName: "resizeModeComboBox"
                 model: [window.text("パーセント", "Percent"), window.text("ピクセル", "Pixels")]
+                onActivated: {
+                    resizeDialog.convertResizeMode(resizeDialog.lastResizeMode, currentIndex)
+                    resizeDialog.lastResizeMode = currentIndex
+                }
             }
             Item { Layout.preferredWidth: 1; Layout.preferredHeight: 1 }
             CheckBox {
@@ -383,6 +453,7 @@ ApplicationWindow {
                 objectName: "resizeLockCheckBox"
                 text: window.text("縦横比を保持", "Keep aspect ratio")
                 checked: true
+                onToggled: if (checked) resizeDialog.applyAspectFromWidth()
             }
         }
         onAccepted: window.requestResize(resizeWidth.value, resizeHeight.value,

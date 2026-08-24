@@ -6,6 +6,7 @@
 - CMake 3.20+
 - MinGW-w64 C++17 toolchain
 - Python 3.13 for optional test and utility scripts
+- Qt 6.10.3 MinGW (`C:\Users\makta\tools\Qt\6.10.3\mingw_64`) and MinGW 13.1.0 (`C:\Users\makta\tools\Qt\Tools\mingw1310_64`) for the Qt Quick target. Override with `QT_ROOT` / `QT_MINGW_BIN` if needed.
 
 Build and test:
 
@@ -14,4 +15,10 @@ Build and test:
 ctest --test-dir build/native --output-on-failure
 ```
 
-The MinGW runtime is statically linked. The executable is written to `dist/binary/QuickImageView.exe`.
+Qt Quick:
+
+```powershell
+.\build.bat qt
+```
+
+The MinGW runtime is statically linked. The Win32 executable is written to `dist/binary/QuickImageView.exe`. The Qt executable is `dist/binary/QuickImageViewQt.exe`.

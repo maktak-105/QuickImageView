@@ -17,9 +17,24 @@ if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Build output not
 
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 if ($Qt) {
-    Get-ChildItem -LiteralPath (Join-Path $root 'dist\binary') -Force |
-        Where-Object { $_.Name -ne 'QuickImageView.exe' } |
-        Copy-Item -Destination $output -Recurse -Force
+    $binaryDir = Join-Path $root 'dist\binary'
+    $qtRuntime = Get-ChildItem -LiteralPath $binaryDir -Force | Where-Object {
+        $_.Name -eq 'QuickImageViewQt.exe' -or
+        $_.Name -like 'Qt6*.dll' -or
+        $_.Name -like 'libgcc*' -or
+        $_.Name -like 'libstdc++*' -or
+        $_.Name -like 'libwinpthread*' -or
+        $_.Name -like 'vcruntime*.dll' -or
+        $_.Name -like 'msvcp*.dll' -or
+        $_.Name -like 'concrt*.dll' -or
+        $_.Name -like 'vccorlib*.dll' -or
+        $_.Name -eq 'D3Dcompiler_47.dll' -or
+        $_.Name -in @('platforms', 'imageformats', 'qml', 'iconengines')
+    }
+    if (-not ($qtRuntime | Where-Object { $_.Name -eq 'QuickImageViewQt.exe' })) {
+        throw "Qt runtime files were not found under $binaryDir"
+    }
+    $qtRuntime | Copy-Item -Destination $output -Recurse -Force
 } else {
     $outputExe = Join-Path $output 'QuickImageView.exe'
     if ([IO.Path]::GetFullPath($exe) -ne [IO.Path]::GetFullPath($outputExe)) {

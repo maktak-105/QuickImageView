@@ -18,6 +18,8 @@ class QtAppControllerTest final : public QObject {
 private slots:
     void defaultsAreJapanese();
     void languageSwitchUpdatesState();
+    void formatsExifTextInJapaneseAndEnglish();
+    void languageSwitchUpdatesExifLabels();
     void rejectsNonLocalUrl();
     void rejectsMissingImagePath();
     void loadsPngThroughWic();
@@ -52,6 +54,39 @@ void QtAppControllerTest::languageSwitchUpdatesState() {
     QCOMPARE(languageSpy.count(), 1);
     QCOMPARE(statusSpy.count(), 1);
     QVERIFY(controller.statusText().contains(QStringLiteral("Open an image")));
+}
+
+void QtAppControllerTest::formatsExifTextInJapaneseAndEnglish() {
+    ImageEngine::ExifFields fields;
+    QCOMPARE(ImageEngine::formatExifText(fields, false), QStringLiteral("EXIF: なし"));
+    QCOMPARE(ImageEngine::formatExifText(fields, true), QStringLiteral("EXIF: none"));
+
+    fields.make = QStringLiteral("Canon");
+    fields.model = QStringLiteral("EOS");
+    fields.taken = QStringLiteral("2026:08:24");
+    QCOMPARE(ImageEngine::formatExifText(fields, false),
+             QStringLiteral("EXIF: メーカー=Canon  機種=EOS  撮影日時=2026:08:24"));
+    QCOMPARE(ImageEngine::formatExifText(fields, true),
+             QStringLiteral("EXIF: Make=Canon  Model=EOS  Taken=2026:08:24"));
+}
+
+void QtAppControllerTest::languageSwitchUpdatesExifLabels() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString filePath = directory.filePath(QStringLiteral("exif.png"));
+    QImage fixture(2, 2, QImage::Format_ARGB32);
+    fixture.fill(Qt::red);
+    QVERIFY(fixture.save(filePath, "PNG"));
+
+    QtAppController controller;
+    controller.openImage(QUrl::fromLocalFile(filePath));
+    QVERIFY(controller.hasImage());
+    QCOMPARE(controller.exifText(), QStringLiteral("EXIF: なし"));
+
+    QSignalSpy exifSpy(&controller, &QtAppController::exifChanged);
+    controller.setEnglish(true);
+    QCOMPARE(exifSpy.count(), 1);
+    QCOMPARE(controller.exifText(), QStringLiteral("EXIF: none"));
 }
 
 void QtAppControllerTest::rejectsNonLocalUrl() {

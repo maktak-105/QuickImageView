@@ -10,8 +10,16 @@ public:
         int compression = 6;
     };
 
+    struct ExifFields {
+        QString make;
+        QString model;
+        QString taken;
+        bool isEmpty() const { return make.isEmpty() && model.isEmpty() && taken.isEmpty(); }
+    };
+
     static QImage load(const QString& filePath, QString* errorMessage);
-    static QString exifText(const QString& filePath);
+    static ExifFields readExif(const QString& filePath);
+    static QString formatExifText(const ExifFields& fields, bool english);
     static bool save(const QImage& image, const QString& filePath, QString* errorMessage);
     static bool save(const QImage& image, const QString& filePath, const SaveOptions& options,
                      QString* errorMessage);
