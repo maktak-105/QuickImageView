@@ -17,3 +17,7 @@ dist/*.msi
 *.log
 __pycache__/
 *.py[cod]
+.venv/
+# ローカルに展開した重複Qt SDK（約1.2GB）。誤コミット防止のため除外する。
+6.10.3/
+docs/loop/.locks/
