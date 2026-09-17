@@ -14,6 +14,12 @@
 #include <QStringList>
 #include <QTransform>
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <shlobj.h>
+
 QtAppController::QtAppController(QuickImageProvider* imageProvider, QObject* parent)
     : QObject(parent), statusText_(localize(QStringLiteral("画像を開いてください。"), QStringLiteral("Open an image to begin."))),
       imageProvider_(imageProvider) {}
@@ -439,4 +445,97 @@ void QtAppController::clearEditHistory() {
     undoHistory_.clear();
     redoHistory_.clear();
     if (changed) emit editHistoryChanged();
+}
+
+bool QtAppController::isContextMenuRegistered() const {
+    HKEY key = nullptr;
+    const wchar_t* subKey = L"Software\\Classes\\SystemFileAssociations\\image\\shell\\QuickImageView\\command";
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, subKey, 0, KEY_READ, &key) == ERROR_SUCCESS) {
+        RegCloseKey(key);
+        return true;
+    }
+    return false;
+}
+
+bool QtAppController::setContextMenuRegistered(bool enable) {
+    const wchar_t* rootSubKey = L"Software\\Classes\\SystemFileAssociations\\image\\shell\\QuickImageView";
+    if (!enable) {
+        LSTATUS status = RegDeleteTreeW(HKEY_CURRENT_USER, rootSubKey);
+        SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+        emit contextMenuRegisteredChanged();
+        return (status == ERROR_SUCCESS || status == ERROR_FILE_NOT_FOUND);
+    }
+
+    const QString appExePath = QDir::toNativeSeparators(QCoreApplication::applicationFilePath());
+    const QString appDir = QCoreApplication::applicationDirPath();
+    const QString icoCandidate = QDir::toNativeSeparators(appDir + QStringLiteral("/QuickImageView.ico"));
+    const QString iconPath = QFile::exists(icoCandidate) ? icoCandidate : appExePath;
+
+    HKEY hKey = nullptr;
+    LSTATUS status = RegCreateKeyExW(
+        HKEY_CURRENT_USER,
+        rootSubKey,
+        0,
+        nullptr,
+        REG_OPTION_NON_VOLATILE,
+        KEY_SET_VALUE | KEY_CREATE_SUB_KEY,
+        nullptr,
+        &hKey,
+        nullptr
+    );
+    if (status != ERROR_SUCCESS) {
+        return false;
+    }
+
+    const QString menuText = english_ ? QStringLiteral("Open with QuickImageView") : QStringLiteral("QuickImageViewで開く");
+    const std::wstring wMenuText = menuText.toStdWString();
+    RegSetValueExW(
+        hKey,
+        nullptr,
+        0,
+        REG_SZ,
+        reinterpret_cast<const BYTE*>(wMenuText.c_str()),
+        static_cast<DWORD>((wMenuText.length() + 1) * sizeof(wchar_t))
+    );
+
+    const std::wstring wIconPath = iconPath.toStdWString();
+    RegSetValueExW(
+        hKey,
+        L"Icon",
+        0,
+        REG_SZ,
+        reinterpret_cast<const BYTE*>(wIconPath.c_str()),
+        static_cast<DWORD>((wIconPath.length() + 1) * sizeof(wchar_t))
+    );
+
+    HKEY hCmdKey = nullptr;
+    status = RegCreateKeyExW(
+        hKey,
+        L"command",
+        0,
+        nullptr,
+        REG_OPTION_NON_VOLATILE,
+        KEY_SET_VALUE,
+        nullptr,
+        &hCmdKey,
+        nullptr
+    );
+    if (status == ERROR_SUCCESS) {
+        const QString commandValue = QStringLiteral("\"%1\" \"%2\"").arg(appExePath, QStringLiteral("%1"));
+        const std::wstring wCmdValue = commandValue.toStdWString();
+        RegSetValueExW(
+            hCmdKey,
+            nullptr,
+            0,
+            REG_SZ,
+            reinterpret_cast<const BYTE*>(wCmdValue.c_str()),
+            static_cast<DWORD>((wCmdValue.length() + 1) * sizeof(wchar_t))
+        );
+        RegCloseKey(hCmdKey);
+    }
+    RegCloseKey(hKey);
+
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+    emit contextMenuRegisteredChanged();
+    return true;
 }

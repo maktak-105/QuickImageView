@@ -28,6 +28,19 @@ LocalAppData directory.
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
+To register the Qt Quick build as the context-menu target and deploy its Qt
+runtime, pass `-Qt`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1 -Qt
+```
+
+If PowerToys Image Resizer, PowerRename, or File Locksmith appears twice in the Windows 11 context menu, run the following once to block only the modern duplicate handlers for the current user. The setting persists across PowerToys and Explorer restarts.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\cleanup-context-menu.ps1
+```
+
 The default installation registers the QuickImageView image context-menu entry
 under the current user (HKCU). To install without that registration, use:
 
@@ -56,6 +69,6 @@ runtime without the legacy executable:
 ```
 
 The Qt package uses `QuickImageViewQt.exe`, includes the deployed Qt DLLs and
-plugins, and keeps the unsigned ZIP distribution model. The existing MSI and
-per-user installer continue to target the stable Win32 executable until the
-Qt migration replaces that target deliberately.
+plugins, and keeps the unsigned ZIP distribution model. The MSI continues to
+target the stable Win32 executable; the per-user installer switches to the Qt
+build when `-Qt` is specified.

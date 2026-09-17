@@ -39,7 +39,7 @@ run([
     "cmake", "--build", str(BUILD), "--target",
     "QuickImageView", "QuickImageViewQt", "qiv_controller_tests", "qiv_qml_tests", "--parallel", "2",
 ], environment)
-run(["ctest", "--test-dir", str(BUILD), "--output-on-failure"], environment)
+run(["ctest", "--test-dir", str(BUILD), "--output-on-failure", "--timeout", "10"], environment)
 
 require_file(QT_BINARY, "Qt build output")
 deploy()

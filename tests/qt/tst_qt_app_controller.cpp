@@ -32,6 +32,7 @@ private slots:
     void pasteCanBePositionedAndCommitted();
     void saveOptionsAreApplied();
     void undoAndRedoRestoreImageState();
+    void contextMenuRegistrationCanBeQueried();
 };
 
 void QtAppControllerTest::defaultsAreJapanese() {
@@ -311,6 +312,14 @@ void QtAppControllerTest::undoAndRedoRestoreImageState() {
     QVERIFY(provider.requestImage(QString(), nullptr, QSize()).size() == QSize(2, 4));
 }
 
+void QtAppControllerTest::contextMenuRegistrationCanBeQueried() {
+    QtAppController controller;
+    QSignalSpy spy(&controller, &QtAppController::contextMenuRegisteredChanged);
+    QVERIFY(spy.isValid());
+    // isContextMenuRegistered() returns a boolean representing the current registry state
+    const bool isRegistered = controller.isContextMenuRegistered();
+    QCOMPARE(controller.property("contextMenuRegistered").toBool(), isRegistered);
+}
 
 QTEST_MAIN(QtAppControllerTest)
 #include "tst_qt_app_controller.moc"

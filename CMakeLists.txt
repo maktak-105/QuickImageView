@@ -59,6 +59,7 @@ if (QUICKIMAGEVIEW_BUILD_QT)
     )
     target_compile_definitions(QuickImageViewQt PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
     target_link_libraries(QuickImageViewQt PRIVATE Qt6::Quick Qt6::QuickControls2 windowscodecs ole32)
+    target_link_libraries(QuickImageViewQt PRIVATE Qt6::Quick Qt6::QuickControls2 windowscodecs ole32 shell32 advapi32)
 
     qt_add_qml_module(QuickImageViewQt
       URI QuickImageView
@@ -68,6 +69,7 @@ if (QUICKIMAGEVIEW_BUILD_QT)
         qml/AboutDialog.qml
         qml/HelpView.qml
         qml/InfoWindow.qml
+        qml/SettingsDialog.qml
     )
     qt_add_resources(QuickImageViewQt "QuickImageViewEmbeddedResources"
       PREFIX "/"
@@ -90,6 +92,7 @@ if (QUICKIMAGEVIEW_BUILD_QT)
     target_compile_definitions(qiv_controller_tests PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
     target_include_directories(qiv_controller_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/core/native")
     target_link_libraries(qiv_controller_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test windowscodecs ole32)
+    target_link_libraries(qiv_controller_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test windowscodecs ole32 shell32 advapi32)
     add_test(NAME qiv_controller_tests COMMAND qiv_controller_tests)
 
     add_executable(qiv_qml_tests tests/qml/qml_tests.cpp)

@@ -28,6 +28,12 @@ UNUSED_DLL_PREFIXES = (
     "Qt6QuickControls2Universal",
     "Qt6QuickControls2FluentWinUI3",
     "Qt6QuickControls2Windows",
+    "dxcompiler",
+    "dxil",
+    "D3Dcompiler_47",
+    "Qt6LabsFolderListModel",
+    "Qt6QuickEffects",
+    "Qt6QuickShapes",
 )
 UNUSED_QML_DIRS = (
     Path("qml") / "QtQuick" / "LocalStorage",
@@ -40,6 +46,9 @@ UNUSED_QML_DIRS = (
     Path("qml") / "QtQuick" / "Dialogs" / "quickimpl" / "qml" / "+Imagine",
     Path("qml") / "QtQuick" / "Dialogs" / "quickimpl" / "qml" / "+Material",
     Path("qml") / "QtQuick" / "Dialogs" / "quickimpl" / "qml" / "+Universal",
+    Path("qml") / "Qt" / "labs",
+    Path("qml") / "QtQuick" / "Effects",
+    Path("qml") / "QtQuick" / "Shapes",
 )
 
 
@@ -114,6 +123,10 @@ def deploy() -> None:
         leftover_dir = QT_DIST / relative
         if leftover_dir.exists():
             shutil.rmtree(leftover_dir)
+
+    icon_source = ROOT / "resources" / "icons" / "QuickImageView.ico"
+    if icon_source.is_file():
+        shutil.copy2(icon_source, QT_DIST / "QuickImageView.ico")
 
 
 if __name__ == "__main__":

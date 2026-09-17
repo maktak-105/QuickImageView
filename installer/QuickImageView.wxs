@@ -23,10 +23,12 @@
           <File Id="LibwebpPatents" Source="$(var.SourceDir)\libwebp-PATENTS" />
           <File Id="ThirdPartyNoticesEn" Source="$(var.SourceDir)\third_party_licenses.md" />
           <File Id="ThirdPartyNoticesJa" Source="$(var.SourceDir)\third_party_licenses_jp.md" />
+          <File Id="QuickImageViewIconFile" Source="$(var.SourceDir)\QuickImageView-icon.ico" />
         </Component>
         <Component Id="ContextMenu" Guid="4D0ED4A9-6954-426D-B894-46E65DB64560" Win64="yes">
           <RegistryKey Root="HKCU" Key="Software\Classes\SystemFileAssociations\image\shell\QuickImageView" Action="createAndRemoveOnUninstall">
             <RegistryValue Type="string" Value="Open with QuickImageView" KeyPath="yes" />
+            <RegistryValue Name="Icon" Type="string" Value="[INSTALLFOLDER]QuickImageView-icon.ico" />
           </RegistryKey>
           <RegistryKey Root="HKCU" Key="Software\Classes\SystemFileAssociations\image\shell\QuickImageView\command" Action="createAndRemoveOnUninstall"><RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]QuickImageView.exe&quot; &quot;%1&quot;" /></RegistryKey>
         </Component>

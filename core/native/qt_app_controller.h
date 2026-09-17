@@ -32,6 +32,7 @@ class QtAppController final : public QObject {
     Q_PROPERTY(int pasteY READ pasteY NOTIFY pasteChanged)
     Q_PROPERTY(int pasteWidth READ pasteWidth NOTIFY pasteChanged)
     Q_PROPERTY(int pasteHeight READ pasteHeight NOTIFY pasteChanged)
+    Q_PROPERTY(bool contextMenuRegistered READ isContextMenuRegistered NOTIFY contextMenuRegisteredChanged)
 
 public:
     explicit QtAppController(QuickImageProvider* imageProvider = nullptr, QObject* parent = nullptr);
@@ -82,6 +83,8 @@ public:
     Q_INVOKABLE void undo();
     Q_INVOKABLE void redo();
     Q_INVOKABLE void setEnglish(bool enabled);
+    Q_INVOKABLE bool isContextMenuRegistered() const;
+    Q_INVOKABLE bool setContextMenuRegistered(bool enable);
 
 signals:
     void languageChanged();
@@ -92,6 +95,7 @@ signals:
     void exifChanged();
     void fileInfoChanged();
     void pasteChanged();
+    void contextMenuRegisteredChanged();
 
 private:
     QString localize(const QString& japanese, const QString& english) const;

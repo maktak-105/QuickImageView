@@ -224,6 +224,13 @@ ApplicationWindow {
             }
             MenuSeparator {}
             DarkMenuItem {
+                objectName: "settingsMenuItem"
+                Accessible.name: window.text("設定", "Settings")
+                text: window.text("設定...", "Settings...")
+                onTriggered: settingsDialog.open()
+            }
+            MenuSeparator {}
+            DarkMenuItem {
                 objectName: "exitMenuItem"
                 Accessible.name: window.text("終了", "Exit")
                 text: window.text("終了", "Exit") + "  Ctrl+Q"
@@ -803,5 +810,9 @@ ApplicationWindow {
         mutedTextColor: window.mutedTextColor
         raisedSurfaceColor: window.raisedSurfaceColor
         onCopyExifRequested: appController.copyExif()
+    }
+    SettingsDialog {
+        id: settingsDialog
+        english: appController.english
     }
 }
