@@ -8,10 +8,11 @@ Windows向けの軽量画像ビューアー・画像編集アプリです。日�
 
 ## 配布版を使う
 
-配布用ZIPは[GitHub Releases](https://github.com/maktak-105/QuickImageView/releases)または[最新版ZIP](https://github.com/maktak-105/QuickImageView/releases/latest/download/QuickImageView-binary.zip)から取得できます。ZIPには実行ファイル、日英の説明書・履歴、MIT License、libwebpのCOPYING/PATENTS、日英ヘルプを同梱します。ReleaseにはZIPと実行ファイルのSHA-256を記載した`SHA256SUMS.txt`も添付されます。MSIは同梱スクリプトで別途作成でき、右クリック登録と拡張子関連付けを個別に選択できます。関連付けは既定で未選択です。
+配布用ZIPは[最新版ZIP](https://github.com/maktak-105/QuickImageView/releases/latest/download/QuickImageView-binary.zip)、MSIは[GitHub Releases](https://github.com/maktak-105/QuickImageView/releases)から取得できます。ZIPとMSIには実行ファイル、日英の説明書・履歴、MIT License、libwebpのCOPYING/PATENTS、日英ヘルプを同梱します。各ReleaseにはZIP・MSI・実行ファイルのSHA-256を記載した`SHA256SUMS.txt`も添付されます。MSIでは右クリック登録と拡張子関連付けを個別に選択できます。関連付けは既定で未選択です。
 
 ```powershell
 Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
+Get-FileHash .\QuickImageView-3.1.3-x64.msi -Algorithm SHA256
 ```
 
 ## 表示と基本操作

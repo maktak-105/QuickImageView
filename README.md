@@ -14,10 +14,11 @@ history, help, MIT License, libwebp COPYING/PATENTS, and the Japanese license
 notice. MSI registration and each image-extension association are independent
 optional features; all associations are unselected by default.
 
-Download the release ZIP from [GitHub Releases](https://github.com/maktak-105/QuickImageView/releases) or use the [latest ZIP](https://github.com/maktak-105/QuickImageView/releases/latest/download/QuickImageView-binary.zip). Each release includes `QuickImageView-binary.zip` and a CI-generated `SHA256SUMS.txt` for the package and executable.
+Download the [latest ZIP](https://github.com/maktak-105/QuickImageView/releases/latest/download/QuickImageView-binary.zip) or MSI from [GitHub Releases](https://github.com/maktak-105/QuickImageView/releases). Each release includes both installers and a CI-generated `SHA256SUMS.txt` covering the ZIP, MSI, and executable.
 
 ```powershell
 Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
+Get-FileHash .\QuickImageView-3.1.3-x64.msi -Algorithm SHA256
 ```
 
 The repository root keeps the canonical README and history files. `docs/`
