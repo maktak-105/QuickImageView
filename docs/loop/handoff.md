@@ -7,29 +7,29 @@
 - 最新コミット: `eb12d60`（`origin/main`へプッシュ済み）
 - 直近コミット時点の作業ツリー: クリーン（この引き継ぎ更新自体は未コミット）
 - PowerShell: 7.6.5
-- アプリ: QuickImageView 0.1.0
+- アプリ: QuickImageView 2.1.0
 
 ## 正本と検査の入口
 
 - 機能仕様の正本: `README.md`
-- 日本語仕様: `README_jp.md`、`document/spec_jp.md`
-- 固定操作台帳: `python/tests/operations.json`
-- 台帳再生成: `python python/tests/rebuild_catalog.py`
+- 日本語仕様: `README_jp.md`、`docs/spec_jp.md`
+- 固定操作台帳: `tests/python/operations.json`
+- 台帳再生成: `python tests/python/rebuild_catalog.py`
 - ループ設計: `plans/test-rebuild-python-001.md`
-- 正式ループ入口: `python python/tests/run_loop.py`
-- UI操作本体: `python/tests/ui_test.py`
+- 正式ループ入口: `python tests/python/run_loop.py`
+- UI操作本体: `tests/python/ui_test.py`
 - 直近結果: `docs/loop/current.json`
 - HTMLレポート: `docs/loop/report.html`
 
-READMEの実装対象は現在64件で、操作台帳と1:1で対応している。通常の検査実行では台帳を再生成しない。READMEの機能を追加・変更・削除した場合だけ、明示的に次を実行して台帳差分を確認する。
+READMEの実装対象は現在98件で、`tests/python/operations.json`の操作台帳と1:1で対応している。通常の検査実行では台帳を再生成しない。READMEの機能を追加・変更・削除した場合だけ、明示的に次を実行して台帳差分を確認する。
 
 ```powershell
-python .\python\tests\rebuild_catalog.py
+python .\tests\python\rebuild_catalog.py
 ```
 
-## 直近の正式ループ
+## 直近の記録
 
-実行順は次のとおり。
+以下はREADME全64項目だった時点の過去記録で、現在の98項目全体に対する検査結果ではありません。フォルダ移行後の再検査は未実施です。実行順は次のとおり。
 
 1. CMake configure
 2. ビルド
@@ -46,7 +46,7 @@ python .\python\tests\rebuild_catalog.py
 - UI FAIL/ERROR/UNCHECKED: 0件
 - CTest: PASS
 - `--self-test`: PASS
-- install-time専用の除外: 7件（README全64件には含まれるが、アプリ起動後のUI検査対象外）
+- install-time専用の除外: 7件（過去記録の64件には含まれるが、当時のアプリ起動後UI検査対象外）
 - 除外ID: `feature_057`～`feature_063`
 
 UIでFAIL・ERROR・UNCHECKEDになった機能を、CLI・静的検査・関数検査で合格扱いにしてはいけない。
@@ -57,7 +57,7 @@ UIでFAIL・ERROR・UNCHECKEDになった機能を、CLI・静的検査・関数
 - 画像表示中のD&Dで確認メッセージを表示し、了承時だけ現在画像を閉じて新画像を開く処理を実装
 - D&DをREADME・操作台帳・UI検査へ追加
 - libwebp 1.6.0をソース組込みし、WebP保存を実装
-- libwebpの`COPYING`・`PATENTS`と配布時の注意を`document/third_party_licenses.md`へ記録
+- libwebpの`COPYING`・`PATENTS`と配布時の注意を`docs/third_party_licenses.md`へ記録
 - 旧PowerShell検査プログラム、旧台帳、旧ループ管理ファイルを削除
 - Python + pywinautoによる実UI検査へ再構築
 - 保存拒否、パン、EXIFのUI検査判定を実画面の挙動に合わせて修正
@@ -72,7 +72,7 @@ UIでFAIL・ERROR・UNCHECKEDになった機能を、CLI・静的検査・関数
 - EXIFなしの場合の表示を定義する
 - OCRではなく、フローティングウィンドウのUI要素とクリップボード内容を直接検査する
 
-現行READMEにあるのは「EXIFが存在する場合、メーカー、機種、撮影日時など代表的な情報を表示する」だけであり、EXIFコピーは未記載である。この引継ぎ時点の未実装指摘であり、現在はREADMEと仕様書へ反映済みである。仕様変更時は `python python/tests/rebuild_catalog.py` で台帳を更新すること。
+現行READMEにあるのは「EXIFが存在する場合、メーカー、機種、撮影日時など代表的な情報を表示する」だけであり、EXIFコピーは未記載である。この引継ぎ時点の未実装指摘であり、現在はREADMEと仕様書へ反映済みである。仕様変更時は `python tests/python/rebuild_catalog.py` で台帳を更新すること。
 
 現行のEXIF UI検査は画像上部の文字をOCRしているため、背景色・画像内容・アンチエイリアスの影響を受ける。これは暫定的な既存検査であり、フローティングウィンドウ実装後はOCR判定を残さず、UIコントロールの存在・表示テキスト・コピー結果を直接検査する。
 

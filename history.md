@@ -1,6 +1,8 @@
 # QuickImageView Changelog
 
-[日本語版 history_jp.md](history_jp.md)
+## v3.1.3 — 2026-09-20
+
+- Fixed the project restructure, build/package paths, and release verification.
 
 ## Versioning rules
 

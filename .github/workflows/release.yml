@@ -12,17 +12,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Configure
-        run: cmake -S . -B build/native -G "Visual Studio 17 2022"
+        run: cmake -S . -B build/intermediate/native -G "Visual Studio 17 2022"
       - name: Build
-        run: cmake --build build/native --config Release
+        run: cmake --build build/intermediate/native --config Release
       - name: Test
-        run: ctest --test-dir build/native -C Release --output-on-failure
+        run: ctest --test-dir build/intermediate/native -C Release --output-on-failure
       - name: Assemble package
         shell: pwsh
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\package
-          Compress-Archive -Path .\build\package\* -DestinationPath QuickImageView-binary.zip -Force
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\intermediate\package
+          Compress-Archive -Path .\build\intermediate\package\* -DestinationPath QuickImageView-binary.zip -Force
+      - name: Generate SHA-256 checksums
+        shell: pwsh
+        run: |
+          $lines = @()
+          foreach ($path in @('QuickImageView-binary.zip', 'dist/QuickImageView.exe')) {
+            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToUpper()
+            $lines += "$hash  $(Split-Path -Leaf $path)"
+          }
+          $lines | Set-Content -Path SHA256SUMS.txt -Encoding utf8NoBOM
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: QuickImageView-binary.zip
+          files: |
+            QuickImageView-binary.zip
+            SHA256SUMS.txt

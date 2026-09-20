@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(QuickImageView VERSION 2.1.0 LANGUAGES CXX)
+project(QuickImageView VERSION 3.1.3 LANGUAGES CXX)
 
 set(WEBP_BUILD_ANIM_UTILS OFF CACHE BOOL "" FORCE)
 set(WEBP_BUILD_CWEBP OFF CACHE BOOL "" FORCE)
@@ -16,13 +16,13 @@ add_subdirectory(third_party/libwebp-1.6.0 third_party/libwebp-build EXCLUDE_FRO
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(QuickImageView WIN32 core/native/main.cpp core/native/resource.rc)
+add_executable(QuickImageView WIN32 src/app/main.cpp src/app/resource.rc)
 set_target_properties(QuickImageView PROPERTIES
-  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist/binary"
-  RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/dist/binary"
-  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/dist/binary"
-  RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/dist/binary"
-  RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/dist/binary"
+  RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist"
+  RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/dist"
+  RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/dist"
+  RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/dist"
+  RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/dist"
 )
 target_compile_definitions(QuickImageView PRIVATE UNICODE _UNICODE NOMINMAX)
 target_link_libraries(QuickImageView PRIVATE windowscodecs ole32 user32 gdi32 shlwapi shell32 comdlg32 uxtheme webp)

@@ -1,6 +1,8 @@
 # QuickImageView 変更履歴
 
-[English history.md](history.md)
+## v3.1.3 — 2026-09-20
+
+- フォルダ構成移行後のビルド・配布パスとリリース検証を修正。
 
 ## バージョン命名規則
 

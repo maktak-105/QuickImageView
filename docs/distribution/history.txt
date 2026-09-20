@@ -1,0 +1,24 @@
+QuickImageView Changelog
+v3.1.3 (2026-09-20)
+- Fixed build and release packaging after the folder restructure.
+
+------------------------
+
+2.1.0 (2026-08-24)
+------------------
+
+- Improved help readability and synchronized the application version.
+
+Versioning rules
+----------------
+
+- First digit: new features
+- Second digit: bug fixes
+- Third digit: documentation and other changes
+
+1.0.0 (2026-08-23)
+------------------
+
+- Added selection-only clipboard copy, overlay paste, and destination reload after Save As.
+- Added dark information bars, Segoe UI, an application icon, and Japanese/English UI switching.
+- Added MSI authoring with optional Explorer context menu and per-extension file associations.

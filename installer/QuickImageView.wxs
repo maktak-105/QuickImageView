@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
-  <Product Id="*" Name="QuickImageView" Language="1041" Version="2.1.0" Manufacturer="maktak-105" UpgradeCode="B3BCB430-7744-4878-A2C8-4B85E3312437">
+  <Product Id="*" Name="QuickImageView" Language="1041" Version="3.1.3" Manufacturer="maktak-105" UpgradeCode="B3BCB430-7744-4878-A2C8-4B85E3312437">
     <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" Platform="x64" />
     <MajorUpgrade DowngradeErrorMessage="A newer version of QuickImageView is already installed." />
     <MediaTemplate EmbedCab="yes" />

@@ -1,11 +1,11 @@
 # QuickImageView
 
-[Japanese README](README_jp.md)
-
 QuickImageView is a lightweight Windows image viewer and editor. The following
-requirements are the single source scope for the 72-item baseline and the
+requirements are the single source scope for the 98-item baseline and the
 additional completion and distribution checks. A requirement is not complete
 until the integrated UI/release verification records evidence for it.
+
+Version: **v3.1.3**
 
 <p align="center"><img src="assets/QuickImageView-gui-en.png" alt="QuickImageView English UI" width="720"></p>
 
@@ -14,11 +14,17 @@ history, help, MIT License, libwebp COPYING/PATENTS, and the Japanese license
 notice. MSI registration and each image-extension association are independent
 optional features; all associations are unselected by default.
 
-The repository root keeps the canonical README and history files. `document/`
-keeps specifications and developer documents. `resources/help/` keeps the
-bilingual help sources that are embedded into the executable. `dist/documents/`
+Download the release ZIP from [GitHub Releases](https://github.com/maktak-105/QuickImageView/releases) or use the [latest ZIP](https://github.com/maktak-105/QuickImageView/releases/latest/download/QuickImageView-binary.zip). Each release includes `QuickImageView-binary.zip` and a CI-generated `SHA256SUMS.txt` for the package and executable.
+
+```powershell
+Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
+```
+
+The repository root keeps the canonical README and history files. `docs/`
+keeps specifications and developer documents. `src/app/help/` keeps the
+bilingual help sources that are embedded into the executable. `docs/distribution/`
 contains the distribution README, history, license, and third-party notice
-files; `dist/binary/` contains binaries only.
+files; `dist/` contains binaries only.
 
 ## View and basic operation
 
@@ -107,7 +113,7 @@ files; `dist/binary/` contains binaries only.
 The command-line conversion form is:
 
 ```powershell
- .\dist\binary\QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
+ .\dist\QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
 ```
 
 ## Windows integration
@@ -152,7 +158,7 @@ The command-line conversion form is:
 - 英日README、仕様、ヘルプ、配布文書、履歴の参照先ファイルを配布物に揃える
 - 配布用READMEに取得URL、SHA-256、免責事項、インストール手順を記載する
 - 日本語ライセンス文書を配布物とMSIへ同梱する
-- `dist/documents/`には配布用README、履歴、ライセンス、libwebp文書を集約し、`dist/binary/`にはバイナリだけを置く
+- `docs/distribution/`には配布用README、履歴、ライセンス、libwebp文書を集約し、`dist/`にはバイナリだけを置く
 - MSIの画像拡張子関連付けを各拡張子の独立したFeatureとして選択できる
 - ダークテーマをダイアログ、情報帯、ステータスバーにも適用する
 - 旧EXIF情報帯を画像本体の表示へ残さず、フローティング表示へ移行する
@@ -186,21 +192,21 @@ The Open dialog exposes JPG/JPEG, PNG, TIFF, BMP, GIF, WebP, HEIC, and HEIF.
 ## Build
 
 ```powershell
-cmake -S . -B build/native -G "MinGW Makefiles"
-cmake --build build/native
-ctest --test-dir build/native --output-on-failure
+cmake -S . -B build/intermediate/native -G "MinGW Makefiles"
+cmake --build build/intermediate/native
+ctest --test-dir build/intermediate/native --output-on-failure
 ```
 
 Alternatively, run:
 
 ```powershell
-.\build.bat
+.\scripts\build.bat
 ```
 
 ## Run
 
 ```powershell
-.\dist\binary\QuickImageView.exe C:\path\to\image.png
+.\dist\QuickImageView.exe C:\path\to\image.png
 ```
 
 ## PowerShell installation
@@ -209,10 +215,10 @@ Alternatively, run:
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-To register the optional context menu, pass `-RegisterContextMenu`:
+The installer registers the context menu by default. To skip registration, pass `-NoRegisterContextMenu`:
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -RegisterContextMenu
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1 -NoRegisterContextMenu
 ```
 
 ## Uninstall
@@ -227,13 +233,13 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1
 ```
 
-The default package output directory is `build/package/`; final binaries remain in `dist/binary/`.
+The default package output directory is `build/intermediate/package/`; final binaries remain in `dist/`.
 
 ## License
 
 QuickImageView is distributed under the MIT License. See [LICENSE](LICENSE).
 
-WebP encoding uses libwebp 1.6.0. See [document/third_party_licenses.md](document/third_party_licenses.md), [document/third_party_licenses_jp.md](document/third_party_licenses_jp.md), and `third_party/libwebp-1.6.0/` for third-party license and patent notices.
+WebP encoding uses libwebp 1.6.0. See [docs/third_party_licenses.md](docs/third_party_licenses.md), [docs/third_party_licenses_jp.md](docs/third_party_licenses_jp.md), and `third_party/libwebp-1.6.0/` for third-party license and patent notices.
 
 ## Verification status
 

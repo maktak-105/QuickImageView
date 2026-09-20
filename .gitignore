@@ -2,14 +2,14 @@
 build/
 
 # Distribution binaries are generated; keep only the directory marker.
-dist/binary/*
-!dist/binary/.gitkeep
+dist/*
+!dist/.gitkeep
 
 # Packaging staging and generated release metadata
-dist/staging/
 dist/*.wixpdb
 dist/*.exe
 dist/*.msi
+SHA256SUMS.txt
 
 # Local IDE and Python files
 *.user
