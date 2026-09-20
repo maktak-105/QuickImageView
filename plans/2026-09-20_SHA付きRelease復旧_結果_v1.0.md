@@ -6,5 +6,6 @@
 - Release workflowにタグ指定のworkflow_dispatchとタグref checkoutを追加。
 
 ## 検証
-- CIと`v3.1.3`手動Release workflowの結果を記録する。
-- SHA添付とZIPハッシュ一致を実行後に記録する。
+- CI成功、`v3.1.3`手動Release workflow成功。
+- Release URL: https://github.com/maktak-105/QuickImageView/releases/tag/v3.1.3
+- `QuickImageView-binary.zip`と同梱EXEを実ファイルで照合し、SHA-256が2/2一致。
