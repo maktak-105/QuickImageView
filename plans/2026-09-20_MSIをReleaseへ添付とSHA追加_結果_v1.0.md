@@ -5,5 +5,6 @@
 - READMEと日英変更履歴を更新。
 
 ## 検証
-- GitHub Actions Release実行とMSIの添付を確認後に記録する。
-- ReleaseのSHA一覧を配布ZIP、MSI、EXEの実ファイルと照合して結果を記録する。
+- GitHub Actions Release run `35494787950` 成功。WiX MSI生成とRelease添付を確認。
+- Release URL: https://github.com/maktak-105/QuickImageView/releases/tag/v3.1.3
+- `SHA256SUMS.txt`内のZIP、MSI、EXEをダウンロードした実配布物と照合し、3/3一致。

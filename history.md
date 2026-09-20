@@ -3,6 +3,7 @@
 ## v3.1.3 — 2026-09-20
 
 - Fixed the project restructure, build/package paths, and release verification.
+- Added the WiX MSI installer to GitHub Releases and included its SHA-256 in the checksum list.
 
 ## Versioning rules
 
