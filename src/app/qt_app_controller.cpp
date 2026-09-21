@@ -158,8 +158,23 @@ void QtAppController::copyExif() {
 }
 
 void QtAppController::saveImage(const QUrl& fileUrl) {
+    saveImage(fileUrl, QString());
+}
+
+void QtAppController::saveImage(const QUrl& fileUrl, const QString& defaultSuffix) {
     if (!hasImage() || !fileUrl.isLocalFile()) return;
-    const QString outputPath = QFileInfo(fileUrl.toLocalFile()).absoluteFilePath();
+    QString outputPath = QFileInfo(fileUrl.toLocalFile()).absoluteFilePath();
+    if (QFileInfo(outputPath).suffix().isEmpty()) {
+        QString suffix = defaultSuffix.trimmed();
+        while (suffix.startsWith(QLatin1Char('*')) || suffix.startsWith(QLatin1Char('.'))) suffix.remove(0, 1);
+        if (suffix.isEmpty()) {
+            statusText_ = localize(QStringLiteral("保存する形式の拡張子を指定してください。"),
+                                   QStringLiteral("Specify a file extension for the format to save."));
+            emit statusChanged();
+            return;
+        }
+        outputPath += QLatin1Char('.') + suffix;
+    }
     if (!sourcePath_.isEmpty() && QFileInfo(outputPath).absoluteFilePath() == QFileInfo(sourcePath_).absoluteFilePath()) {
         statusText_ = localize(QStringLiteral("原本と同じ場所には保存できません。原本は変更していません。"),
                                QStringLiteral("The original image cannot be overwritten."));
@@ -178,7 +193,15 @@ void QtAppController::saveImage(const QUrl& fileUrl) {
         emit statusChanged();
         return;
     }
-    statusText_ = localize(QStringLiteral("別ファイルとして保存しました。"), QStringLiteral("Saved as a separate file."));
+    // 保存先を確認なしで再読み込みし、現在の画像として表示する（3.x と同じ）。
+    openImage(QUrl::fromLocalFile(outputPath));
+    if (sourcePath_ == QFileInfo(outputPath).absoluteFilePath()) {
+        statusText_ = localize(QStringLiteral("別ファイルとして保存し、保存先ファイルを再読み込みしました。原本は変更していません。"),
+                               QStringLiteral("Saved as a separate file and reloaded it. The original was not changed."));
+    } else {
+        statusText_ = localize(QStringLiteral("別ファイルとして保存しました。保存先の再読み込みはできませんでした。"),
+                               QStringLiteral("Saved as a separate file, but reloading it failed."));
+    }
     emit statusChanged();
 }
 

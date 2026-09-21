@@ -24,6 +24,11 @@ private slots:
     void rejectsMissingImagePath();
     void loadsPngThroughWic();
     void loadsWebPThroughQtImageFormats();
+    void savesTiffWithoutQtImagePlugin();
+    void savesHeicWithQualityWhenWicHasAnEncoder();
+    void saveAppendsTheSelectedExtensionAndReloadsTheFile();
+    void saveWithoutAnyExtensionIsRejected();
+    void convertsFilesFromTheCommandLineWithoutOverwriting();
     void rotatesDisplayedImage();
     void rotatesDisplayedImage180Degrees();
     void resizesDisplayedImage();
@@ -139,6 +144,135 @@ void QtAppControllerTest::loadsWebPThroughQtImageFormats() {
     QCOMPARE(loaded.size(), QSize(2, 2));
     QCOMPARE(loaded.pixelColor(0, 0).red(), 0);
     QCOMPARE(loaded.pixelColor(0, 0).green(), 220);
+}
+
+void QtAppControllerTest::savesTiffWithoutQtImagePlugin() {
+    // TIFF is written through WIC, so it must work even when Qt has no TIFF image plugin
+    // (the MinGW build of Qt ships none).
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    QImage fixture(4, 3, QImage::Format_ARGB32);
+    fixture.fill(QColor(10, 200, 120, 255));
+
+    for (const QString& name : {QStringLiteral("plain.tif"), QStringLiteral("plain.TIFF")}) {
+        for (const int compression : {0, 6}) {
+            const QString filePath = directory.filePath(QStringLiteral("c%1_%2").arg(compression).arg(name));
+            ImageEngine::SaveOptions options;
+            options.compression = compression;
+            QString error;
+            QVERIFY2(ImageEngine::save(fixture, filePath, options, &error), qPrintable(error));
+            QVERIFY(QFileInfo::exists(filePath));
+
+            const QImage loaded = ImageEngine::load(filePath, &error);
+            QVERIFY2(!loaded.isNull(), qPrintable(error));
+            QCOMPARE(loaded.size(), fixture.size());
+            QCOMPARE(loaded.pixelColor(0, 0).green(), 200);
+        }
+    }
+}
+
+void QtAppControllerTest::savesHeicWithQualityWhenWicHasAnEncoder() {
+    // The quality option must reach the WIC HEIF encoder. Needs a HEIF encoder (HEVC extension) on the PC.
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    QImage noise(64, 64, QImage::Format_ARGB32);
+    for (int y = 0; y < noise.height(); ++y) {
+        for (int x = 0; x < noise.width(); ++x) {
+            noise.setPixelColor(x, y, QColor((x * 37 + y * 11) % 256, (x * 13 + y * 59) % 256, (x * y) % 256));
+        }
+    }
+    ImageEngine::SaveOptions low;
+    low.quality = 5;
+    ImageEngine::SaveOptions high;
+    high.quality = 95;
+    const QString lowPath = directory.filePath(QStringLiteral("low.heic"));
+    const QString highPath = directory.filePath(QStringLiteral("high.heic"));
+
+    QString error;
+    if (!ImageEngine::save(noise, lowPath, low, &error)) {
+        QSKIP(qPrintable(QStringLiteral("No HEIF encoder is available: ") + error));
+    }
+    QVERIFY2(ImageEngine::save(noise, highPath, high, &error), qPrintable(error));
+    QVERIFY(QFileInfo(lowPath).size() > 0);
+    QVERIFY2(QFileInfo(lowPath).size() < QFileInfo(highPath).size(),
+             "a higher quality should produce a larger file");
+}
+
+void QtAppControllerTest::saveAppendsTheSelectedExtensionAndReloadsTheFile() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("source.png"));
+    QImage fixture(8, 6, QImage::Format_ARGB32);
+    fixture.fill(Qt::magenta);
+    QVERIFY(fixture.save(sourcePath, "PNG"));
+
+    QtAppController controller;
+    controller.openImage(QUrl::fromLocalFile(sourcePath));
+    QVERIFY(controller.hasImage());
+    controller.rotateRight();
+    QVERIFY(controller.canUndo());
+
+    // The file name has no extension: the extension of the selected file type (as reported by the dialog) is used.
+    controller.saveImage(QUrl::fromLocalFile(directory.filePath(QStringLiteral("result"))), QStringLiteral("*.png"));
+
+    const QString expected = directory.filePath(QStringLiteral("result.png"));
+    QVERIFY(QFileInfo::exists(expected));
+    // The saved file is reloaded and shown as the current image, without a confirmation.
+    QCOMPARE(controller.imageName(), QStringLiteral("result.png"));
+    QCOMPARE(controller.imageWidth(), 6);   // rotated 90 degrees: 8x6 -> 6x8
+    QCOMPARE(controller.imageHeight(), 8);
+    QVERIFY(!controller.canUndo());
+    QVERIFY(controller.statusText().contains(QStringLiteral("再読み込み")));
+}
+
+void QtAppControllerTest::saveWithoutAnyExtensionIsRejected() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("source.png"));
+    QImage fixture(4, 4, QImage::Format_ARGB32);
+    fixture.fill(Qt::green);
+    QVERIFY(fixture.save(sourcePath, "PNG"));
+
+    QtAppController controller;
+    controller.openImage(QUrl::fromLocalFile(sourcePath));
+
+    // No extension in the name and none from the dialog: nothing is written and the image stays.
+    controller.saveImage(QUrl::fromLocalFile(directory.filePath(QStringLiteral("noext"))), QString());
+    QVERIFY(!QFileInfo::exists(directory.filePath(QStringLiteral("noext"))));
+    QCOMPARE(controller.imageName(), QStringLiteral("source.png"));
+
+    // The completed name is checked against the original: "source" + png would overwrite it.
+    controller.saveImage(QUrl::fromLocalFile(directory.filePath(QStringLiteral("source"))), QStringLiteral("png"));
+    QCOMPARE(controller.imageName(), QStringLiteral("source.png"));
+    QVERIFY(controller.statusText().contains(QStringLiteral("原本")));
+}
+
+void QtAppControllerTest::convertsFilesFromTheCommandLineWithoutOverwriting() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("source.png"));
+    QImage fixture(4, 3, QImage::Format_ARGB32);
+    fixture.fill(QColor(200, 30, 60));
+    QVERIFY(fixture.save(sourcePath, "PNG"));
+
+    for (const QString& name : {QStringLiteral("out.bmp"), QStringLiteral("out.tif"), QStringLiteral("out.jpg")}) {
+        const QString destination = directory.filePath(name);
+        QString error;
+        QVERIFY2(ImageEngine::convertFile(sourcePath, destination, &error), qPrintable(name + ": " + error));
+        const QImage loaded = ImageEngine::load(destination, &error);
+        QVERIFY2(!loaded.isNull(), qPrintable(name + ": " + error));
+        QCOMPARE(loaded.size(), fixture.size());
+    }
+
+    QString error;
+    QVERIFY(!ImageEngine::convertFile(sourcePath, sourcePath, &error));               // same path
+    QVERIFY(!error.isEmpty());
+    const qint64 existingSize = QFileInfo(directory.filePath(QStringLiteral("out.bmp"))).size();
+    QVERIFY(!ImageEngine::convertFile(sourcePath, directory.filePath(QStringLiteral("out.bmp")), &error));  // exists
+    QCOMPARE(QFileInfo(directory.filePath(QStringLiteral("out.bmp"))).size(), existingSize);
+    QVERIFY(!ImageEngine::convertFile(directory.filePath(QStringLiteral("missing.png")),
+                                      directory.filePath(QStringLiteral("x.bmp")), &error));  // no source
+    QVERIFY(!QFileInfo::exists(directory.filePath(QStringLiteral("x.bmp"))));
 }
 
 void QtAppControllerTest::rotatesDisplayedImage() {

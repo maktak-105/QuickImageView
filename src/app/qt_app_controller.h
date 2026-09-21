@@ -60,6 +60,8 @@ public:
 
     Q_INVOKABLE void openImage(const QUrl& fileUrl);
     Q_INVOKABLE void saveImage(const QUrl& fileUrl);
+    // defaultSuffix: extension of the format chosen in the file dialog, used when the name has none.
+    Q_INVOKABLE void saveImage(const QUrl& fileUrl, const QString& defaultSuffix);
     Q_INVOKABLE void copyExif();
     Q_INVOKABLE void clearImage();
     Q_INVOKABLE void rotateRight();

@@ -1,7 +1,8 @@
 QuickImageView Changelog
 v4.0.0 (2026-09-21)
 - Replaced the Win32 implementation with the Qt 6 (Qt Quick) implementation.
-- Releases are an unsigned ZIP with SHA256SUMS.txt; the MSI installer and the --convert command line were removed.
+- Releases are an unsigned ZIP with SHA256SUMS.txt; the MSI installer was removed.
+- TIFF is written through WIC. Restored from 3.x: --convert, dark title bar, drop confirmation, reload after Save as, extension completion, HEIC/HEIF quality.
 - WebP now uses Qt's WebP image-format plugin.
 
 v3.1.3 (2026-09-20)

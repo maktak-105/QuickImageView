@@ -44,6 +44,18 @@ ApplicationWindow {
         return appController.english ? en : ja
     }
 
+    // ドロップされた画像。画像を表示中は確認してから開く（編集内容が失われるため）。
+    property url pendingDropUrl
+
+    function requestOpenDropped(url) {
+        if (appController.hasImage) {
+            pendingDropUrl = url
+            replaceImageDialog.open()
+        } else {
+            appController.openImage(url)
+        }
+    }
+
     function resetView() {
         zoom = 1.0
         panX = 0
@@ -337,7 +349,7 @@ ApplicationWindow {
             columns: 2
             rowSpacing: 10
             columnSpacing: 14
-            Label { text: window.text("JPEG/WebP品質 (0-100)", "JPEG/WebP quality (0-100)"); color: window.textColor }
+            Label { text: window.text("JPEG/WebP/HEIC品質 (0-100)", "JPEG/WebP/HEIC quality (0-100)"); color: window.textColor }
             SpinBox { id: saveQuality; objectName: "saveQualitySpinBox"; from: 0; to: 100; value: 90; editable: true }
             Label { text: window.text("PNG/TIFF圧縮 (0-9)", "PNG/TIFF compression (0-9)"); color: window.textColor }
             SpinBox { id: saveCompression; objectName: "saveCompressionSpinBox"; from: 0; to: 9; value: 6; editable: true }
@@ -354,7 +366,8 @@ ApplicationWindow {
         fileMode: FileDialog.SaveFile
         title: window.text("別形式で保存", "Save as")
         nameFilters: ["PNG (*.png)", "JPEG (*.jpg *.jpeg)", "BMP (*.bmp)", "TIFF (*.tif *.tiff)", "WebP (*.webp)", "HEIC/HEIF (*.heic *.heif)"]
-        onAccepted: appController.saveImage(selectedFile)
+        onAccepted: appController.saveImage(selectedFile,
+                                            selectedNameFilter.extensions.length > 0 ? selectedNameFilter.extensions[0] : "")
     }
 
     // 幅・高さの初期値100は「パーセント」を意味する。Win32版のリサイズダイアログと同じ既定値。
@@ -786,7 +799,7 @@ ApplicationWindow {
                 Accessible.name: window.text("画像ファイルのドロップ領域", "Image file drop area")
                 anchors.fill: parent
                 onDropped: drop => {
-                    if (drop.hasUrls && drop.urls.length > 0) appController.openImage(drop.urls[0])
+                    if (drop.hasUrls && drop.urls.length > 0) window.requestOpenDropped(drop.urls[0])
                 }
             }
         }
@@ -796,6 +809,11 @@ ApplicationWindow {
         id: aboutDialog
         english: appController.english
         appVersion: appController.appVersion
+    }
+    ReplaceImageDialog {
+        id: replaceImageDialog
+        english: appController.english
+        onAccepted: appController.openImage(window.pendingDropUrl)
     }
     HelpView {
         id: helpDialog

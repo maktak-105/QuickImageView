@@ -6,7 +6,7 @@ QuickImageView is a Windows image viewer and editor implemented with Qt 6 (Qt Qu
 
 ## Viewing and operation
 
-- Open an image from a command-line path, File > Open image, `Ctrl+O`, or drag and drop.
+- Open an image from a command-line path, File > Open image, `Ctrl+O`, or drag and drop. When an image is already displayed, a dropped image is opened only after the user confirms.
 - Fit the image to the window, zoom with the mouse wheel, and pan with a middle-button drag.
 - Select a rectangle with a left-button drag and crop it from the context menu.
 - Show the file name, dimensions, format, and file size, and representative EXIF fields (make, model, capture date) when present. EXIF is shown in a floating window that can be copied as text; editing EXIF or metadata is out of scope.
@@ -22,18 +22,24 @@ QuickImageView is a Windows image viewer and editor implemented with Qt 6 (Qt Qu
 ## Saving
 
 - File > Save as shows save options first, then the file picker.
-- Quality (JPEG and WebP, 0-100) and compression (PNG and TIFF, 0-9) are user-specified values, not a fixed list.
+- Quality (JPEG, WebP, and HEIC/HEIF, 0-100) and compression (PNG 0-9; TIFF 0 = uncompressed, 1-9 = LZW) are user-specified values, not a fixed list.
 - The source image and existing output files are never overwritten.
-- Save formats: PNG, JPEG, BMP, WebP. TIFF requires Qt's TIFF image plugin and HEIC/HEIF requires a WIC encoder; saving fails when they are missing.
+- Save formats: PNG, JPEG, BMP, TIFF, WebP, HEIC/HEIF. TIFF is written through WIC (no Qt plugin needed). HEIC/HEIF requires a Windows HEIF encoder (HEIF Image Extensions and HEVC Video Extensions); saving fails when it is missing.
+- When the file name has no extension, the extension of the selected file type is added.
+- After a successful save, the saved file is reloaded without a confirmation and shown as the current image.
 
 ## Windows integration
 
 - File > Settings registers or removes the QuickImageView entry in the Explorer image context menu (current user, HKCU).
 - `scripts/install.ps1` installs per user under `%LOCALAPPDATA%` and registers the entry unless `-NoRegisterContextMenu` is given.
 
+## Command line
+
+- `QuickImageView.exe --convert <source> <destination>` converts an image without showing a window. The format follows the destination extension. The exit code is 0 on success and 2 on failure (the reason is written to `crash.log`). The source and existing files are never overwritten.
+
 ## UI
 
-- Dark theme, Japanese/English switch (menus, dialogs, information, EXIF, help), in-app Help, and an About dialog that shows the version, development environment, author, and creator badge.
+- Dark theme (including the title bar), Japanese/English switch (menus, dialogs, information, EXIF, help), in-app Help, and an About dialog that shows the version, development environment, author, and creator badge.
 
 ## Supported image formats
 

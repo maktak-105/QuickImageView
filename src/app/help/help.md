@@ -2,16 +2,16 @@
 Version 4.0.0
 
 ## Open and view
-Open a local image with **File > Open image**, `Ctrl+O`, or drag and drop. The image is displayed to fit the window.
+Open a local image with **File > Open image**, `Ctrl+O`, or drag and drop. The image is displayed to fit the window. When an image is already displayed, dropping another image asks for confirmation before it is opened.
 
 ## Rotate, flip, and edit
-Use the **Edit** menu or the image area's context menu to rotate right, 180 degrees, or left by 90 degrees, flip horizontally or vertically, convert color, and resize. Drag with the left mouse button over the image to select a crop rectangle. Changes apply to the displayed image and never modify the original file.
+Use the image area's context menu (right-click) to rotate right, 180 degrees, or left by 90 degrees, flip horizontally or vertically, convert color, and resize. Drag with the left mouse button over the image to select a crop rectangle. Changes apply to the displayed image and never modify the original file.
 
 ## Copy and paste
-Use `Ctrl+C` or **Edit > Copy image** to copy the displayed image to the Windows clipboard. Use `Ctrl+V` or **Edit > Paste image** to paste a clipboard image. Drag the pending paste with the left mouse button, then use the right-click **Commit paste** or **Retry paste** command.
+Use `Ctrl+C` or the right-click **Copy image** command to copy the displayed image to the Windows clipboard. Use `Ctrl+V` or the right-click **Paste image** command to paste a clipboard image. Drag the pending paste with the left mouse button, then use the right-click **Commit paste** or **Retry paste** command.
 
 ## Save
-**File > Save as** opens save options before the file picker. JPEG/WebP quality (0-100) and PNG/TIFF compression (0-9) can be set. Saving over the original or an existing output is rejected. HEIC/HEIF saving requires an available Windows WIC encoder.
+**File > Save as** opens save options before the file picker. JPEG/WebP/HEIC quality (0-100) and PNG/TIFF compression (0-9; for TIFF, 0 = uncompressed and 1-9 = LZW) can be set. If the file name has no extension, the extension of the selected file type is added. Saving over the original or an existing output is rejected. HEIC/HEIF saving requires a Windows HEIF encoder (HEIF Image Extensions and HEVC Video Extensions). After a successful save, the saved file is loaded as the current image.
 
 ## EXIF
 **Help > EXIF information** displays WIC-retrieved make, model, and taken date in a floating modal window. Use **Copy EXIF** to copy the text to the clipboard. Images without metadata show `EXIF: none`.

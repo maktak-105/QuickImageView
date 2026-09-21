@@ -34,16 +34,27 @@ Copy and paste:
 EXIF and saving:
 - File and EXIF information is shown in a floating window; the EXIF text can be
   copied.
-- File > Save as shows save options before the file picker. Quality (JPEG and
-  WebP, 0-100) and compression (PNG and TIFF, 0-9) can be set.
+- File > Save as shows save options before the file picker. Quality (JPEG,
+  WebP, and HEIC/HEIF, 0-100) and compression (PNG 0-9; TIFF 0 = none, 1-9 =
+  LZW) can be set.
+- If the file name has no extension, the extension of the selected file type
+  is added. After saving, the saved file is loaded as the current image.
 - Existing files and the source image are not overwritten.
+- Dropping an image onto a displayed image asks for confirmation first.
 
 Supported formats and codecs:
 - Open: BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS
   use Windows Imaging Component (WIC). WebP uses Qt's WebP image-format plugin.
   HEIC and HEIF need a compatible WIC codec installed on the computer.
-- Save as: PNG, JPEG, BMP, and WebP. TIFF saving needs Qt's TIFF image plugin
-  and HEIC/HEIF saving needs a WIC encoder; both fail when unavailable.
+- Save as: PNG, JPEG, BMP, TIFF, WebP, and HEIC/HEIF. TIFF is written through
+  WIC. HEIC/HEIF saving needs a Windows HEIF encoder (HEIF Image Extensions and
+  HEVC Video Extensions) and fails without it.
+
+Command line:
+- QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
+  converts an image without showing a window. The exit code is 0 on success and
+  2 on failure (the reason is written to crash.log). Existing files are never
+  overwritten.
 
 Language, theme, and Windows integration:
 - The upper-right button shows a cyan globe and English or 日本語; click it to

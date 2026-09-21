@@ -142,7 +142,7 @@ def deploy() -> None:
         "--no-opengl-sw",
         "--skip-plugin-types",
         "qmltooling,generic,networkinformation,tls,qmllint,qmlls,designer,help,sqldrivers,styles",
-        "--exclude-plugins", "qicns,qtga,qwbmp,qsvgicon,qsvg",
+        "--exclude-plugins", "qicns,qtga,qwbmp,qsvgicon,qsvg,qtiff",
         "--no-svg",
         "--no-quickcontrols2imagine",
         "--no-quickcontrols2imaginestyleimpl",

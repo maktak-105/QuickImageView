@@ -16,6 +16,8 @@ qt_add_executable(QuickImageView WIN32
   src/app/image_engine.h
   src/app/quick_image_provider.cpp
   src/app/quick_image_provider.h
+  src/app/window_theme.cpp
+  src/app/window_theme.h
   src/app/QuickImageView.rc
 )
 set_target_properties(QuickImageView PROPERTIES
@@ -37,6 +39,7 @@ qt_add_qml_module(QuickImageView
     src/ui/HelpView.qml
     src/ui/InfoWindow.qml
     src/ui/SettingsDialog.qml
+    src/ui/ReplaceImageDialog.qml
 )
 qt_add_resources(QuickImageView "QuickImageViewEmbeddedResources"
   PREFIX "/"

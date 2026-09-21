@@ -1,5 +1,7 @@
+#include "image_engine.h"
 #include "qt_app_controller.h"
 #include "quick_image_provider.h"
+#include "window_theme.h"
 
 #include <QGuiApplication>
 #include <QFile>
@@ -56,6 +58,18 @@ int main(int argc, char* argv[]) {
     (void)crashLog.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
     qInstallMessageHandler(writeQtMessage);
     SetUnhandledExceptionFilter(writeCrashRecord);
+
+    // Command-line conversion: QuickImageView.exe --convert <source> <destination>. No window is shown;
+    // the result is the exit code (0 = converted, 2 = failed) and, on failure, a line in crash.log.
+    const QStringList arguments = application.arguments();
+    if (arguments.size() == 4 && arguments.at(1) == QLatin1String("--convert")) {
+        QString error;
+        if (ImageEngine::convertFile(arguments.at(2), arguments.at(3), &error)) return 0;
+        qWarning().noquote() << "Conversion failed:" << error;
+        return 2;
+    }
+
+    WindowTheme::installDarkTitleBar(&application);
 
     QQmlApplicationEngine engine;
     auto* imageProvider = new QuickImageProvider;

@@ -32,15 +32,25 @@ EXIFと保存:
 - ファイル情報とEXIF情報はフローティングウィンドウに表示します。EXIFテキストは
   コピーできます。
 - 「ファイル > 別形式で保存」は、ファイル選択の前に保存オプションを表示します。
-  品質（JPEGとWebP、0〜100）と圧縮（PNGとTIFF、0〜9）を指定できます。
+  品質（JPEG・WebP・HEIC/HEIF、0〜100）と圧縮（PNGは0〜9、TIFFは0＝なし、1〜9＝LZW）を
+  指定できます。
+- ファイル名に拡張子が無ければ、選択した形式の拡張子を補います。保存後は、保存した
+  ファイルを現在の画像として読み込み直します。
 - 既存ファイルと原本画像は上書きしません。
+- 画像を表示中に別の画像をドロップすると、確認してから開きます。
 
 対応形式とコーデック:
 - 開く: BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDSは
   Windows Imaging Component（WIC）を使用します。WebPはQtのWebP画像フォーマット
   プラグインを使用します。HEICとHEIFは、PCに対応するWICコーデックが必要です。
-- 保存: PNG、JPEG、BMP、WebPに保存できます。TIFFの保存にはQtのTIFF画像プラグイン、
-  HEIC/HEIFの保存にはWICエンコーダーが必要で、ない場合は保存に失敗します。
+- 保存: PNG、JPEG、BMP、TIFF、WebP、HEIC/HEIFに保存できます。TIFFはWICで書きます。
+  HEIC/HEIFの保存にはWindowsのHEIFエンコーダー（HEIF画像拡張機能とHEVCビデオ拡張機能）が
+  必要で、無い場合は保存に失敗します。
+
+コマンドライン:
+- QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
+  ウィンドウを表示せずに画像を変換します。終了コードは成功が0、失敗が2です
+  （理由はcrash.logへ書き込みます）。既存ファイルは上書きしません。
 
 言語、テーマ、Windows連携:
 - 右上のボタンは水色の地球儀とEnglishまたは日本語を表示します。押して切り替えます。

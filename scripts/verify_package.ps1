@@ -18,7 +18,7 @@ if (Test-Path -LiteralPath (Join-Path $dir 'libstdc++-6.dll')) {
 } else {
     $required += 'vcruntime140.dll', 'vcruntime140_1.dll', 'msvcp140.dll', 'msvcp140_1.dll', 'msvcp140_2.dll'
 }
-$forbidden = @('Qt6Svg.dll', 'imageformats\qsvg.dll', 'QuickImageViewQt.exe')
+$forbidden = @('Qt6Svg.dll', 'imageformats\qsvg.dll', 'imageformats\qtiff.dll', 'QuickImageViewQt.exe')
 
 $errors = @()
 foreach ($file in $required) {

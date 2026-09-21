@@ -18,7 +18,7 @@ Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 
 ## 機能
 
-- ファイルメニュー、`Ctrl+O`、ドラッグ＆ドロップ、コマンドライン引数で画像を開く
+- ファイルメニュー、`Ctrl+O`、ドラッグ＆ドロップ、コマンドライン引数で画像を開く（画像表示中のドロップは確認を出す）
 - ウィンドウへのフィット表示、マウスホイールで拡大・縮小、中ドラッグでパン
 - 左ドラッグで範囲を選択し、右クリックメニューから切り抜く
 - 右90度・180度・左90度の回転、左右反転、上下反転、フルカラー・256色・グレースケールへの色変換
@@ -26,16 +26,17 @@ Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 - `Ctrl+Z`でUndo、`Ctrl+Y`でRedo
 - `Ctrl+C`で画像または選択範囲をコピー、`Ctrl+V`で貼り付け、移動してから確定またはやり直し
 - ファイル名、寸法、形式、ファイルサイズ、EXIFのメーカー・機種・撮影日時をフローティングウィンドウに表示し、コピーできる
-- 品質・圧縮オプションを指定して別形式で保存する。原本と既存ファイルは上書きしない
+- 品質・圧縮オプションを指定して別形式で保存する。原本と既存ファイルは上書きせず、拡張子が無ければ選択した形式の拡張子を補い、保存したファイルを現在の画像として読み込み直す
+- `--convert`でコマンドラインから画像を変換する
 - ファイル > 設定から、Explorerの画像右クリックメニューへ登録できる
 - 右上のボタンで日本語とEnglishを切り替える
-- ダークテーマ、アプリ内ヘルプ、バージョン情報
+- ダークテーマ（タイトルバーを含む）、アプリ内ヘルプ、バージョン情報
 
 ## 対応形式
 
 - 開く: BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDSはWindows Imaging Component（WIC）で読み込みます。WebPはQtのWebP画像フォーマットプラグインで読み込みます。HEICとHEIFは、対応するWICコーデックが導入されている場合に読み込めます。
-- 保存: PNG、JPEG、BMP、WebPに保存できます。TIFFの保存にはQtのTIFF画像プラグイン、HEIC/HEIFの保存にはWICエンコーダーが必要で、プラグインまたはコーデックがない環境では保存できません。
-- 保存先を選ぶ前に、品質（JPEGとWebP、0〜100）と圧縮（PNGとTIFF、0〜9）を指定できます。
+- 保存: PNG、JPEG、BMP、TIFF、WebP、HEIC/HEIFに保存できます。TIFFはWICで書くため、Qtのプラグインは不要です。HEIC/HEIFの保存にはWindowsのHEIFエンコーダー（HEIF画像拡張機能とHEVCビデオ拡張機能）が必要で、無い環境では保存に失敗します。
+- 保存先を選ぶ前に、品質（JPEG・WebP・HEIC/HEIF、0〜100）と圧縮（PNGは0〜9、TIFFは0＝圧縮なし・1〜9＝LZW。WICには段階指定がありません）を指定できます。
 
 ## ビルド
 
@@ -52,6 +53,14 @@ CMakeの構成、`dist/`への`QuickImageView.exe`のビルド、CTest、実行�
 ```powershell
 .\dist\QuickImageView.exe C:\path\to\image.png
 ```
+
+## コマンドラインでの変換
+
+```powershell
+.\dist\QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
+```
+
+ウィンドウは表示しません。変換できたときの終了コードは0、失敗時は2で、理由は`%LOCALAPPDATA%\maktak-105\QuickImageView`の`crash.log`に書き込みます。形式は出力先の拡張子で決まります。原本と既存ファイルは上書きしません。
 
 ## 現在のユーザーへインストール
 

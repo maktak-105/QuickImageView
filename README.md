@@ -18,7 +18,7 @@ Version 4.0.0 replaces the earlier Win32 implementation. The 3.x releases (up to
 
 ## Features
 
-- Open an image with File > Open image, `Ctrl+O`, drag and drop, or a command-line path
+- Open an image with File > Open image, `Ctrl+O`, drag and drop, or a command-line path; dropping onto a displayed image asks for confirmation
 - Fit the image to the window, zoom with the mouse wheel, and pan with a middle-button drag
 - Select a region with a left-button drag and crop it from the context menu
 - Rotate right, 180 degrees, or left, flip horizontally or vertically, and convert to full color, 256 colors, or grayscale
@@ -26,16 +26,17 @@ Version 4.0.0 replaces the earlier Win32 implementation. The 3.x releases (up to
 - Undo and redo with `Ctrl+Z` and `Ctrl+Y`
 - Copy the image or the selection with `Ctrl+C`; paste an image with `Ctrl+V`, move it, then commit or retry
 - Show file name, dimensions, format, file size, and EXIF make, model, and capture date in a floating window that can be copied
-- Save as another format with quality or compression options; the source image and existing files are never overwritten
+- Save as another format with quality or compression options; the source image and existing files are never overwritten, a missing extension is added from the selected file type, and the saved file is reloaded as the current image
+- Convert an image from the command line with `--convert`
 - Add QuickImageView to the Explorer image context menu from File > Settings
 - Switch between Japanese and English with the upper-right button
-- Dark theme, in-app Help, and an About dialog
+- Dark theme (including the title bar), in-app Help, and an About dialog
 
 ## Supported formats
 
 - Open: BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS through Windows Imaging Component (WIC); WebP through Qt's WebP image-format plugin; HEIC and HEIF when a compatible WIC codec is installed.
-- Save as: PNG, JPEG, BMP, and WebP. TIFF saving requires Qt's TIFF image plugin, and HEIC/HEIF saving requires a WIC encoder; both are unavailable when the plugin or codec is missing.
-- Quality (JPEG and WebP, 0-100) and compression (PNG and TIFF, 0-9) can be set before choosing the destination.
+- Save as: PNG, JPEG, BMP, TIFF, WebP, and HEIC/HEIF. TIFF is written through WIC, so no Qt plugin is needed. HEIC/HEIF saving requires a Windows HEIF encoder (HEIF Image Extensions and HEVC Video Extensions) and fails without it.
+- Quality (JPEG, WebP, and HEIC/HEIF, 0-100) and compression (PNG 0-9; TIFF 0 = uncompressed, 1-9 = LZW, WIC has no level) can be set before choosing the destination.
 
 ## Build
 
@@ -52,6 +53,14 @@ The script configures CMake, builds `QuickImageView.exe` into `dist/`, runs CTes
 ```powershell
 .\dist\QuickImageView.exe C:\path\to\image.png
 ```
+
+## Command-line conversion
+
+```powershell
+.\dist\QuickImageView.exe --convert C:\path\to\source.png C:\path\to\output.bmp
+```
+
+No window is shown. The exit code is 0 when the image was converted and 2 on failure; the reason is written to `crash.log` under `%LOCALAPPDATA%\maktak-105\QuickImageView`. The format follows the destination extension. The source image and existing files are never overwritten.
 
 ## Install for the current user
 

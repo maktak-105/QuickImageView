@@ -23,6 +23,9 @@ public:
     static bool save(const QImage& image, const QString& filePath, QString* errorMessage);
     static bool save(const QImage& image, const QString& filePath, const SaveOptions& options,
                      QString* errorMessage);
+    // Command-line conversion: never overwrites the source or an existing destination.
+    static bool convertFile(const QString& sourcePath, const QString& destinationPath,
+                            QString* errorMessage);
     static QImage resize(const QImage& image, int width, int height);
     static QImage convertColor(const QImage& image, int mode);
 };
