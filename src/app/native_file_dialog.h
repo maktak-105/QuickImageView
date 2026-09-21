@@ -27,6 +27,7 @@ QStringList openImageSuffixes();
 
 // Both calls are modal and use the active window as owner. An empty path / not accepted means cancelled.
 QString pickOpenFile(const QString& title, const QString& typeLabel, const QStringList& suffixes);
-SaveResult pickSaveFile(const QString& title, const QList<FileType>& types);
+// initialFolder: the folder the dialog opens in (every time, not only the first). Empty = Windows' choice.
+SaveResult pickSaveFile(const QString& title, const QList<FileType>& types, const QString& initialFolder = QString());
 
 }  // namespace NativeFileDialog

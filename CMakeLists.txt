@@ -42,6 +42,7 @@ qt_add_qml_module(QuickImageView
     src/ui/InfoWindow.qml
     src/ui/SettingsDialog.qml
     src/ui/ReplaceImageDialog.qml
+    src/ui/OverwriteRefusedDialog.qml
 )
 qt_add_resources(QuickImageView "QuickImageViewEmbeddedResources"
   PREFIX "/"

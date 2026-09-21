@@ -21,6 +21,11 @@ TestCase {
         QuickImageView.HelpView { id: helpDialog; english: false; helpText: testCase.longText }
         QuickImageView.ReplaceImageDialog { id: replaceDialog; english: false }
         QuickImageView.SettingsDialog { id: settingsDialog; english: false }
+        QuickImageView.OverwriteRefusedDialog {
+            id: overwriteDialog
+            english: false
+            path: "C:\\Users\\someone\\Pictures\\a-rather-long-folder-name\\another-long-folder-name\\photo-with-a-long-name.png"
+        }
     }
 
     function resizeHost(w, h) {
@@ -52,6 +57,7 @@ TestCase {
         openAndCheck(helpDialog, "Help")
         openAndCheck(replaceDialog, "Replace confirmation")
         openAndCheck(settingsDialog, "Settings")
+        openAndCheck(overwriteDialog, "Overwrite refused")
     }
 
     function test_every_dialog_fits_the_default_window() {
@@ -60,6 +66,7 @@ TestCase {
         openAndCheck(helpDialog, "Help")
         openAndCheck(replaceDialog, "Replace confirmation")
         openAndCheck(settingsDialog, "Settings")
+        openAndCheck(overwriteDialog, "Overwrite refused")
     }
 
     function test_dialogs_keep_their_normal_size_in_a_large_window() {

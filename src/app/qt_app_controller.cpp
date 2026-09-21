@@ -187,12 +187,14 @@ void QtAppController::saveImage(const QUrl& fileUrl, const QString& defaultSuffi
         statusText_ = localize(QStringLiteral("原本と同じ場所には保存できません。原本は変更していません。"),
                                QStringLiteral("The original image cannot be overwritten."));
         emit statusChanged();
+        emit overwriteRefused(QDir::toNativeSeparators(outputPath), true);
         return;
     }
     if (QFileInfo::exists(outputPath)) {
         statusText_ = localize(QStringLiteral("既存ファイルへの上書きは禁止されています。"),
                                QStringLiteral("Overwriting an existing file is not allowed."));
         emit statusChanged();
+        emit overwriteRefused(QDir::toNativeSeparators(outputPath), false);
         return;
     }
     QString error;
@@ -582,7 +584,8 @@ void QtAppController::showOpenImageDialog() {
 void QtAppController::showSaveImageDialog() {
     if (!hasImage()) return;
     const NativeFileDialog::SaveResult result = NativeFileDialog::pickSaveFile(
-        localize(QStringLiteral("別形式で保存"), QStringLiteral("Save as")), NativeFileDialog::saveFileTypes());
+        localize(QStringLiteral("別形式で保存"), QStringLiteral("Save as")), NativeFileDialog::saveFileTypes(),
+        initialSaveFolder());
     if (result.accepted) saveImage(QUrl::fromLocalFile(result.path), result.suffix);
 }
 
@@ -632,4 +635,10 @@ void QtAppController::setWindowSize(int width, int height) {
     emit windowSizeChanged();
     emit windowResizeRequested(windowSize_.width(), windowSize_.height());
     emit statusChanged();
+}
+
+QString QtAppController::initialSaveFolder() const {
+    if (sourcePath_.isEmpty()) return {};
+    const QDir folder = QFileInfo(sourcePath_).absoluteDir();
+    return folder.exists() ? folder.absolutePath() : QString();
 }

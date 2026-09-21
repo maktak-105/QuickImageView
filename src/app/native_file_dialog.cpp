@@ -1,5 +1,7 @@
 #include "native_file_dialog.h"
 
+#include <QDir>
+
 #include <windows.h>
 #include <shobjidl.h>
 
@@ -90,7 +92,7 @@ QString pickOpenFile(const QString& title, const QString& typeLabel, const QStri
     return path;
 }
 
-SaveResult pickSaveFile(const QString& title, const QList<FileType>& types) {
+SaveResult pickSaveFile(const QString& title, const QList<FileType>& types, const QString& initialFolder) {
     SaveResult result;
     if (types.isEmpty()) return result;
     IFileSaveDialog* dialog = nullptr;
@@ -104,6 +106,15 @@ SaveResult pickSaveFile(const QString& title, const QList<FileType>& types) {
     dialog->SetTitle(wideTitle.c_str());
     dialog->SetFileTypes(static_cast<UINT>(specs.size()), specs.data());
     dialog->SetFileTypeIndex(1);
+    // SetFolder (not SetDefaultFolder) so that the dialog opens here every time, not in the folder Windows remembers.
+    if (!initialFolder.isEmpty()) {
+        IShellItem* folder = nullptr;
+        const std::wstring widePath = QDir::toNativeSeparators(initialFolder).toStdWString();
+        if (SUCCEEDED(SHCreateItemFromParsingName(widePath.c_str(), nullptr, IID_PPV_ARGS(&folder)))) {
+            dialog->SetFolder(folder);
+            folder->Release();
+        }
+    }
     // The dialog adds the extension of the selected file type when none is typed. Overwriting is refused by
     // the caller, so no overwrite prompt is needed here.
     FILEOPENDIALOGOPTIONS options = 0;

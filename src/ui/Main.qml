@@ -817,6 +817,18 @@ ApplicationWindow {
         english: appController.english
         onAccepted: appController.openImage(window.pendingDropUrl)
     }
+    OverwriteRefusedDialog {
+        id: overwriteRefusedDialog
+        english: appController.english
+    }
+    Connections {
+        target: appController
+        function onOverwriteRefused(path, isOriginal) {
+            overwriteRefusedDialog.path = path
+            overwriteRefusedDialog.original = isOriginal
+            overwriteRefusedDialog.open()
+        }
+    }
     HelpView {
         id: helpDialog
         english: appController.english

@@ -95,6 +95,8 @@ public:
     // Windows common file dialogs; they open / save through openImage() and saveImage().
     Q_INVOKABLE void showOpenImageDialog();
     Q_INVOKABLE void showSaveImageDialog();
+    // Folder where the Save as dialog opens: the folder of the image on screen (empty without a file).
+    QString initialSaveFolder() const;
     Q_INVOKABLE void copyExif();
     Q_INVOKABLE void clearImage();
     Q_INVOKABLE void rotateRight();
@@ -133,6 +135,8 @@ signals:
     void fileInfoChanged();
     void pasteChanged();
     void contextMenuRegisteredChanged();
+    // A save was refused because the destination exists (isOriginal: it is the image's own file).
+    void overwriteRefused(const QString& path, bool isOriginal);
     void windowSizeChanged();
     void windowResizeRequested(int width, int height);
 

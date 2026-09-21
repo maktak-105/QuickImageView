@@ -42,6 +42,8 @@ private slots:
     void savesHeicWithQualityWhenWicHasAnEncoder();
     void saveAppendsTheSelectedExtensionAndReloadsTheFile();
     void saveWithoutAnyExtensionIsRejected();
+    void refusedOverwriteRaisesAWarningNotice();
+    void saveDialogStartsInTheFolderOfTheCurrentImage();
     void convertsFilesFromTheCommandLineWithoutOverwriting();
     void rotatesDisplayedImage();
     void rotatesDisplayedImage180Degrees();
@@ -380,6 +382,64 @@ void QtAppControllerTest::saveWithoutAnyExtensionIsRejected() {
     controller.saveImage(QUrl::fromLocalFile(directory.filePath(QStringLiteral("source"))), QStringLiteral("png"));
     QCOMPARE(controller.imageName(), QStringLiteral("source.png"));
     QVERIFY(controller.statusText().contains(QStringLiteral("原本")));
+}
+
+void QtAppControllerTest::refusedOverwriteRaisesAWarningNotice() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString sourcePath = directory.filePath(QStringLiteral("source.png"));
+    const QString takenPath = directory.filePath(QStringLiteral("taken.png"));
+    QImage fixture(4, 4, QImage::Format_ARGB32);
+    fixture.fill(Qt::yellow);
+    QVERIFY(fixture.save(sourcePath, "PNG"));
+    QVERIFY(fixture.save(takenPath, "PNG"));
+
+    QtAppController controller;
+    controller.openImage(QUrl::fromLocalFile(sourcePath));
+    QSignalSpy refused(&controller, &QtAppController::overwriteRefused);
+
+    // An existing file: a warning notice with the path (a small status line was too easy to miss).
+    controller.saveImage(QUrl::fromLocalFile(takenPath));
+    QCOMPARE(refused.count(), 1);
+    QCOMPARE(refused.at(0).at(0).toString(), QDir::toNativeSeparators(takenPath));
+    QCOMPARE(refused.at(0).at(1).toBool(), false);
+    QVERIFY(controller.statusText().contains(QStringLiteral("上書き")));   // the status line still says it too
+    QCOMPARE(QFileInfo(takenPath).size(), QFileInfo(takenPath).size());
+    QCOMPARE(controller.imageName(), QStringLiteral("source.png"));       // nothing was loaded or written
+
+    // The image's own file: the same notice, marked as the original.
+    controller.saveImage(QUrl::fromLocalFile(sourcePath));
+    QCOMPARE(refused.count(), 2);
+    QCOMPARE(refused.at(1).at(0).toString(), QDir::toNativeSeparators(sourcePath));
+    QCOMPARE(refused.at(1).at(1).toBool(), true);
+
+    // A successful save raises no warning.
+    controller.saveImage(QUrl::fromLocalFile(directory.filePath(QStringLiteral("fresh.png"))));
+    QCOMPARE(refused.count(), 2);
+    QVERIFY(QFileInfo::exists(directory.filePath(QStringLiteral("fresh.png"))));
+}
+
+void QtAppControllerTest::saveDialogStartsInTheFolderOfTheCurrentImage() {
+    QTemporaryDir first;
+    QTemporaryDir second;
+    QVERIFY(first.isValid() && second.isValid());
+    const QString picture = first.filePath(QStringLiteral("picture.png"));
+    QImage fixture(4, 4, QImage::Format_ARGB32);
+    fixture.fill(Qt::cyan);
+    QVERIFY(fixture.save(picture, "PNG"));
+
+    QtAppController controller;
+    QVERIFY(controller.initialSaveFolder().isEmpty());          // no image, no folder: Windows decides
+
+    controller.openImage(QUrl::fromLocalFile(picture));
+    QCOMPARE(controller.initialSaveFolder(), QFileInfo(picture).absolutePath());
+
+    // Saving elsewhere reloads the saved file, so the next Save as starts where the current image now is.
+    controller.saveImage(QUrl::fromLocalFile(second.filePath(QStringLiteral("copy.png"))));
+    QCOMPARE(controller.initialSaveFolder(), QFileInfo(second.filePath(QStringLiteral("copy.png"))).absolutePath());
+
+    controller.clearImage();
+    QVERIFY(controller.initialSaveFolder().isEmpty());
 }
 
 void QtAppControllerTest::convertsFilesFromTheCommandLineWithoutOverwriting() {
