@@ -7,6 +7,7 @@
 - UIをQt Quickで作り直し、Explorer右クリック登録の設定ダイアログを追加。
 - MSIインストーラーと、Win32用のself-testおよびUI検査スクリプトを廃止。
 - WebPは、静的リンクのlibwebpからQtのWebP画像フォーマットプラグインへ変更。保存はPNG、JPEG、BMP、TIFF、WebP、HEIC/HEIFに対応。TIFFはWICで書く（Qtのプラグインは不要）。HEIC/HEIFの保存にはWindowsのHEIFエンコーダーが必要。
+- 配布物を、アプリが実際に使うものだけにした。QtQuick.Dialogsの代わりにWindows標準のファイルダイアログを使い、Svg・TIFF・GIF・ICOの画像プラグインとQMLのツール用メタデータを外した。リリースはローカルと同じくMinGWでビルドする。
 - 3.xにあってQt版で欠けていた機能を復活: `--convert`によるコマンドライン変換、ダークなタイトルバー、ドロップで表示中の画像を置き換える前の確認、別形式で保存した後の保存先の再読み込み、拡張子が無い場合の補完、HEIC/HEIFの品質指定。
 - Win32実装はv3.x系のリリースタグ（v3.1.3まで）から取得できる。
 

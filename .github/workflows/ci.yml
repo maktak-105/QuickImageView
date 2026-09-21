@@ -11,24 +11,22 @@ jobs:
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-      - name: Install Qt 6
+      - name: Install Qt 6 and MinGW
         uses: jurplel/install-qt-action@v4
         with:
           version: 6.10.3
-          arch: win64_msvc2022_64
+          arch: win64_mingw
+          tools: tools_mingw1310,qt.tools.win64_mingw1310
           modules: qtimageformats qtshadertools
-      - name: Configure
-        run: cmake -S . -B build/intermediate/ci -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
-      - name: Build
-        run: cmake --build build/intermediate/ci --config Release --target QuickImageView qiv_controller_tests qiv_qml_tests
-      - name: Test
-        run: ctest --test-dir build/intermediate/ci -C Release --output-on-failure
-      - name: Deploy Qt runtime
+      - name: Build, test and deploy
         shell: pwsh
         run: |
           $env:PYTHONIOENCODING = "utf-8"
-          python .\scripts\deploy.py
-          if ($LASTEXITCODE -ne 0) { throw "Qt deploy failed" }
+          # Same script as the local build: CMake with MinGW Makefiles, CTest, then the Qt runtime deployment.
+          $env:QT_ROOT = $env:QT_ROOT_DIR
+          $env:QT_MINGW_BIN = Join-Path (Split-Path (Split-Path $env:QT_ROOT_DIR)) 'Tools\mingw1310_64\bin'
+          python .\scripts\build.py
+          if ($LASTEXITCODE -ne 0) { throw "Build failed" }
       - name: Verify package
         shell: pwsh
         run: |
@@ -44,11 +42,11 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value 'C:\Program Files\Cppcheck'
           Add-Content -Path $env:GITHUB_PATH -Value 'C:\Program Files (x86)\Cppcheck'
       - name: Static analysis
-        run: cppcheck --error-exitcode=1 --std=c++17 --enable=warning,style,performance,portability --suppress=missingIncludeSystem --suppress=unknownMacro src/app/qt_main.cpp src/app/qt_app_controller.cpp src/app/image_engine.cpp src/app/quick_image_provider.cpp src/app/window_theme.cpp
+        run: cppcheck --error-exitcode=1 --std=c++17 --enable=warning,style,performance,portability --suppress=missingIncludeSystem --suppress=unknownMacro src/app/qt_main.cpp src/app/qt_app_controller.cpp src/app/image_engine.cpp src/app/quick_image_provider.cpp src/app/window_theme.cpp src/app/native_file_dialog.cpp
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-logs
-          path: build/intermediate/ci/Testing
+          path: build/intermediate/qt-mingw1310/Testing
           if-no-files-found: ignore

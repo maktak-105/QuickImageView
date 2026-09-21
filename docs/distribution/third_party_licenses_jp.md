@@ -20,6 +20,6 @@ WebPファイルの読み書きは、Qtのqtimageformatsモジュールに含ま
 
 `PATENTS`に記載された特許ライセンスの条件も適用されます。Qtのバージョン更新時は、`libwebp-COPYING`、`libwebp-PATENTS`、本書の内容を再確認します。
 
-## Microsoft Visual C++ ランタイム
+## MinGW-w64 C++ ランタイム
 
-配布ZIPには、Visual Studioの再頒布可能ファイルに含まれるVisual C++ランタイムDLL（`vcruntime140.dll`、`vcruntime140_1.dll`、`msvcp140.dll`、`msvcp140_1.dll`、`msvcp140_2.dll`）を、実行ファイルの横へアプリローカルで同梱します。これらはMicrosoftのソフトウェアで、Visual Studioの再頒布条件に従って再頒布しています。
+配布ZIPには、Qt 6.10.3 MinGW版のビルドに使われたMinGW 13.1.0ツールチェーンのMinGW-w64ランタイムDLL（`libgcc_s_seh-1.dll`、`libstdc++-6.dll`、`libwinpthread-1.dll`）を、実行ファイルの横へアプリローカルで同梱します。`libgcc`と`libstdc++`はGCC Runtime Library Exception付きのGNU General Public License version 3で、`libwinpthread`はMinGW-w64プロジェクトの一部で寛容なライセンスで配布されています。ライセンス本文はGCCおよびMinGW-w64プロジェクトを参照してください。

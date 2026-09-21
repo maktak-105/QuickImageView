@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Dialogs
 import QtQuick.Layouts
 
 ApplicationWindow {
@@ -223,7 +222,7 @@ ApplicationWindow {
                 objectName: "openImageMenuItem"
                 Accessible.name: window.text("画像を開く", "Open image")
                 text: window.text("画像を開く...", "Open image...") + "  Ctrl+O"
-                onTriggered: imageFileDialog.open()
+                onTriggered: appController.showOpenImageDialog()
             }
             DarkMenuItem {
                 objectName: "saveImageMenuItem"
@@ -329,14 +328,6 @@ ApplicationWindow {
         }
     }
 
-    FileDialog {
-        id: imageFileDialog
-        objectName: "imageFileDialog"
-        title: window.text("画像を開く", "Open image")
-        nameFilters: [window.text("画像ファイル (*.jpg *.jpeg *.png *.tif *.tiff *.bmp *.gif *.webp *.heic *.heif)",
-                                  "Image files (*.jpg *.jpeg *.png *.tif *.tiff *.bmp *.gif *.webp *.heic *.heif)")]
-        onAccepted: appController.openImage(selectedFile)
-    }
 
     Dialog {
         id: saveOptionsDialog
@@ -356,19 +347,10 @@ ApplicationWindow {
         }
         onAccepted: {
             appController.setSaveOptions(saveQuality.value, saveCompression.value)
-            saveImageDialog.open()
+            Qt.callLater(function() { appController.showSaveImageDialog() })
         }
     }
 
-    FileDialog {
-        id: saveImageDialog
-        objectName: "saveImageDialog"
-        fileMode: FileDialog.SaveFile
-        title: window.text("別形式で保存", "Save as")
-        nameFilters: ["PNG (*.png)", "JPEG (*.jpg *.jpeg)", "BMP (*.bmp)", "TIFF (*.tif *.tiff)", "WebP (*.webp)", "HEIC/HEIF (*.heic *.heif)"]
-        onAccepted: appController.saveImage(selectedFile,
-                                            selectedNameFilter.extensions.length > 0 ? selectedNameFilter.extensions[0] : "")
-    }
 
     // 幅・高さの初期値100は「パーセント」を意味する。Win32版のリサイズダイアログと同じ既定値。
     // 縦横比ロック中は、変更した側に合わせて他方の表示値も更新する。
@@ -485,7 +467,7 @@ ApplicationWindow {
                                          resizeMode.currentIndex === 0, resizeLock.checked)
     }
 
-    Shortcut { sequence: "Ctrl+O"; onActivated: imageFileDialog.open() }
+    Shortcut { sequence: "Ctrl+O"; onActivated: appController.showOpenImageDialog() }
     Shortcut { sequence: "Ctrl+C"; enabled: appController.hasImage; onActivated: window.copyCurrent() }
     Shortcut { sequence: "Ctrl+V"; onActivated: appController.pasteImage() }
     Shortcut { sequence: "Ctrl+Z"; enabled: appController.canUndo; onActivated: appController.undo() }
@@ -501,7 +483,7 @@ ApplicationWindow {
             objectName: "contextOpenImageMenuItem"
             Accessible.name: window.text("画像を開く", "Open image")
             text: window.text("画像を開く...", "Open image...")
-            onTriggered: imageFileDialog.open()
+            onTriggered: appController.showOpenImageDialog()
         }
         DarkMenuItem {
             objectName: "contextSaveImageMenuItem"

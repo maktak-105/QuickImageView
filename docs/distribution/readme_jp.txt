@@ -62,7 +62,7 @@ EXIFと保存:
 配布ファイル
 ------------
 - QuickImageView.exeとQtランタイム（Qt6*.dll、platforms、imageformats、qmlなど）
-- C++ランタイムDLL（vcruntime140*.dll、msvcp140*.dll）。Visual C++再頒布可能パッケージの別途導入は不要です
+- MinGWのC++ランタイムDLL（libgcc_s_seh-1.dll、libstdc++-6.dll、libwinpthread-1.dll）
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt

@@ -1,5 +1,6 @@
 #include "qt_app_controller.h"
 #include "image_engine.h"
+#include "native_file_dialog.h"
 #include "quick_image_provider.h"
 
 #include <QFile>
@@ -25,6 +26,7 @@ private slots:
     void loadsPngThroughWic();
     void loadsWebPThroughQtImageFormats();
     void savesTiffWithoutQtImagePlugin();
+    void everySaveTypeOfTheFileDialogIsWritable();
     void savesHeicWithQualityWhenWicHasAnEncoder();
     void saveAppendsTheSelectedExtensionAndReloadsTheFile();
     void saveWithoutAnyExtensionIsRejected();
@@ -167,6 +169,27 @@ void QtAppControllerTest::savesTiffWithoutQtImagePlugin() {
             QVERIFY2(!loaded.isNull(), qPrintable(error));
             QCOMPARE(loaded.size(), fixture.size());
             QCOMPARE(loaded.pixelColor(0, 0).green(), 200);
+        }
+    }
+}
+
+void QtAppControllerTest::everySaveTypeOfTheFileDialogIsWritable() {
+    // The Save as dialog must not offer a format that ImageEngine cannot write (TIFF once did on MinGW Qt).
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    QImage fixture(4, 4, QImage::Format_ARGB32);
+    fixture.fill(Qt::blue);
+
+    const auto types = NativeFileDialog::saveFileTypes();
+    QVERIFY(!types.isEmpty());
+    for (const NativeFileDialog::FileType& type : types) {
+        QVERIFY(!type.suffixes.isEmpty());
+        for (const QString& suffix : type.suffixes) {
+            const QString filePath = directory.filePath(QStringLiteral("x_") + suffix + QLatin1Char('.') + suffix);
+            QString error;
+            const bool saved = ImageEngine::save(fixture, filePath, ImageEngine::SaveOptions{}, &error);
+            if (!saved && type.name.startsWith(QLatin1String("HEIC"))) continue;  // needs a Windows HEIF encoder
+            QVERIFY2(saved, qPrintable(type.name + " (" + suffix + "): " + error));
         }
     }
 }

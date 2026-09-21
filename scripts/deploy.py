@@ -24,6 +24,7 @@ UNUSED_QML_STYLES = (
 # The application never renders SVG, so the Svg module and its image plugin are not shipped.
 UNUSED_DLL_PREFIXES = (
     "Qt6Svg",
+    "Qt6QuickDialogs2",
     "Qt6QuickControls2Fusion",
     "Qt6QuickControls2Imagine",
     "Qt6QuickControls2Material",
@@ -44,6 +45,7 @@ UNUSED_QML_DIRS = (
     Path("qml") / "QtQuick" / "tooling",
     Path("qml") / "QtQuick" / "VectorImage",
     Path("qml") / "QtQml" / "XmlListModel",
+    Path("qml") / "QtQuick" / "Dialogs",
     Path("qml") / "QtQuick" / "Dialogs" / "quickimpl" / "qml" / "+Fusion",
     Path("qml") / "QtQuick" / "Dialogs" / "quickimpl" / "qml" / "+Imagine",
     Path("qml") / "QtQuick" / "Dialogs" / "quickimpl" / "qml" / "+Material",
@@ -142,7 +144,7 @@ def deploy() -> None:
         "--no-opengl-sw",
         "--skip-plugin-types",
         "qmltooling,generic,networkinformation,tls,qmllint,qmlls,designer,help,sqldrivers,styles",
-        "--exclude-plugins", "qicns,qtga,qwbmp,qsvgicon,qsvg,qtiff",
+        "--exclude-plugins", "qicns,qtga,qwbmp,qsvgicon,qsvg,qtiff,qgif,qico",
         "--no-svg",
         "--no-quickcontrols2imagine",
         "--no-quickcontrols2imaginestyleimpl",
@@ -178,9 +180,9 @@ def deploy() -> None:
 
     bundle_msvc_runtime()
 
-    icon_source = ROOT / "src" / "app" / "QuickImageView.ico"
-    if icon_source.is_file():
-        shutil.copy2(icon_source, QT_DIST / "QuickImageView.ico")
+    # *.qmltypes are metadata for qmllint and Qt Creator; the runtime never reads them.
+    for metadata in (QT_DIST / "qml").rglob("*.qmltypes"):
+        metadata.unlink()
 
 
 if __name__ == "__main__":

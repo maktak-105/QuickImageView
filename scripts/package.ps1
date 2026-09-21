@@ -32,7 +32,6 @@ $qtRuntime | Copy-Item -Destination $output -Recurse -Force
 
 $distributionDocs = Join-Path $root 'docs\distribution'
 Get-ChildItem -LiteralPath $distributionDocs -File | Copy-Item -Destination $output -Force
-Copy-Item -LiteralPath (Join-Path $root 'src\app\QuickImageView.ico') -Destination (Join-Path $output 'QuickImageView-icon.ico') -Force
 Write-Output "Package created: $output"
 if (-not [string]::IsNullOrWhiteSpace($ArchivePath)) {
     $archive = [IO.Path]::GetFullPath($ArchivePath)

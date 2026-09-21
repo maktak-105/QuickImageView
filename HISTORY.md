@@ -7,6 +7,7 @@
 - Rebuilt the UI in Qt Quick and added a Settings dialog for the Explorer context-menu entry.
 - Removed the MSI installer and the Win32 self-test and UI test scripts.
 - WebP is now handled by Qt's WebP image-format plugin instead of a statically linked libwebp. Saving supports PNG, JPEG, BMP, TIFF, WebP, and HEIC/HEIF. TIFF is written through WIC (no Qt plugin needed), and HEIC/HEIF saving needs a Windows HEIF encoder.
+- The distribution contains only what the application uses: native Windows file dialogs instead of QtQuick.Dialogs, no Svg, TIFF, GIF or ICO image plugins, no QML tooling metadata, and the MinGW runtime instead of a separate redistributable. The release is built with MinGW, like the local build.
 - Restored from 3.x in the Qt version: `--convert` command-line conversion, the dark title bar, the confirmation before a dropped image replaces the displayed one, reloading the saved file after Save as, adding a missing extension from the selected file type, and the HEIC/HEIF quality option.
 - The Win32 implementation remains available at the v3.x release tags (up to v3.1.3).
 

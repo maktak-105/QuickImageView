@@ -1,6 +1,7 @@
 #include "qt_app_controller.h"
 
 #include "image_engine.h"
+#include "native_file_dialog.h"
 #include "quick_image_provider.h"
 
 #include <QClipboard>
@@ -561,4 +562,19 @@ bool QtAppController::setContextMenuRegistered(bool enable) {
     SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
     emit contextMenuRegisteredChanged();
     return true;
+}
+
+void QtAppController::showOpenImageDialog() {
+    const QString path = NativeFileDialog::pickOpenFile(
+        localize(QStringLiteral("画像を開く"), QStringLiteral("Open image")),
+        localize(QStringLiteral("画像ファイル"), QStringLiteral("Image files")),
+        NativeFileDialog::openImageSuffixes());
+    if (!path.isEmpty()) openImage(QUrl::fromLocalFile(path));
+}
+
+void QtAppController::showSaveImageDialog() {
+    if (!hasImage()) return;
+    const NativeFileDialog::SaveResult result = NativeFileDialog::pickSaveFile(
+        localize(QStringLiteral("別形式で保存"), QStringLiteral("Save as")), NativeFileDialog::saveFileTypes());
+    if (result.accepted) saveImage(QUrl::fromLocalFile(result.path), result.suffix);
 }

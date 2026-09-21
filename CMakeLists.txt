@@ -16,6 +16,8 @@ qt_add_executable(QuickImageView WIN32
   src/app/image_engine.h
   src/app/quick_image_provider.cpp
   src/app/quick_image_provider.h
+  src/app/native_file_dialog.cpp
+  src/app/native_file_dialog.h
   src/app/window_theme.cpp
   src/app/window_theme.h
   src/app/QuickImageView.rc
@@ -28,7 +30,7 @@ set_target_properties(QuickImageView PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/dist"
 )
 target_compile_definitions(QuickImageView PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
-target_link_libraries(QuickImageView PRIVATE Qt6::Quick Qt6::QuickControls2 windowscodecs ole32 shell32 advapi32)
+target_link_libraries(QuickImageView PRIVATE Qt6::Quick Qt6::QuickControls2 windowscodecs ole32 shell32 advapi32 uuid)
 
 qt_add_qml_module(QuickImageView
   URI QuickImageView
@@ -58,10 +60,12 @@ add_executable(qiv_controller_tests
   src/app/image_engine.h
   src/app/quick_image_provider.cpp
   src/app/quick_image_provider.h
+  src/app/native_file_dialog.cpp
+  src/app/native_file_dialog.h
 )
 target_compile_definitions(qiv_controller_tests PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
 target_include_directories(qiv_controller_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app")
-target_link_libraries(qiv_controller_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test windowscodecs ole32 shell32 advapi32)
+target_link_libraries(qiv_controller_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test windowscodecs ole32 shell32 advapi32 uuid)
 add_test(NAME qiv_controller_tests COMMAND qiv_controller_tests)
 
 add_executable(qiv_qml_tests tests/qml/qml_tests.cpp)

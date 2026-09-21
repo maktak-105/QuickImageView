@@ -16,4 +16,4 @@
 
 `build/intermediate/qt-mingw1310`でCMakeを構成し、`QuickImageView`、`qiv_controller_tests`、`qiv_qml_tests`をビルドしてCTestを実行し、`windeployqt`（`scripts/deploy.py`）でQtランタイムを配置します。実行ファイルは`dist/QuickImageView.exe`へ出力され、Qtランタイムはその横へ置かれます。
 
-GitHub Actionsは`windows-2022`上で、Qt 6.10.3 MSVC 2022（`win64_msvc2022_64`）を使ってビルドします。
+GitHub Actionsは、ローカルと同じ構成（Qt 6.10.3 MinGW〔`win64_mingw`〕とMinGW 13.1.0〔`tools_mingw1310`〕）を`windows-2022`上に導入し、`scripts/build.py`を実行してビルドします。

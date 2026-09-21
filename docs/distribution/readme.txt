@@ -68,8 +68,8 @@ Distribution files
 ------------------
 - QuickImageView.exe and the Qt runtime (Qt6*.dll, platforms, imageformats,
   qml, and related files)
-- C++ runtime DLLs (vcruntime140*.dll, msvcp140*.dll); no separate Visual C++
-  Redistributable installation is needed
+- MinGW C++ runtime DLLs (libgcc_s_seh-1.dll, libstdc++-6.dll,
+  libwinpthread-1.dll)
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt

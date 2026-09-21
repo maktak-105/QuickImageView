@@ -4,7 +4,7 @@
 
 QuickImageView is distributed as an unsigned ZIP on GitHub Releases. There is no installer. Each release attaches `QuickImageView-binary.zip` and a CI-generated `SHA256SUMS.txt`.
 
-The ZIP contains `QuickImageView.exe`, the deployed Qt DLLs and plugins (`platforms`, `imageformats`, `qml`), the C++ runtime DLLs (the Visual C++ runtime for the release build, so no separate redistributable is needed), the bilingual README and history, the MIT License, the Japanese license notice, the third-party notices, and the libwebp COPYING/PATENTS files. The bilingual help is embedded in the executable.
+The ZIP contains `QuickImageView.exe`, the deployed Qt DLLs and plugins (`platforms`, `imageformats`, `qml`), the MinGW C++ runtime DLLs (`libgcc_s_seh-1.dll`, `libstdc++-6.dll`, `libwinpthread-1.dll`), the bilingual README and history, the MIT License, the Japanese license notice, the third-party notices, and the libwebp COPYING/PATENTS files. The bilingual help is embedded in the executable.
 
 ## Build
 
@@ -24,7 +24,7 @@ See [environment.md](environment.md) for the toolchain.
 
 ## Release
 
-Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds with Qt 6.10.3 (MSVC 2022), runs CTest, deploys the Qt runtime, creates the ZIP and `SHA256SUMS.txt`, and publishes them to the release. The workflow can also be started manually with an existing tag.
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds with Qt 6.10.3 and MinGW 13.1.0 through `scripts/build.py` (the same script as the local build), runs CTest, deploys the Qt runtime, creates the ZIP and `SHA256SUMS.txt`, and publishes them to the release. The workflow can also be started manually with an existing tag.
 
 ## Install
 

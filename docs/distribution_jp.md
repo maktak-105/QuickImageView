@@ -4,7 +4,7 @@
 
 QuickImageViewは、署名なしZIPとしてGitHub Releasesで配布します。インストーラーはありません。各Releaseには`QuickImageView-binary.zip`と、CIが生成した`SHA256SUMS.txt`を添付します。
 
-ZIPには、`QuickImageView.exe`、配置済みのQt DLL・プラグイン（`platforms`、`imageformats`、`qml`）、C++ランタイムDLL（リリース版はVisual C++ランタイム。再頒布可能パッケージの別途導入は不要）、日英README・履歴、MIT License、日本語ライセンス文書、第三者通知、libwebpのCOPYING・PATENTSを同梱します。日英ヘルプは実行ファイルに埋め込まれています。
+ZIPには、`QuickImageView.exe`、配置済みのQt DLL・プラグイン（`platforms`、`imageformats`、`qml`）、MinGWのC++ランタイムDLL（`libgcc_s_seh-1.dll`、`libstdc++-6.dll`、`libwinpthread-1.dll`）、日英README・履歴、MIT License、日本語ライセンス文書、第三者通知、libwebpのCOPYING・PATENTSを同梱します。日英ヘルプは実行ファイルに埋め込まれています。
 
 ## ビルド
 
@@ -24,7 +24,7 @@ ZIPには、`QuickImageView.exe`、配置済みのQt DLL・プラグイン（`pl
 
 ## リリース
 
-`v*`タグをpushすると`.github/workflows/release.yml`が動き、Qt 6.10.3（MSVC 2022）でビルド、CTest、Qtランタイム配置、ZIPと`SHA256SUMS.txt`の作成、Releaseへの公開を行います。既存タグを指定した手動実行もできます。
+`v*`タグをpushすると`.github/workflows/release.yml`が動き、Qt 6.10.3とMinGW 13.1.0で（ローカルと同じ`scripts/build.py`により）ビルド、CTest、Qtランタイム配置、ZIPと`SHA256SUMS.txt`の作成、Releaseへの公開を行います。既存タグを指定した手動実行もできます。
 
 ## インストール
 
