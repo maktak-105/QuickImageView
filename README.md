@@ -79,7 +79,7 @@ See [docs/distribution.md](docs/distribution.md).
 - [docs/environment.md](docs/environment.md): development environment
 - [docs/distribution.md](docs/distribution.md): installation and packaging
 - [docs/project-structure.md](docs/project-structure.md): folder layout (Japanese)
-- [history.md](history.md): changelog
+- [HISTORY.md](HISTORY.md): changelog
 
 ## License
 

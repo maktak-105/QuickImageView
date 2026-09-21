@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../qml" as QuickImageView
+import "../../src/ui" as QuickImageView
 
 TestCase {
     name: "QuickImageViewQmlSmoke"

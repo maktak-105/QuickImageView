@@ -32,11 +32,11 @@ qt_add_qml_module(QuickImageViewQt
   URI QuickImageView
   VERSION 1.0
   QML_FILES
-    qml/Main.qml
-    qml/AboutDialog.qml
-    qml/HelpView.qml
-    qml/InfoWindow.qml
-    qml/SettingsDialog.qml
+    src/ui/Main.qml
+    src/ui/AboutDialog.qml
+    src/ui/HelpView.qml
+    src/ui/InfoWindow.qml
+    src/ui/SettingsDialog.qml
 )
 qt_add_resources(QuickImageViewQt "QuickImageViewEmbeddedResources"
   PREFIX "/"

@@ -79,7 +79,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -ArchivePath
 - [docs/environment_jp.md](docs/environment_jp.md): 開発環境
 - [docs/distribution_jp.md](docs/distribution_jp.md): インストールと配布
 - [docs/project-structure.md](docs/project-structure.md): フォルダ構成
-- [history_jp.md](history_jp.md): 変更履歴
+- [HISTORY_jp.md](HISTORY_jp.md): 変更履歴
 
 ## ライセンス
 

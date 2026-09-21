@@ -1,4 +1,0 @@
-interface:
-  display_name: "Codex Agent Loop Orchestrator"
-  short_description: "Durable multi-agent Codex loops with lanes, typed messages, and verification gates."
-  default_prompt: "Use $codex-agent-loop-orchestrator to set up or continue a multi-agent Codex loop."

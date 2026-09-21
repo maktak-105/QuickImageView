@@ -13,7 +13,7 @@ QuickImageViewリポジトリで作業するAIエージェント向けの要約�
 ## 配置ルール
 
 - `src/app/`：C++エンジン、Qt連携、エントリーポイント、埋め込み用`help/help.md`・`help/help_jp.md`、アイコン
-- `qml/`：QML画面・共通部品
+- `src/ui/`：QML画面・共通部品
 - `assets/`：アイコン、SVG、`maktak105-V04-01.jpg`、日英スクリーンショット。配布ZIPへ入れない
 - `docs/`：開発者向け日英文書。日本語版は`_jp`接尾辞
 - `plans/`：計画書・実施結果。既存計画を上書きしない
@@ -43,11 +43,10 @@ QuickImageViewリポジトリで作業するAIエージェント向けの要約�
 
 ```powershell
 git diff --check
-build.bat
-build.bat qt
+.\scriptsuild.bat
 ```
 
-5. Qt移行後はCMake/CTest、Qt Quick Test、静的解析、起動確認、日英UI、配布ZIPも検証する。
+5. CMake/CTest、Qt Quick Test、静的解析、起動確認、日英UI、配布ZIPも検証する。
 6. 実行できない検証は理由と代替確認を`plans/*_結果_*.md`へ記録する。
 7. 最後に差分と`git status`を確認し、作業結果を日本語で報告する。
 
@@ -68,7 +67,7 @@ build.bat qt
 
 ## 主要参照
 
-- 計画書：`plans/2026-08-24_qt-quick-migration_v1.0.md`
+- 計画書：`plans/`
 - アプリ仕様：`docs/spec.md`、`docs/spec_jp.md`
 - Quick共通UI：`quick-app-template`スキルの`11_アプリ仕様.md`
 - ビルド・配布：`docs/environment.md`、`docs/environment_jp.md`

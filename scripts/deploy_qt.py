@@ -86,7 +86,7 @@ def deploy() -> None:
         str(windeployqt),
         "--release",
         "--force",
-        "--qmldir", str(ROOT / "qml"),
+        "--qmldir", str(ROOT / "src" / "ui"),
         "--no-translations",
         "--no-opengl-sw",
         "--skip-plugin-types",
