@@ -4,7 +4,7 @@
 
 - Windows 10/11 64-bit
 - CMake 3.20+
-- Qt 6.10.3 MinGW (`C:\Users\makta\tools\Qt\6.10.3\mingw_64`) and MinGW 13.1.0 (`C:\Users\makta\tools\Qt\Tools\mingw1310_64`). Override with `QT_ROOT` / `QT_MINGW_BIN` if Qt is installed elsewhere.
+- Qt 6.10.3 MinGW (`%USERPROFILE%\tools\Qt\6.10.3\mingw_64`) and MinGW 13.1.0 (`%USERPROFILE%\tools\Qt\Tools\mingw1310_64`). Override with `QT_ROOT` / `QT_MINGW_BIN` if Qt is installed elsewhere.
 - Python 3.13 for the build and deploy scripts
 - `aqtinstall` (`scripts/requirements.txt`) is an optional tool for provisioning the Qt SDK locally.
 

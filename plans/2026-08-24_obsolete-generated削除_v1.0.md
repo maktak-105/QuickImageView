@@ -1,7 +1,7 @@
 # QuickImageView 旧生成物フォルダ削除 v1.0
 
 作成日: 2026-08-24  
-作業ディレクトリ: `C:\Users\makta\source\QuickImageView`
+作業ディレクトリ: `%USERPROFILE%\source\QuickImageView`
 
 ## 目的
 
@@ -9,11 +9,11 @@
 
 ## 削除したもの
 
-- `C:\Users\makta\source\QuickImageView-obsolete-generated-20260823`
-- `C:\Users\makta\source\QuickImageView-obsolete-generated-20260823-dist-root`
+- `%USERPROFILE%\source\QuickImageView-obsolete-generated-20260823`
+- `%USERPROFILE%\source\QuickImageView-obsolete-generated-20260823-dist-root`
 
 いずれも `.git` なし。旧 CMake 中間物・MSI staging・exe/msi。正本 `QuickImageView` は未変更。
 
 ## 結果
 
-`C:\Users\makta\source` 配下の `QuickImage*` は `QuickImageView` のみ。
+`%USERPROFILE%\source` 配下の `QuickImage*` は `QuickImageView` のみ。

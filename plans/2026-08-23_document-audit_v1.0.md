@@ -2,7 +2,7 @@
 
 実施日: 2026-08-23  
 担当: 文書作成  
-対象: `C:\Users\makta\source\QuickImageView`
+対象: `%USERPROFILE%\source\QuickImageView`
 
 ## 1. 前提
 

@@ -12,8 +12,8 @@ from deploy import QT_BINARY, deploy, require_file
 
 ROOT = Path(__file__).resolve().parents[1]
 BUILD = ROOT / "build" / "intermediate" / "qt-mingw1310"
-QT_ROOT = Path(os.environ.get("QT_ROOT", r"C:\Users\makta\tools\Qt\6.10.3\mingw_64"))
-MINGW_BIN = Path(os.environ.get("QT_MINGW_BIN", r"C:\Users\makta\tools\Qt\Tools\mingw1310_64\bin"))
+QT_ROOT = Path(os.environ.get("QT_ROOT", str(Path.home() / "tools" / "Qt" / "6.10.3" / "mingw_64")))
+MINGW_BIN = Path(os.environ.get("QT_MINGW_BIN", str(Path.home() / "tools" / "Qt" / "Tools" / "mingw1310_64" / "bin")))
 QT_CMAKE = QT_ROOT / "bin" / "qt-cmake.bat"
 
 

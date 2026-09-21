@@ -1,7 +1,7 @@
 # Qtブランチ GitHub Actions リリース v1.0
 
 作成日: 2026-08-24  
-作業ディレクトリ: `C:\Users\makta\source\QuickImageView`  
+作業ディレクトリ: `%USERPROFILE%\source\QuickImageView`  
 ブランチ: `qt`  
 タグ: `v3.1.2-qt`
 

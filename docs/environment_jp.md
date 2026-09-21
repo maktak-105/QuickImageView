@@ -4,7 +4,7 @@
 
 - Windows 10/11 64-bit
 - CMake 3.20以上
-- Qt 6.10.3 MinGW（`C:\Users\makta\tools\Qt\6.10.3\mingw_64`）と MinGW 13.1.0（`C:\Users\makta\tools\Qt\Tools\mingw1310_64`）。別の場所にある場合は `QT_ROOT` / `QT_MINGW_BIN` で上書きする。
+- Qt 6.10.3 MinGW（`%USERPROFILE%\tools\Qt\6.10.3\mingw_64`）と MinGW 13.1.0（`%USERPROFILE%\tools\Qt\Tools\mingw1310_64`）。別の場所にある場合は `QT_ROOT` / `QT_MINGW_BIN` で上書きする。
 - ビルド・デプロイスクリプト用のPython 3.13
 - `aqtinstall`（`scripts/requirements.txt`）は、Qt SDKをローカルに導入するための任意ツール。
 

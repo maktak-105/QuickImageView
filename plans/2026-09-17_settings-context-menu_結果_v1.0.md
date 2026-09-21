@@ -27,6 +27,6 @@
 - `qiv_controller_tests` 単体テスト（`contextMenuRegistrationCanBeQueried`）: PASS
 - `scripts/install.ps1 -Qt` 実行およびレジストリ検証: PASS
   - `(default)`: `Open with QuickImageView`
-  - `Icon`: `C:\Users\0120025-Z100\AppData\Local\QuickImageView\QuickImageView.ico`
-  - `command`: `"C:\Users\0120025-Z100\AppData\Local\QuickImageView\QuickImageViewQt.exe" "%1"`
+  - `Icon`: `%USERPROFILE%\AppData\Local\QuickImageView\QuickImageView.ico`
+  - `command`: `"%USERPROFILE%\AppData\Local\QuickImageView\QuickImageViewQt.exe" "%1"`
 - DLL一覧確認: 20個の必要最小限のDLLのみが配置されていることを確認。
