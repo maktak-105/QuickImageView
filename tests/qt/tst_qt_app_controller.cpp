@@ -8,6 +8,7 @@
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QImage>
+#include <QSettings>
 #include <QSignalSpy>
 #include <QTest>
 #include <QTemporaryDir>
@@ -25,6 +26,9 @@ private slots:
     void rejectsMissingImagePath();
     void loadsPngThroughWic();
     void loadsWebPThroughQtImageFormats();
+    void windowSizeDefaultsToSevenTwentyByFourEighty();
+    void windowSizeIsSavedAndReadBackAtTheNextStart();
+    void windowSizeIsKeptInsideTheAllowedRange();
     void savesTiffWithoutQtImagePlugin();
     void everySaveTypeOfTheFileDialogIsWritable();
     void savesHeicWithQualityWhenWicHasAnEncoder();
@@ -46,7 +50,7 @@ void QtAppControllerTest::defaultsAreJapanese() {
     QtAppController controller;
     QVERIFY(!controller.english());
     QCOMPARE(controller.appName(), QStringLiteral("QuickImageView"));
-    QCOMPARE(controller.appVersion(), QStringLiteral("4.0.0"));
+    QCOMPARE(controller.appVersion(), QStringLiteral("4.1.0"));
     QVERIFY(!controller.hasImage());
     QVERIFY(controller.statusText().contains(QStringLiteral("画像")));
 }
@@ -146,6 +150,71 @@ void QtAppControllerTest::loadsWebPThroughQtImageFormats() {
     QCOMPARE(loaded.size(), QSize(2, 2));
     QCOMPARE(loaded.pixelColor(0, 0).red(), 0);
     QCOMPARE(loaded.pixelColor(0, 0).green(), 220);
+}
+
+void QtAppControllerTest::windowSizeDefaultsToSevenTwentyByFourEighty() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    QtAppController controller;
+    controller.setSettingsFile(directory.filePath(QStringLiteral("settings.ini")));
+    QCOMPARE(controller.windowWidth(), 720);
+    QCOMPARE(controller.windowHeight(), 480);
+    QVERIFY(!QFileInfo::exists(directory.filePath(QStringLiteral("settings.ini"))));  // nothing is written by reading
+}
+
+void QtAppControllerTest::windowSizeIsSavedAndReadBackAtTheNextStart() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    const QString settingsFile = directory.filePath(QStringLiteral("nested/settings.ini"));
+
+    QtAppController controller;
+    controller.setSettingsFile(settingsFile);
+    QSignalSpy changed(&controller, &QtAppController::windowSizeChanged);
+    QSignalSpy resizeRequested(&controller, &QtAppController::windowResizeRequested);
+    controller.setWindowSize(900, 600);
+    QCOMPARE(controller.windowWidth(), 900);
+    QCOMPARE(controller.windowHeight(), 600);
+    QCOMPARE(changed.count(), 1);
+    QCOMPARE(resizeRequested.count(), 1);   // the running window is asked to take the new size
+    QCOMPARE(resizeRequested.first().at(0).toInt(), 900);
+    QCOMPARE(resizeRequested.first().at(1).toInt(), 600);
+
+    const QSettings stored(settingsFile, QSettings::IniFormat);   // the file is a plain, readable ini
+    QCOMPARE(stored.value(QStringLiteral("window/width")).toInt(), 900);
+    QCOMPARE(stored.value(QStringLiteral("window/height")).toInt(), 600);
+
+    QtAppController nextStart;   // a new start reads the saved size
+    nextStart.setSettingsFile(settingsFile);
+    QCOMPARE(nextStart.windowWidth(), 900);
+    QCOMPARE(nextStart.windowHeight(), 600);
+}
+
+void QtAppControllerTest::windowSizeIsKeptInsideTheAllowedRange() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    QtAppController controller;
+    controller.setSettingsFile(directory.filePath(QStringLiteral("settings.ini")));
+
+    controller.setWindowSize(10, 10);
+    QCOMPARE(controller.windowWidth(), QtAppController::kMinimumWindowWidth);
+    QCOMPARE(controller.windowHeight(), QtAppController::kMinimumWindowHeight);
+    controller.setWindowSize(999999, 999999);
+    QCOMPARE(controller.windowWidth(), QtAppController::kMaximumWindowWidth);
+    QCOMPARE(controller.windowHeight(), QtAppController::kMaximumWindowHeight);
+
+    // A hand-edited or corrupt file cannot produce an unusable window either.
+    {
+        QSettings broken(directory.filePath(QStringLiteral("broken.ini")), QSettings::IniFormat);
+        broken.setValue(QStringLiteral("window/width"), 5);
+        broken.setValue(QStringLiteral("window/height"), QStringLiteral("abc"));
+    }
+    QtAppController fromBrokenFile;
+    fromBrokenFile.setSettingsFile(directory.filePath(QStringLiteral("broken.ini")));
+    QCOMPARE(fromBrokenFile.windowWidth(), QtAppController::kMinimumWindowWidth);
+    QCOMPARE(fromBrokenFile.windowHeight(), QtAppController::kMinimumWindowHeight);
+    // start-up size never drops below the window's minimum
+    QVERIFY(fromBrokenFile.startupWindowWidth() >= QtAppController::kMinimumWindowWidth);
+    QVERIFY(fromBrokenFile.startupWindowHeight() >= QtAppController::kMinimumWindowHeight);
 }
 
 void QtAppControllerTest::savesTiffWithoutQtImagePlugin() {

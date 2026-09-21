@@ -1,8 +1,13 @@
 QuickImageView Changelog
-v4.0.0 (2026-09-21)
+v4.1.0 (2026-09-21)
+- Fixed a hang when moving the window between monitors with different display scaling.
+- Default window size 720 x 480; File > Settings sets the window size.
+- TIFF is written through WIC. Restored from 3.x: --convert, dark title bar, drop confirmation, reload after Save as, extension completion, HEIC/HEIF quality.
+- Smaller distribution (native file dialogs, no unused plugins); built with MinGW.
+
+v4.0.0 (2026-09-21) - withdrawn (hang when moving the window between monitors with different display scaling)
 - Replaced the Win32 implementation with the Qt 6 (Qt Quick) implementation.
 - Releases are an unsigned ZIP with SHA256SUMS.txt; the MSI installer was removed.
-- TIFF is written through WIC. Restored from 3.x: --convert, dark title bar, drop confirmation, reload after Save as, extension completion, HEIC/HEIF quality.
 - WebP now uses Qt's WebP image-format plugin.
 
 v3.1.3 (2026-09-20)

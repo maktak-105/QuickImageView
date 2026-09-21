@@ -12,6 +12,9 @@
 #include <QImageReader>
 #include <QPainter>
 #include <QRect>
+#include <QScreen>
+#include <QSettings>
+#include <QStandardPaths>
 #include <QStringList>
 #include <QTransform>
 
@@ -23,7 +26,11 @@
 
 QtAppController::QtAppController(QuickImageProvider* imageProvider, QObject* parent)
     : QObject(parent), statusText_(localize(QStringLiteral("画像を開いてください。"), QStringLiteral("Open an image to begin."))),
-      imageProvider_(imageProvider) {}
+      imageProvider_(imageProvider) {
+    settingsFile_ = QDir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation))
+                        .filePath(QStringLiteral("settings.ini"));
+    loadWindowSize();
+}
 
 QString QtAppController::appName() const {
     return QStringLiteral("QuickImageView");
@@ -577,4 +584,52 @@ void QtAppController::showSaveImageDialog() {
     const NativeFileDialog::SaveResult result = NativeFileDialog::pickSaveFile(
         localize(QStringLiteral("別形式で保存"), QStringLiteral("Save as")), NativeFileDialog::saveFileTypes());
     if (result.accepted) saveImage(QUrl::fromLocalFile(result.path), result.suffix);
+}
+
+QSize QtAppController::clampWindowSize(const QSize& size) {
+    return QSize(qBound(kMinimumWindowWidth, size.width(), kMaximumWindowWidth),
+                 qBound(kMinimumWindowHeight, size.height(), kMaximumWindowHeight));
+}
+
+void QtAppController::loadWindowSize() {
+    const QSettings settings(settingsFile_, QSettings::IniFormat);
+    const int width = settings.value(QStringLiteral("window/width"), kDefaultWindowWidth).toInt();
+    const int height = settings.value(QStringLiteral("window/height"), kDefaultWindowHeight).toInt();
+    windowSize_ = clampWindowSize(QSize(width, height));
+}
+
+void QtAppController::setSettingsFile(const QString& path) {
+    settingsFile_ = path;
+    loadWindowSize();
+    emit windowSizeChanged();
+}
+
+int QtAppController::windowWidth() const { return windowSize_.width(); }
+int QtAppController::windowHeight() const { return windowSize_.height(); }
+
+// The size used at start-up is the saved size, limited to what fits on the primary screen.
+int QtAppController::startupWindowWidth() const {
+    int width = windowSize_.width();
+    if (const QScreen* screen = QGuiApplication::primaryScreen()) width = qMin(width, screen->availableSize().width());
+    return qMax(kMinimumWindowWidth, width);
+}
+
+int QtAppController::startupWindowHeight() const {
+    int height = windowSize_.height();
+    if (const QScreen* screen = QGuiApplication::primaryScreen()) height = qMin(height, screen->availableSize().height());
+    return qMax(kMinimumWindowHeight, height);
+}
+
+void QtAppController::setWindowSize(int width, int height) {
+    windowSize_ = clampWindowSize(QSize(width, height));
+    QDir().mkpath(QFileInfo(settingsFile_).absolutePath());
+    QSettings settings(settingsFile_, QSettings::IniFormat);
+    settings.setValue(QStringLiteral("window/width"), windowSize_.width());
+    settings.setValue(QStringLiteral("window/height"), windowSize_.height());
+    settings.sync();
+    statusText_ = localize(QStringLiteral("ウィンドウサイズを %1×%2 に設定しました。").arg(windowSize_.width()).arg(windowSize_.height()),
+                           QStringLiteral("Window size set to %1x%2.").arg(windowSize_.width()).arg(windowSize_.height()));
+    emit windowSizeChanged();
+    emit windowResizeRequested(windowSize_.width(), windowSize_.height());
+    emit statusChanged();
 }

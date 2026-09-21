@@ -4,7 +4,7 @@
 
 ## Qt 6.10.3
 
-QuickImageViewはQt 6（Core、Gui、Qml、Quick、Quick Controls 2、Quick Dialogs、Svgなどのモジュール）を使用します。Qtライブラリは動的ライブラリ（DLL）として実行ファイルの横に配置し、QuickImageViewでは改変していません。
+QuickImageViewはQt 6（Core、Gui、Network、OpenGL、Qml、Quick、Quick Controls 2、Quick Layouts、Quick Templates 2などのモジュール）を使用します。Qtライブラリは動的ライブラリ（DLL）として実行ファイルの横に配置し、QuickImageViewでは改変していません。
 
 - QtはGNU Lesser General Public License version 3などのライセンスで提供されています。https://www.qt.io/licensing/ と https://doc.qt.io/qt-6/lgpl.html を参照してください。
 

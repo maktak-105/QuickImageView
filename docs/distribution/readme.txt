@@ -1,4 +1,4 @@
-QuickImageView - Distribution package v4.0.0
+QuickImageView - Distribution package v4.1.0
 
 This document describes the package contents and the documented behavior of
 this version.
@@ -62,7 +62,8 @@ Language, theme, and Windows integration:
 - The menu order is File, Edit, Help. Help > Help opens the bundled help and
   Help > About opens the version dialog.
 - File > Settings adds or removes QuickImageView in the Explorer image context
-  menu (current user, HKCU).
+  menu (current user, HKCU). It also sets the window size in pixels (default
+  720 x 480), which is used at the next start and applied to the current window.
 
 Distribution files
 ------------------

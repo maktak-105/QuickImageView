@@ -2,7 +2,7 @@
 
 [日本語版 spec_jp.md](spec_jp.md)
 
-QuickImageView is a Windows image viewer and editor implemented with Qt 6 (Qt Quick / QML), C++17, Windows Imaging Component (WIC), and CMake. Image processing is separated from the UI in GUI-independent C++. This document covers version 4.0.0.
+QuickImageView is a Windows image viewer and editor implemented with Qt 6 (Qt Quick / QML), C++17, Windows Imaging Component (WIC), and CMake. Image processing is separated from the UI in GUI-independent C++. This document covers version 4.1.0.
 
 ## Viewing and operation
 
@@ -31,6 +31,7 @@ QuickImageView is a Windows image viewer and editor implemented with Qt 6 (Qt Qu
 ## Windows integration
 
 - File > Settings registers or removes the QuickImageView entry in the Explorer image context menu (current user, HKCU).
+- File > Settings also sets the window size: the width and height of the content area in pixels (480 x 320 up to 7680 x 4320; the default is 720 x 480). The size is saved in `%LOCALAPPDATA%\maktak-105\QuickImageView\settings.ini`, used at the next start (limited to the primary screen), and applied to the current window unless it is maximized.
 - `scripts/install.ps1` installs per user under `%LOCALAPPDATA%` and registers the entry unless `-NoRegisterContextMenu` is given.
 
 ## Command line

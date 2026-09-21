@@ -2,6 +2,7 @@
 
 #include <QObject>
 #include <QImage>
+#include <QSize>
 #include <QUrl>
 #include <QVector>
 
@@ -33,9 +34,38 @@ class QtAppController final : public QObject {
     Q_PROPERTY(int pasteWidth READ pasteWidth NOTIFY pasteChanged)
     Q_PROPERTY(int pasteHeight READ pasteHeight NOTIFY pasteChanged)
     Q_PROPERTY(bool contextMenuRegistered READ isContextMenuRegistered NOTIFY contextMenuRegisteredChanged)
+    // Window size (client area, logical pixels): the saved value, the size used at start-up, and the allowed range.
+    Q_PROPERTY(int windowWidth READ windowWidth NOTIFY windowSizeChanged)
+    Q_PROPERTY(int windowHeight READ windowHeight NOTIFY windowSizeChanged)
+    Q_PROPERTY(int startupWindowWidth READ startupWindowWidth CONSTANT)
+    Q_PROPERTY(int startupWindowHeight READ startupWindowHeight CONSTANT)
+    Q_PROPERTY(int minimumWindowWidth READ minimumWindowWidth CONSTANT)
+    Q_PROPERTY(int minimumWindowHeight READ minimumWindowHeight CONSTANT)
+    Q_PROPERTY(int maximumWindowWidth READ maximumWindowWidth CONSTANT)
+    Q_PROPERTY(int maximumWindowHeight READ maximumWindowHeight CONSTANT)
 
 public:
+    static constexpr int kDefaultWindowWidth = 720;
+    static constexpr int kDefaultWindowHeight = 480;
+    static constexpr int kMinimumWindowWidth = 480;
+    static constexpr int kMinimumWindowHeight = 320;
+    static constexpr int kMaximumWindowWidth = 7680;
+    static constexpr int kMaximumWindowHeight = 4320;
+
     explicit QtAppController(QuickImageProvider* imageProvider = nullptr, QObject* parent = nullptr);
+
+    // Keeps a window size inside the allowed range.
+    static QSize clampWindowSize(const QSize& size);
+    // Where the settings are stored (settings.ini). Tests point it at a temporary file.
+    void setSettingsFile(const QString& path);
+    int windowWidth() const;
+    int windowHeight() const;
+    int startupWindowWidth() const;
+    int startupWindowHeight() const;
+    int minimumWindowWidth() const { return kMinimumWindowWidth; }
+    int minimumWindowHeight() const { return kMinimumWindowHeight; }
+    int maximumWindowWidth() const { return kMaximumWindowWidth; }
+    int maximumWindowHeight() const { return kMaximumWindowHeight; }
 
     QString appName() const;
     QString appVersion() const;
@@ -90,6 +120,8 @@ public:
     Q_INVOKABLE void setEnglish(bool enabled);
     Q_INVOKABLE bool isContextMenuRegistered() const;
     Q_INVOKABLE bool setContextMenuRegistered(bool enable);
+    // Saves the size (used at the next start) and asks the window to take it now.
+    Q_INVOKABLE void setWindowSize(int width, int height);
 
 signals:
     void languageChanged();
@@ -101,6 +133,8 @@ signals:
     void fileInfoChanged();
     void pasteChanged();
     void contextMenuRegisteredChanged();
+    void windowSizeChanged();
+    void windowResizeRequested(int width, int height);
 
 private:
     QString localize(const QString& japanese, const QString& english) const;
@@ -109,6 +143,7 @@ private:
     void applyImageEdit(const QImage& image, const QString& noticeJapanese, const QString& noticeEnglish);
     void clearEditHistory();
     void clearPasteState();
+    void loadWindowSize();
 
     bool english_ = false;
     QUrl imageSource_;
@@ -126,4 +161,6 @@ private:
     ImageEngine::SaveOptions saveOptions_;
     QVector<QImage> undoHistory_;
     QVector<QImage> redoHistory_;
+    QString settingsFile_;
+    QSize windowSize_{kDefaultWindowWidth, kDefaultWindowHeight};
 };

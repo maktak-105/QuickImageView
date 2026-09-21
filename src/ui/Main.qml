@@ -5,10 +5,11 @@ import QtQuick.Layouts
 ApplicationWindow {
     id: window
     objectName: "quickImageViewWindow"
-    width: 1180
-    height: 760
-    minimumWidth: 480
-    minimumHeight: 320
+    // 既定は 720x480。設定ダイアログで数値指定でき、次回起動時にも使う（画面に収まる大きさに丸める）。
+    width: appController.startupWindowWidth
+    height: appController.startupWindowHeight
+    minimumWidth: appController.minimumWindowWidth
+    minimumHeight: appController.minimumWindowHeight
     visible: true
     title: appController.appName + " " + appController.appVersion
     color: "#0b1018"
@@ -53,6 +54,13 @@ ApplicationWindow {
         } else {
             appController.openImage(url)
         }
+    }
+
+    // 設定ダイアログで指定された大きさを、いまのウィンドウにも反映する（最大化中・全画面中は反映しない）。
+    function applyWindowSize(w, h) {
+        if (window.visibility !== Window.Windowed) return
+        window.width = Math.min(w, Screen.desktopAvailableWidth)
+        window.height = Math.min(h, Screen.desktopAvailableHeight)
     }
 
     function resetView() {
@@ -360,6 +368,8 @@ ApplicationWindow {
         modal: true
         title: window.text("リサイズを指定", "Custom resize")
         anchors.centerIn: Overlay.overlay
+        // ウィンドウより大きくならない（最小 480x320 でも収まる）。はみ出す分はスクロールする。
+        height: Math.min(implicitHeight, Overlay.overlay ? Overlay.overlay.height - 32 : implicitHeight)
         standardButtons: Dialog.Ok | Dialog.Cancel
         property bool resizeUpdating: false
         property int lastResizeMode: 0
@@ -420,7 +430,12 @@ ApplicationWindow {
             resizeLock.checked = true
             resizeUpdating = false
         }
-        contentItem: GridLayout {
+        contentItem: ScrollView {
+            id: resizeScroller
+            clip: true
+            contentWidth: availableWidth
+            GridLayout {
+            width: resizeScroller.availableWidth
             columns: 2
             rowSpacing: 10
             columnSpacing: 14
@@ -461,6 +476,7 @@ ApplicationWindow {
                 text: window.text("縦横比を保持", "Keep aspect ratio")
                 checked: true
                 onToggled: if (checked) resizeDialog.applyAspectFromWidth()
+            }
             }
         }
         onAccepted: window.requestResize(resizeWidth.value, resizeHeight.value,
@@ -791,6 +807,10 @@ ApplicationWindow {
         id: aboutDialog
         english: appController.english
         appVersion: appController.appVersion
+    }
+    Connections {
+        target: appController
+        function onWindowResizeRequested(width, height) { window.applyWindowSize(width, height) }
     }
     ReplaceImageDialog {
         id: replaceImageDialog

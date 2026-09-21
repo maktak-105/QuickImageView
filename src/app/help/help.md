@@ -1,5 +1,5 @@
 # QuickImageView Help
-Version 4.0.0
+Version 4.1.0
 
 ## Open and view
 Open a local image with **File > Open image**, `Ctrl+O`, or drag and drop. The image is displayed to fit the window. When an image is already displayed, dropping another image asks for confirmation before it is opened.
@@ -20,10 +20,16 @@ Use `Ctrl+C` or the right-click **Copy image** command to copy the displayed ima
 Use `Ctrl+Z` or **Edit > Undo** to reverse the latest rotation or flip. Use `Ctrl+Y` or **Edit > Redo** to reapply an undone edit.
 
 ## Help and About
-Use **Help > Help** to open this document. **Help > About** shows QuickImageView Ver. 4.0.0, its development environment, the author, and the creator badge. Both are dark modal views and close with **Close** or **OK**.
+Use **Help > Help** to open this document. **Help > About** shows QuickImageView Ver. 4.1.0, its development environment, the author, and the creator badge. Both are dark modal views and close with **Close** or **OK**.
 
 ## Display language
 Use the globe button in the upper-right labeled `English` / `日本語` to switch the menus, status messages, Help, and About dialog.
+
+## Settings
+**File > Settings** adds QuickImageView to the Explorer image context menu and sets the window size. Enter the width and height of the window's content area in pixels (480 x 320 or larger; the default is 720 x 480). The size is used the next time QuickImageView starts and is applied to the current window unless it is maximized.
+
+## Command line
+Run `QuickImageView.exe --convert <source> <destination>` to convert an image without opening a window. The format follows the destination extension. The exit code is 0 on success and 2 on failure; the reason is written to `crash.log`. Existing files are never overwritten.
 
 ## Formats and codecs
 BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS are read with Windows Imaging Component (WIC). HEIC and HEIF can be read when a compatible Windows WIC codec is installed. WebP is read with Qt's WebP image-format plugin, so no Windows WebP codec is required.

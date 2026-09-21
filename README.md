@@ -2,7 +2,7 @@
 
 QuickImageView is a lightweight Windows image viewer and editor built with Qt 6 (Qt Quick / QML) and C++17. It opens, edits, and converts images, and switches between Japanese and English.
 
-Version: **v4.0.0**
+Version: **v4.1.0**
 
 ## Download
 
@@ -14,7 +14,7 @@ Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 
 Compare the result with `SHA256SUMS.txt`.
 
-Version 4.0.0 replaces the earlier Win32 implementation. The 3.x releases (up to v3.1.3) stay available at their release tags.
+Version 4 replaces the earlier Win32 implementation. The 3.x releases (up to v3.1.3) stay available at their release tags.
 
 ## Features
 
@@ -28,7 +28,7 @@ Version 4.0.0 replaces the earlier Win32 implementation. The 3.x releases (up to
 - Show file name, dimensions, format, file size, and EXIF make, model, and capture date in a floating window that can be copied
 - Save as another format with quality or compression options; the source image and existing files are never overwritten, a missing extension is added from the selected file type, and the saved file is reloaded as the current image
 - Convert an image from the command line with `--convert`
-- Add QuickImageView to the Explorer image context menu from File > Settings
+- Add QuickImageView to the Explorer image context menu, and set the window size (default 720 x 480) in File > Settings
 - Switch between Japanese and English with the upper-right button
 - Dark theme (including the title bar), in-app Help, and an About dialog
 

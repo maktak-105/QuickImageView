@@ -8,8 +8,11 @@ Dialog {
     modal: true
     dim: true
     anchors.centerIn: Overlay.overlay
-    width: 760
-    height: 620
+    // ウィンドウより大きくならない（既定 720x480、最小 480x320 でも収まる）。はみ出す分はスクロールする。
+    readonly property real maxDialogWidth: Overlay.overlay ? Overlay.overlay.width - 32 : 760
+    readonly property real maxDialogHeight: Overlay.overlay ? Overlay.overlay.height - 32 : 620
+    width: Math.min(760, maxDialogWidth)
+    height: Math.min(620, maxDialogHeight)
     padding: 0
 
     required property bool english

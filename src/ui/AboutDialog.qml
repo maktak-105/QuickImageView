@@ -8,8 +8,11 @@ Dialog {
     modal: true
     dim: true
     anchors.centerIn: Overlay.overlay
-    width: 380
-    height: 510
+    // ウィンドウより大きくならない（既定 720x480、最小 480x320 でも収まる）。はみ出す分はスクロールする。
+    readonly property real maxDialogWidth: Overlay.overlay ? Overlay.overlay.width - 32 : 380
+    readonly property real maxDialogHeight: Overlay.overlay ? Overlay.overlay.height - 32 : 510
+    width: Math.min(380, maxDialogWidth)
+    height: Math.min(510, maxDialogHeight)
     padding: 24
 
     required property bool english
@@ -22,7 +25,12 @@ Dialog {
         border.width: 1
     }
 
-    contentItem: ColumnLayout {
+    contentItem: ScrollView {
+        id: aboutScroller
+        clip: true
+        contentWidth: availableWidth
+        ColumnLayout {
+        width: aboutScroller.availableWidth
         spacing: 10
         Label { text: "QuickImageView"; color: "#e7edf5"; font.pixelSize: 19; font.bold: true }
         Label { text: "Ver. " + aboutDialog.appVersion; color: "#00c9e8"; font.bold: true }
@@ -49,6 +57,7 @@ Dialog {
             width: 170
             height: 170
             fillMode: Image.PreserveAspectFit
+        }
         }
     }
 

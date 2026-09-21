@@ -7,6 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
+import time
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -65,6 +66,19 @@ MSVC_RUNTIME_DLLS = (
     "msvcp140_1.dll",
     "msvcp140_2.dll",
 )
+
+
+def remove_tree(path: Path) -> None:
+    """Delete a folder, retrying briefly: Windows can keep a freshly created folder busy for a moment
+    (search indexer, antivirus), which made the deployment fail with "used by another process"."""
+    for attempt in range(20):
+        try:
+            shutil.rmtree(path)
+            return
+        except OSError:
+            if attempt == 19:
+                raise
+            time.sleep(0.5)
 
 
 def require_file(path: Path, description: str) -> None:
@@ -131,7 +145,7 @@ def deploy() -> None:
         if item.name.lower() in keep_names:
             continue
         if item.is_dir():
-            shutil.rmtree(item)
+            remove_tree(item)
         else:
             item.unlink()
 
@@ -167,7 +181,7 @@ def deploy() -> None:
         for style in UNUSED_QML_STYLES:
             style_dir = controls_dir / style
             if style_dir.exists():
-                shutil.rmtree(style_dir)
+                remove_tree(style_dir)
 
     for prefix in UNUSED_DLL_PREFIXES:
         for leftover in QT_DIST.glob(prefix + "*"):
@@ -176,7 +190,7 @@ def deploy() -> None:
     for relative in UNUSED_QML_DIRS:
         leftover_dir = QT_DIST / relative
         if leftover_dir.exists():
-            shutil.rmtree(leftover_dir)
+            remove_tree(leftover_dir)
 
     bundle_msvc_runtime()
 

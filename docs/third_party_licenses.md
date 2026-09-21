@@ -4,7 +4,7 @@
 
 ## Qt 6.10.3
 
-QuickImageView uses Qt 6 (Core, Gui, Qml, Quick, Quick Controls 2, Quick Dialogs, Svg, and related modules). The Qt libraries are deployed as dynamic libraries (DLLs) next to the executable and are not modified by QuickImageView.
+QuickImageView uses Qt 6 (Core, Gui, Network, OpenGL, Qml, Quick, Quick Controls 2, Quick Layouts, Quick Templates 2, and related modules). The Qt libraries are deployed as dynamic libraries (DLLs) next to the executable and are not modified by QuickImageView.
 
 - Qt is available under the GNU Lesser General Public License version 3 and other licenses. See https://www.qt.io/licensing/ and https://doc.qt.io/qt-6/lgpl.html.
 
