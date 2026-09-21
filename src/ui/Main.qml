@@ -8,8 +8,8 @@ ApplicationWindow {
     objectName: "quickImageViewWindow"
     width: 1180
     height: 760
-    minimumWidth: 860
-    minimumHeight: 560
+    minimumWidth: 480
+    minimumHeight: 320
     visible: true
     title: appController.appName + " " + appController.appVersion
     color: "#0b1018"
