@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, qt]
+    branches: [main]
   pull_request:
-    branches: [main, qt]
+    branches: [main]
 
 jobs:
   build:
@@ -18,9 +18,9 @@ jobs:
           arch: win64_msvc2022_64
           modules: qtimageformats qtshadertools
       - name: Configure
-        run: cmake -S . -B build/intermediate/ci -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DQUICKIMAGEVIEW_BUILD_QT=ON
+        run: cmake -S . -B build/intermediate/ci -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
       - name: Build
-        run: cmake --build build/intermediate/ci --config Release --target QuickImageView QuickImageViewQt qiv_controller_tests qiv_qml_tests
+        run: cmake --build build/intermediate/ci --config Release --target QuickImageViewQt qiv_controller_tests qiv_qml_tests
       - name: Test
         run: ctest --test-dir build/intermediate/ci -C Release --output-on-failure
       - name: Install Cppcheck

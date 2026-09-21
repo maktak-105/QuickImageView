@@ -4,11 +4,11 @@
 
 ## バージョン
 
-3.1.3
+4.0.0
 
 ## 技術スタック
 
-C++17、Win32 API、Windows Imaging Component、CMake、MinGW-w64。
+C++17、Qt 6（Qt Quick / QML）、Windows Imaging Component、CMake、MinGW-w64。
 
 ## 制作者
 

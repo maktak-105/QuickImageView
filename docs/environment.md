@@ -4,21 +4,16 @@
 
 - Windows 10/11 64-bit
 - CMake 3.20+
-- MinGW-w64 C++17 toolchain
-- Python 3.13 for optional test and utility scripts
-- Qt 6.10.3 MinGW (`C:\Users\makta\tools\Qt\6.10.3\mingw_64`) and MinGW 13.1.0 (`C:\Users\makta\tools\Qt\Tools\mingw1310_64`) for the Qt Quick target. Override with `QT_ROOT` / `QT_MINGW_BIN` if needed.
+- Qt 6.10.3 MinGW (`C:\Users\makta\tools\Qt\6.10.3\mingw_64`) and MinGW 13.1.0 (`C:\Users\makta\tools\Qt\Tools\mingw1310_64`). Override with `QT_ROOT` / `QT_MINGW_BIN` if Qt is installed elsewhere.
+- Python 3.13 for the build and deploy scripts
+- `aqtinstall` (`scripts/requirements.txt`) is an optional tool for provisioning the Qt SDK locally.
 
 Build and test:
 
 ```powershell
 .\scripts\build.bat
-ctest --test-dir build/intermediate/native --output-on-failure
 ```
 
-Qt Quick:
+The script configures CMake in `build/intermediate/qt-mingw1310`, builds `QuickImageViewQt`, `qiv_controller_tests`, and `qiv_qml_tests`, runs CTest, and deploys the Qt runtime with `windeployqt` (`scripts/deploy_qt.py`). The executable is written to `dist/QuickImageViewQt.exe` and the Qt runtime is placed next to it.
 
-```powershell
-.\scripts\build.bat qt
-```
-
-The MinGW runtime is statically linked. The Win32 executable is written to `dist/QuickImageView.exe`. The Qt executable is written to `dist/binary/QuickImageViewQt.exe`.
+GitHub Actions builds with Qt 6.10.3 for MSVC 2022 (`win64_msvc2022_64`) on `windows-2022`.

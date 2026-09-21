@@ -1,5 +1,14 @@
 # QuickImageView Changelog
 
+## v4.0.0 — 2026-09-21
+
+- Replaced the Win32 implementation with the Qt 6 (Qt Quick / QML) implementation as the main line.
+- Releases are an unsigned ZIP (`QuickImageViewQt-<tag>-win64.zip`) with a CI-generated `SHA256SUMS.txt`.
+- Rebuilt the UI in Qt Quick and added a Settings dialog for the Explorer context-menu entry.
+- Removed the MSI installer, the `--convert` command-line conversion, and the Win32 self-test and UI test scripts.
+- WebP is now handled by Qt's WebP image-format plugin instead of a statically linked libwebp. Saving supports PNG, JPEG, BMP, and WebP; TIFF and HEIC/HEIF saving depend on Qt's TIFF plugin and a WIC encoder.
+- The Win32 implementation remains available at the v3.x release tags (up to v3.1.3).
+
 ## v3.1.3 — 2026-09-20
 
 - Fixed the project restructure, build/package paths, and release verification.

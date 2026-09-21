@@ -10,7 +10,7 @@ import sys
 
 
 ROOT = Path(__file__).resolve().parents[1]
-QT_DIST = ROOT / "dist" / "binary"
+QT_DIST = ROOT / "dist"
 QT_BINARY = QT_DIST / "QuickImageViewQt.exe"
 
 UNUSED_QML_STYLES = (
@@ -72,7 +72,7 @@ def find_windeployqt() -> Path:
 def deploy() -> None:
     require_file(QT_BINARY, "Qt build output")
     windeployqt = find_windeployqt()
-    keep_names = {QT_BINARY.name.lower()}
+    keep_names = {QT_BINARY.name.lower(), ".gitkeep"}
     QT_DIST.mkdir(parents=True, exist_ok=True)
     for item in QT_DIST.iterdir():
         if item.name.lower() in keep_names:

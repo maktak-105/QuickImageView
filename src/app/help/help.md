@@ -1,5 +1,5 @@
 # QuickImageView Help
-Version 3.1.3
+Version 4.0.0
 
 ## Open and view
 Open a local image with **File > Open image**, `Ctrl+O`, or drag and drop. The image is displayed to fit the window.
@@ -20,13 +20,13 @@ Use `Ctrl+C` or **Edit > Copy image** to copy the displayed image to the Windows
 Use `Ctrl+Z` or **Edit > Undo** to reverse the latest rotation or flip. Use `Ctrl+Y` or **Edit > Redo** to reapply an undone edit.
 
 ## Help and About
-Use **Help > Help** to open this document. **Help > About** shows QuickImageView Ver. 3.1.3, its development environment, the author, and the creator badge. Both are dark modal views and close with **Close** or **OK**.
+Use **Help > Help** to open this document. **Help > About** shows QuickImageView Ver. 4.0.0, its development environment, the author, and the creator badge. Both are dark modal views and close with **Close** or **OK**.
 
 ## Display language
 Use the globe button in the upper-right labeled `English` / `日本語` to switch the menus, status messages, Help, and About dialog.
 
 ## Formats and codecs
-BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS are read with Windows Imaging Component (WIC). HEIC and HEIF can be read when a compatible Windows WIC codec is installed. WebP is read with libwebp 1.6.0 statically linked into QuickImageView, so no separate libwebp installation is required.
+BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS are read with Windows Imaging Component (WIC). HEIC and HEIF can be read when a compatible Windows WIC codec is installed. WebP is read with Qt's WebP image-format plugin, so no Windows WebP codec is required.
 
-## Current migration scope
-This Qt Quick build provides image loading, viewing, rotation, flipping, color conversion, crop, resize, movable paste, Undo/Redo, EXIF viewing/copying, Save as, Help, and About.
+## Features
+QuickImageView provides image loading, viewing, rotation, flipping, color conversion, crop, resize, movable paste, Undo/Redo, EXIF viewing/copying, Save as, Help, and About.

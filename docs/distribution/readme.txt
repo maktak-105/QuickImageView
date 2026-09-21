@@ -1,7 +1,7 @@
-QuickImageView - Distribution package v3.1.3
+QuickImageView - Distribution package v4.0.0
 
-This document describes the package contents and current documented behavior. It
-is not a UI-test result; untested requirements must not be treated as complete.
+This document describes the package contents and the documented behavior of
+this version.
 
 Requirements
 ------------
@@ -11,84 +11,69 @@ Requirements
 Usage
 -----
 Starting and opening images:
-- Run QuickImageView.exe.
-- Use File > Open image or Ctrl+O, or drag an image onto the window.
-- Opening another image replaces the current image after confirmation.
-- The source image is not overwritten.
+- Extract every file of the ZIP into the same folder and run
+  QuickImageViewQt.exe. Keep the executable, the Qt DLLs, and the platforms,
+  imageformats, and qml folders together.
+- Use File > Open image or Ctrl+O, drag an image onto the window, or pass an
+  image path on the command line.
+- The source image is never overwritten.
 
-Viewing and navigation:
-- The image is fitted to the window when opened.
-- Use zoom controls or the mouse wheel to zoom; drag to pan when zoomed.
-- The information area and lower message area report image and operation status.
-
-Selection and editing:
-- Drag on the image to select a rectangular area.
-- Edit > Crop crops to the selection.
-- Edit > Rotate clockwise, Rotate counterclockwise, Flip horizontal, and Flip
-  vertical perform image transformations.
-- Edit > Undo and Edit > Redo, Ctrl+Z, and Ctrl+Y undo or redo changes.
-- Resize accepts percentage and pixel dimensions. Aspect-ratio lock preserves
-  the original ratio. Resize values are entered through the resize command.
+Viewing and editing:
+- The image is fitted to the window when opened. Zoom with the mouse wheel and
+  pan with a middle-button drag.
+- Drag with the left button to select a rectangle, then crop from the context
+  menu.
+- Rotate, flip, convert colors, and resize (percentage or pixels, optional
+  aspect-ratio lock) from the context menu.
+- Undo and redo with Ctrl+Z and Ctrl+Y.
 
 Copy and paste:
-- Edit > Copy or Ctrl+C copies the selection, or the full image when there is
-  no selection. The context menu also provides Copy and Paste.
-- Edit > Paste or Ctrl+V accepts internal QuickImageView copies and images from
-  external Windows applications.
-- Internal copy data is preferred. If unavailable, the Windows clipboard is
-  read from CF_BITMAP, CF_DIB, or CF_DIBV5.
-- A pasted image is movable until OK applies it. Retry cancels the operation;
-  the applied paste can be undone.
+- Ctrl+C copies the image or the selection. Ctrl+V pastes an image.
+- A pasted image can be moved; commit it or retry from the context menu.
 
 EXIF and saving:
-- Open image information from the information command or context menu.
-- EXIF information and the lower message area use black backgrounds with white
-  text. EXIF text can be copied from the EXIF window.
-- Use File > Save as to choose destination, format, and file name.
-- Existing destination files are not overwritten without confirmation.
-- WebP output is included. HEIC/HEIF availability depends on installed codecs.
+- File and EXIF information is shown in a floating window; the EXIF text can be
+  copied.
+- File > Save as shows save options before the file picker. Quality (JPEG and
+  WebP, 0-100) and compression (PNG and TIFF, 0-9) can be set.
+- Existing files and the source image are not overwritten.
 
 Supported formats and codecs:
-- BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, DDS,
-  WebP, HEIC, and HEIF.
-- BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS use
-  Windows Imaging Component (WIC) decoders.
-- WebP input uses the Windows WIC WebP decoder and depends on that codec.
-- WebP output uses statically linked libwebp 1.6.0 included in QuickImageView;
-  no separate libwebp installation is required.
-- HEIC and HEIF input/output depend on the Windows WIC codecs installed on the
-  computer.
+- Open: BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS
+  use Windows Imaging Component (WIC). WebP uses Qt's WebP image-format plugin.
+  HEIC and HEIF need a compatible WIC codec installed on the computer.
+- Save as: PNG, JPEG, BMP, and WebP. TIFF saving needs Qt's TIFF image plugin
+  and HEIC/HEIF saving needs a WIC encoder; both fail when unavailable.
 
 Language, theme, and Windows integration:
 - The upper-right button shows a cyan globe and English or 日本語; click it to
   switch language.
-- The menu order is File, Edit, Help. Help > Help opens the bundled help and Help > About opens the version dialog.
-- The client area, buttons, menus, and menu popups use the dark theme.
-- The PowerShell installer registers the context menu under the current user
-  (HKCU). MSI context-menu and extension associations are independent optional
-  features and associations are unselected by default.
+- The menu order is File, Edit, Help. Help > Help opens the bundled help and
+  Help > About opens the version dialog.
+- File > Settings adds or removes QuickImageView in the Explorer image context
+  menu (current user, HKCU).
 
 Distribution files
 ------------------
-- QuickImageView.exe
+- QuickImageViewQt.exe and the Qt runtime (Qt6*.dll, platforms, imageformats,
+  qml, and related files)
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt
-- Help is embedded in QuickImageView.exe in English and Japanese.
+- third_party_licenses.md / third_party_licenses_jp.md
 - libwebp-COPYING / libwebp-PATENTS
-
-LICENSE_jp.txt is sourced from docs/distribution/LICENSE_jp.txt and is included in the binary package and MSI.
+- Help is embedded in QuickImageViewQt.exe in English and Japanese.
 
 SHA-256
 -------
-GitHub Releases includes a CI-generated SHA256SUMS.txt for the ZIP and executable:
+GitHub Releases includes a CI-generated SHA256SUMS.txt for the ZIP:
 https://github.com/maktak-105/QuickImageView/releases
-Verify the ZIP with PowerShell: Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
+Verify the ZIP with PowerShell:
+Get-FileHash .\QuickImageViewQt-v4.0.0-win64.zip -Algorithm SHA256
 
 License
 -------
-MIT License. See LICENSE.txt. WebP encoding in this build statically links
-libwebp 1.6.0. Image loading and other WIC-backed formats use Windows Imaging
-Component; HEIC/HEIF availability depends on the codecs installed on Windows.
-The libwebp BSD license and patent notice are provided as libwebp-COPYING and
-libwebp-PATENTS.
+MIT License. See LICENSE.txt. QuickImageView uses Qt 6 as dynamic libraries;
+see third_party_licenses.md. WebP support comes from Qt's WebP image-format
+plugin, which contains libwebp. The libwebp BSD license and patent notice are
+provided as libwebp-COPYING and libwebp-PATENTS.

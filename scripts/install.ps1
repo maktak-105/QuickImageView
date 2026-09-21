@@ -3,17 +3,13 @@ param(
     [string]$SourceExe,
     [string]$InstallDirectory = "$(Join-Path $env:LOCALAPPDATA 'QuickImageView')",
     [string]$ContextMenuName = 'QuickImageView',
-    [switch]$Qt,
     [switch]$NoRegisterContextMenu
 )
 
 $ErrorActionPreference = 'Stop'
+$exeName = 'QuickImageViewQt.exe'
 if ([string]::IsNullOrWhiteSpace($SourceExe)) {
-    $SourceExe = if ($Qt) {
-        Join-Path $PSScriptRoot '..\dist\binary\QuickImageViewQt.exe'
-    } else {
-        Join-Path $PSScriptRoot '..\dist\QuickImageView.exe'
-    }
+    $SourceExe = Join-Path $PSScriptRoot ('..\dist\' + $exeName)
 }
 $source = [IO.Path]::GetFullPath($SourceExe)
 $target = [IO.Path]::GetFullPath($InstallDirectory)
@@ -26,33 +22,31 @@ if (-not (Test-Path -LiteralPath $iconSource -PathType Leaf)) {
     throw "Application icon not found: $iconSource"
 }
 
+# The deployed Qt runtime (windeployqt output) sits next to the executable.
+$runtimeSource = Split-Path -Parent $source
+$deployedFiles = Get-ChildItem -LiteralPath $runtimeSource -Force | Where-Object { $_.Name -ne '.gitkeep' }
+if (-not ($deployedFiles | Where-Object { $_.Name -eq $exeName })) {
+    throw "Qt runtime files were not found under $runtimeSource"
+}
+
 New-Item -ItemType Directory -Force -Path $target | Out-Null
-$installedExeName = if ($Qt) { 'QuickImageViewQt.exe' } else { 'QuickImageView.exe' }
-$installedExe = Join-Path $target $installedExeName
+$installedExe = Join-Path $target $exeName
 $installedIcon = Join-Path $target 'QuickImageView.ico'
+
+# Remove leftovers from earlier installs (for example the pre-4.0 Win32 executable).
+$staleItems = Get-ChildItem -LiteralPath $target -Force | Where-Object {
+    $name = $_.Name
+    -not ($deployedFiles | Where-Object { $_.Name -eq $name }) -and $name -ne 'QuickImageView.ico'
+}
+foreach ($item in $staleItems) {
+    Remove-Item -LiteralPath $item.FullName -Recurse -Force
+}
+
+foreach ($file in $deployedFiles) {
+    Copy-Item -LiteralPath $file.FullName -Destination $target -Recurse -Force
+}
 Copy-Item -LiteralPath $source -Destination $installedExe -Force
 Copy-Item -LiteralPath $iconSource -Destination $installedIcon -Force
-
-if ($Qt) {
-    $runtimeSource = Split-Path -Parent $source
-    $deployedFiles = Get-ChildItem -LiteralPath $runtimeSource -Force
-    if (-not ($deployedFiles | Where-Object { $_.Name -eq 'QuickImageViewQt.exe' })) {
-        throw "Qt runtime files were not found under $runtimeSource"
-    }
-    $staleItems = Get-ChildItem -LiteralPath $target -Force | Where-Object {
-        $name = $_.Name
-        $name -ne 'QuickImageView.exe' -and (-not ($deployedFiles | Where-Object { $_.Name -eq $name }))
-    }
-    foreach ($item in $staleItems) {
-        Remove-Item -LiteralPath $item.FullName -Recurse -Force
-    }
-
-    foreach ($file in $deployedFiles) {
-        if ($file.Name -ne 'QuickImageViewQt.exe' -and $file.Name -ne 'QuickImageView.ico') {
-            Copy-Item -LiteralPath $file.FullName -Destination $target -Recurse -Force
-        }
-    }
-}
 
 $keyPath = 'HKCU:\Software\Classes\SystemFileAssociations\image\shell\' + $ContextMenuName
 if (-not $NoRegisterContextMenu) {

@@ -39,7 +39,7 @@ void QtAppControllerTest::defaultsAreJapanese() {
     QtAppController controller;
     QVERIFY(!controller.english());
     QCOMPARE(controller.appName(), QStringLiteral("QuickImageView"));
-    QCOMPARE(controller.appVersion(), QStringLiteral("3.1.3"));
+    QCOMPARE(controller.appVersion(), QStringLiteral("4.0.0"));
     QVERIFY(!controller.hasImage());
     QVERIFY(controller.statusText().contains(QStringLiteral("画像")));
 }

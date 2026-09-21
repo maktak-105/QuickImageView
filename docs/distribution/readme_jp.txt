@@ -1,6 +1,6 @@
-QuickImageView - 配布パッケージ v3.1.3
+QuickImageView - 配布パッケージ v4.0.0
 
-この文書は配布物の内容と現在文書化されている動作を説明するものです。UI検査結果ではないため、未検証の要求を完了済みとして扱わないでください。
+この文書は配布物の内容と、このバージョンで文書化されている動作を説明するものです。
 
 動作環境
 --------
@@ -10,73 +10,64 @@ QuickImageView - 配布パッケージ v3.1.3
 使い方
 ------
 起動と画像を開く:
-- QuickImageView.exeを起動します。
-- 「ファイル > 画像を開く」またはCtrl+Oを使います。画像をウィンドウへ
-  ドラッグして開くこともできます。
-- 別の画像を開くときは確認後に置き換えます。原本画像は上書きしません。
+- ZIPの中身をすべて同じフォルダーへ展開し、QuickImageViewQt.exeを実行します。
+  実行ファイル、Qt DLL、platforms・imageformats・qmlフォルダーは同じ場所に置きます。
+- 「ファイル > 画像を開く」またはCtrl+Oを使います。画像をウィンドウへドラッグして
+  開くことも、コマンドラインで画像パスを渡すこともできます。
+- 原本画像は上書きしません。
 
-表示と移動:
-- 画像を開くとウィンドウに合わせて表示します。
-- ズーム操作またはマウスホイールで拡大・縮小し、拡大中はドラッグで移動します。
-- 情報領域と下部メッセージ領域に画像・操作の状態を表示します。
-
-範囲選択と編集:
-- 画像上をドラッグして矩形範囲を選択します。
-- 「編集 > 切り抜き」で選択範囲を切り抜きます。
-- 回転、左右反転、上下反転を編集メニューから実行できます。
-- 「元に戻す」「やり直す」、またはCtrl+Z / Ctrl+Yを使います。
-- リサイズはパーセント指定とピクセル指定に対応します。縦横比固定で元の
-  比率を維持します。値はリサイズコマンドから指定します。
+表示と編集:
+- 画像を開くとウィンドウに合わせて表示します。マウスホイールで拡大・縮小し、
+  中ドラッグで移動します。
+- 左ドラッグで矩形範囲を選択し、右クリックメニューから切り抜きます。
+- 回転、反転、色変換、リサイズ（パーセントまたはピクセル、縦横比の保持を選択可能）を
+  右クリックメニューから実行できます。
+- Ctrl+Z / Ctrl+YでUndo / Redoします。
 
 コピーと貼り付け:
-- 「編集 > コピー」またはCtrl+Cで選択範囲をコピーします。選択範囲が
-  なければ画像全体をコピーします。右クリックメニューも使用できます。
-- 「編集 > 貼り付け」またはCtrl+Vで内部コピーと外部Windowsアプリの画像を
-  貼り付けます。内部コピーを優先し、なければCF_BITMAP、CF_DIB、CF_DIBV5を
-  Windowsクリップボードから読み込みます。
-- 貼り付け画像は「OK」で適用、「再試行」で取り消します。適用後は元に戻せます。
+- Ctrl+Cで画像または選択範囲をコピーし、Ctrl+Vで画像を貼り付けます。
+- 貼り付け画像は移動でき、右クリックメニューで確定またはやり直します。
 
 EXIFと保存:
-- 情報コマンドまたは右クリックメニューから画像情報を開きます。
-- EXIF情報と下部メッセージ領域は黒背景・白文字です。EXIF情報はコピーできます。
-- 「ファイル > 名前を付けて保存」で保存先、形式、ファイル名を指定します。
-- 既存ファイルは確認なしに上書きしません。WebP出力に対応し、HEIC/HEIFは導入済み
-  コーデックに依存します。
+- ファイル情報とEXIF情報はフローティングウィンドウに表示します。EXIFテキストは
+  コピーできます。
+- 「ファイル > 別形式で保存」は、ファイル選択の前に保存オプションを表示します。
+  品質（JPEGとWebP、0〜100）と圧縮（PNGとTIFF、0〜9）を指定できます。
+- 既存ファイルと原本画像は上書きしません。
 
 対応形式とコーデック:
-- BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDS、
-  WebP、HEIC、HEIFに対応します。
-- BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDSは
-  Windows Imaging Component（WIC）のデコーダーを使用します。
-- WebPの読込はWindows WIC WebPデコーダーを使用するため、そのコーデックに依存します。
-- WebPの保存はQuickImageViewに静的リンクされたlibwebp 1.6.0を使用するため、
-  別途libwebpをインストールする必要はありません。
-- HEICとHEIFの読込・保存は、PCに導入されたWindows WICコーデックに依存します。
+- 開く: BMP、GIF、ICO、JPEG、JPEG XR、PNG、TIFF、Windows Media Photo、DDSは
+  Windows Imaging Component（WIC）を使用します。WebPはQtのWebP画像フォーマット
+  プラグインを使用します。HEICとHEIFは、PCに対応するWICコーデックが必要です。
+- 保存: PNG、JPEG、BMP、WebPに保存できます。TIFFの保存にはQtのTIFF画像プラグイン、
+  HEIC/HEIFの保存にはWICエンコーダーが必要で、ない場合は保存に失敗します。
 
 言語、テーマ、Windows連携:
 - 右上のボタンは水色の地球儀とEnglishまたは日本語を表示します。押して切り替えます。
-- メニューは「ファイル、編集、ヘルプ」の順です。「ヘルプ > ヘルプ」で同梱ヘルプを開き、「ヘルプ > バージョン情報」で版数と作者情報を確認できます。
-- クライアント領域、ボタン、メニュー、メニューポップアップはダークテーマです。
-- PowerShellインストーラーは現在のユーザー（HKCU）に右クリックメニューを登録します。
-- MSIでは右クリックメニューと拡張子関連付けを独立した任意機能として選択でき、既定では未選択です。
+- メニューは「ファイル、編集、ヘルプ」の順です。「ヘルプ > ヘルプ」で同梱ヘルプを開き、
+  「ヘルプ > バージョン情報」で版数と作者情報を確認できます。
+- 「ファイル > 設定」で、Explorerの画像右クリックメニューへQuickImageViewを追加・削除
+  できます（現在のユーザー、HKCU）。
 
 配布ファイル
 ------------
-- QuickImageView.exe
+- QuickImageViewQt.exeとQtランタイム（Qt6*.dll、platforms、imageformats、qmlなど）
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt
-- ヘルプはQuickImageView.exeへ英語・日本語で埋め込まれています。
+- third_party_licenses.md / third_party_licenses_jp.md
 - libwebp-COPYING / libwebp-PATENTS
-
-LICENSE_jp.txtはこのフォルダで管理し、ZIPとMSIへ同梱します。
+- ヘルプはQuickImageViewQt.exeへ英語・日本語で埋め込まれています。
 
 SHA-256
 -------
-GitHub Releasesには、CIが生成したZIPと実行ファイルのチェックサムSHA256SUMS.txtを添付します。
+GitHub Releasesには、CIが生成したZIPのチェックサムSHA256SUMS.txtを添付します。
 https://github.com/maktak-105/QuickImageView/releases
-ZIPの確認: Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
+ZIPの確認: Get-FileHash .\QuickImageViewQt-v4.0.0-win64.zip -Algorithm SHA256
 
 ライセンス
 ----------
-MIT License。LICENSE.txtを確認してください。このビルドのWebPエンコードはlibwebp 1.6.0を静的リンクしています。画像読み込みその他のWIC依存形式はWindows Imaging Componentを使用し、HEIC/HEIFの可否はWindowsに導入されたコーデックに依存します。libwebpのBSD系ライセンスと特許通知はlibwebp-COPYING、libwebp-PATENTSとして提供します。
+MIT License。LICENSE.txtを確認してください。QuickImageViewはQt 6を動的ライブラリとして使用します。
+詳細はthird_party_licenses_jp.mdを参照してください。WebP対応はQtのWebP画像フォーマット
+プラグインによるもので、このプラグインはlibwebpを含んでいます。libwebpのBSD系ライセンスと
+特許通知はlibwebp-COPYING、libwebp-PATENTSとして提供します。

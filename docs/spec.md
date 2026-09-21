@@ -2,41 +2,51 @@
 
 [日本語版 spec_jp.md](spec_jp.md)
 
-QuickImageView is a Windows image viewer and editor implemented with C++17, Win32, Windows Imaging Component, and CMake. This document covers version 3.1.3.
+QuickImageView is a Windows image viewer and editor implemented with Qt 6 (Qt Quick / QML), C++17, Windows Imaging Component (WIC), and CMake. Image processing is separated from the UI in GUI-independent C++. This document covers version 4.0.0.
 
-## Preserved existing behavior
+## Viewing and operation
 
-- Display the file name, dimensions, format, and file size.
-- Display representative EXIF fields when present (make, model, capture date). Editing EXIF or metadata is out of scope.
-- New features and UI changes must not remove these displays.
+- Open an image from a command-line path, File > Open image, `Ctrl+O`, or drag and drop.
+- Fit the image to the window, zoom with the mouse wheel, and pan with a middle-button drag.
+- Select a rectangle with a left-button drag and crop it from the context menu.
+- Show the file name, dimensions, format, and file size, and representative EXIF fields (make, model, capture date) when present. EXIF is shown in a floating window that can be copied as text; editing EXIF or metadata is out of scope.
 
-## Features
+## Editing
 
-- Open an image from a command line path or the File > Open dialog.
-- Fit, zoom, and pan an image.
-- Convert to a new file without overwriting the original.
-- Resize using user-specified positive percentage or pixel dimensions, crop, rotate, mirror, and convert color modes; a fixed preset list is not the requirement.
-- Undo/redo edits and copy/paste images through the Windows clipboard.
-- Apply user-specified JPEG quality and PNG compression; WebP output uses bundled libwebp and WebP input uses the Windows WIC decoder. HEIC/HEIF use installed WIC codecs. Quality is not restricted to a fixed candidate list.
-- Install and optionally register an Explorer context-menu entry.
-- Provide independent MSI features for the context menu and each supported extension, disabled by default.
-- Include the executable, bilingual help, distribution documents, MIT License, and libwebp notices in the MSI.
+- Rotate right 90 degrees, 180 degrees, or left 90 degrees; flip horizontally or vertically.
+- Convert to full color, 256 colors, or grayscale.
+- Resize by a user-specified positive percentage or pixel size, with an aspect-ratio lock option.
+- Undo and redo with `Ctrl+Z` and `Ctrl+Y`.
+- Copy the image or the selection with `Ctrl+C`. Paste an image with `Ctrl+V`; the pasted image keeps its original scale, can be moved within the destination image, and is committed or retried from the context menu.
 
-## Safety rules
+## Saving
 
-- The source image is never changed, deleted, or overwritten.
-- A pasted image keeps its original scale and is constrained to the destination image.
-- A successful conversion reloads the destination without a confirmation prompt.
-- EXIF is shown in a separate floating window and can be copied as Unicode text.
-- Information and status bars use a black background and white text.
-- The application uses Windows Segoe UI without installing a private font.
-- The Japanese/English switch updates menus, dialogs, information bars, EXIF, and help.
-- Help > About opens a dark modal card showing version 3.1.3, development environment, author, and the official creator badge.
+- File > Save as shows save options first, then the file picker.
+- Quality (JPEG and WebP, 0-100) and compression (PNG and TIFF, 0-9) are user-specified values, not a fixed list.
+- The source image and existing output files are never overwritten.
+- Save formats: PNG, JPEG, BMP, WebP. TIFF requires Qt's TIFF image plugin and HEIC/HEIF requires a WIC encoder; saving fails when they are missing.
+
+## Windows integration
+
+- File > Settings registers or removes the QuickImageView entry in the Explorer image context menu (current user, HKCU).
+- `scripts/install.ps1` installs per user under `%LOCALAPPDATA%` and registers the entry unless `-NoRegisterContextMenu` is given.
+
+## UI
+
+- Dark theme, Japanese/English switch (menus, dialogs, information, EXIF, help), in-app Help, and an About dialog that shows the version, development environment, author, and creator badge.
 
 ## Supported image formats
 
-QuickImageView opens BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, DDS, WebP, HEIC and HEIF when the corresponding decoder is present. Windows includes WIC decoders for BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo and DDS. WebP input uses the Windows WIC WebP decoder, WebP output uses bundled libwebp 1.6.0, and HEIC/HEIF depend on installed WIC codecs. The current Open dialog lists JPG/JPEG, PNG, TIFF, BMP, GIF, WebP, HEIC and HEIF.
+- Open: BMP, GIF, ICO, JPEG, JPEG XR, PNG, TIFF, Windows Media Photo, and DDS through WIC; WebP through Qt's WebP image-format plugin; HEIC and HEIF through an installed WIC codec.
+- The Open dialog lists JPG/JPEG, PNG, TIFF, BMP, GIF, WebP, HEIC, and HEIF.
 
-- The original image is never overwritten or deleted.
-- Existing output files are rejected.
-- UI and Explorer behavior is tested by `tests/python/ui_test.py` using pywinauto/uiautomation against the installed application.
+## Out of scope
+
+- Explorer thumbnail shell extensions
+- Previous/next navigation through a folder, slide shows, and printing
+- EXIF or metadata editing
+- Saving directly over the source image
+
+## Tests
+
+CTest runs `qiv_controller_tests` (Qt Test, GUI-independent controller and engine) and `qiv_qml_tests` (Qt Quick Test, offscreen).

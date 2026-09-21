@@ -1,4 +1,4 @@
-"""Build and test the Qt Quick migration target with the matching Qt toolchain."""
+"""Build and test QuickImageView (Qt Quick) with the matching Qt toolchain."""
 
 from __future__ import annotations
 
@@ -33,11 +33,11 @@ environment["QT_ROOT"] = str(QT_ROOT)
 run([
     "cmd.exe", "/c", "call", str(QT_CMAKE),
     "-S", ".", "-B", str(BUILD), "-G", "MinGW Makefiles",
-    "-DCMAKE_BUILD_TYPE=Release", "-DQUICKIMAGEVIEW_BUILD_QT=ON",
+    "-DCMAKE_BUILD_TYPE=Release",
 ], environment)
 run([
     "cmake", "--build", str(BUILD), "--target",
-    "QuickImageView", "QuickImageViewQt", "qiv_controller_tests", "qiv_qml_tests", "--parallel", "2",
+    "QuickImageViewQt", "qiv_controller_tests", "qiv_qml_tests", "--parallel", "2",
 ], environment)
 run(["ctest", "--test-dir", str(BUILD), "--output-on-failure", "--timeout", "10"], environment)
 

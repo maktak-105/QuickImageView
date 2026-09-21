@@ -1,6 +1,0 @@
-pywinauto==0.6.9
-uiautomation==2.0.29
-Pillow>=12.0
-psutil>=7.0
-pywin32>=312
-rapidocr_onnxruntime>=1.2.3

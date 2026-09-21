@@ -9,7 +9,7 @@ TestCase {
         id: aboutComponent
         QuickImageView.AboutDialog {
             english: false
-            appVersion: "3.1.3"
+            appVersion: "4.0.0"
         }
     }
 
@@ -18,6 +18,6 @@ TestCase {
         verify(about !== null)
         compare(about.objectName, "aboutDialog")
         verify(about.modal)
-        compare(about.appVersion, "3.1.3")
+        compare(about.appVersion, "4.0.0")
     }
 }

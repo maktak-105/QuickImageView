@@ -1,4 +1,9 @@
 QuickImageView Changelog
+v4.0.0 (2026-09-21)
+- Replaced the Win32 implementation with the Qt 6 (Qt Quick) implementation.
+- Releases are an unsigned ZIP with SHA256SUMS.txt; the MSI installer and the --convert command line were removed.
+- WebP now uses Qt's WebP image-format plugin.
+
 v3.1.3 (2026-09-20)
 - Fixed build and release packaging after the folder restructure.
 

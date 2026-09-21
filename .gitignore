@@ -6,9 +6,7 @@ dist/*
 !dist/.gitkeep
 
 # Packaging staging and generated release metadata
-dist/*.wixpdb
 dist/*.exe
-dist/*.msi
 SHA256SUMS.txt
 
 # Local IDE and Python files
