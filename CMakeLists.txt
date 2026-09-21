@@ -8,7 +8,7 @@ find_package(Qt6 6.10 REQUIRED COMPONENTS Quick QuickControls2 QuickTest Test)
 qt_standard_project_setup(REQUIRES 6.10)
 enable_testing()
 
-qt_add_executable(QuickImageViewQt WIN32
+qt_add_executable(QuickImageView WIN32
   src/app/qt_main.cpp
   src/app/qt_app_controller.cpp
   src/app/qt_app_controller.h
@@ -16,19 +16,19 @@ qt_add_executable(QuickImageViewQt WIN32
   src/app/image_engine.h
   src/app/quick_image_provider.cpp
   src/app/quick_image_provider.h
-  src/app/qt_resource.rc
+  src/app/QuickImageView.rc
 )
-set_target_properties(QuickImageViewQt PROPERTIES
+set_target_properties(QuickImageView PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/dist"
   RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_SOURCE_DIR}/dist"
   RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_SOURCE_DIR}/dist"
   RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_SOURCE_DIR}/dist"
   RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_SOURCE_DIR}/dist"
 )
-target_compile_definitions(QuickImageViewQt PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
-target_link_libraries(QuickImageViewQt PRIVATE Qt6::Quick Qt6::QuickControls2 windowscodecs ole32 shell32 advapi32)
+target_compile_definitions(QuickImageView PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
+target_link_libraries(QuickImageView PRIVATE Qt6::Quick Qt6::QuickControls2 windowscodecs ole32 shell32 advapi32)
 
-qt_add_qml_module(QuickImageViewQt
+qt_add_qml_module(QuickImageView
   URI QuickImageView
   VERSION 1.0
   QML_FILES
@@ -38,7 +38,7 @@ qt_add_qml_module(QuickImageViewQt
     src/ui/InfoWindow.qml
     src/ui/SettingsDialog.qml
 )
-qt_add_resources(QuickImageViewQt "QuickImageViewEmbeddedResources"
+qt_add_resources(QuickImageView "QuickImageViewEmbeddedResources"
   PREFIX "/"
   BASE "${CMAKE_CURRENT_SOURCE_DIR}"
   FILES

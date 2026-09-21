@@ -1,2 +1,2 @@
 @echo off
-python "%~dp0build_qt.py" %*
+python "%~dp0build.py" %*

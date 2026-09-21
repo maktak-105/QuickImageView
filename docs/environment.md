@@ -14,6 +14,6 @@ Build and test:
 .\scripts\build.bat
 ```
 
-The script configures CMake in `build/intermediate/qt-mingw1310`, builds `QuickImageViewQt`, `qiv_controller_tests`, and `qiv_qml_tests`, runs CTest, and deploys the Qt runtime with `windeployqt` (`scripts/deploy_qt.py`). The executable is written to `dist/QuickImageViewQt.exe` and the Qt runtime is placed next to it.
+The script configures CMake in `build/intermediate/qt-mingw1310`, builds `QuickImageView`, `qiv_controller_tests`, and `qiv_qml_tests`, runs CTest, and deploys the Qt runtime with `windeployqt` (`scripts/deploy.py`). The executable is written to `dist/QuickImageView.exe` and the Qt runtime is placed next to it.
 
 GitHub Actions builds with Qt 6.10.3 for MSVC 2022 (`win64_msvc2022_64`) on `windows-2022`.

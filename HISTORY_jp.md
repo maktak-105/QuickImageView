@@ -3,7 +3,7 @@
 ## v4.0.0 — 2026-09-21
 
 - Win32実装からQt 6（Qt Quick / QML）実装へ切り替え、メインラインにした。
-- 配布は署名なしZIP（`QuickImageViewQt-<タグ>-win64.zip`）と、CIが生成する`SHA256SUMS.txt`。
+- 配布は署名なしZIP（`QuickImageView-binary.zip`）と、CIが生成する`SHA256SUMS.txt`。
 - UIをQt Quickで作り直し、Explorer右クリック登録の設定ダイアログを追加。
 - MSIインストーラー、`--convert`によるコマンドライン変換、Win32用のself-testとUI検査スクリプトを廃止。
 - WebPは、静的リンクのlibwebpからQtのWebP画像フォーマットプラグインへ変更。保存はPNG、JPEG、BMP、WebPに対応し、TIFFとHEIC/HEIFの保存はQtのTIFFプラグインとWICエンコーダーに依存する。

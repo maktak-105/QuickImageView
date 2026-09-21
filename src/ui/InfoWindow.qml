@@ -9,6 +9,10 @@ Window {
     id: infoWindow
 
     property Window host: null
+    // 本体が載っている画面の作業領域（仮想デスクトップ座標）。本体側から渡す。
+    property int hostWorkAreaLeft: 0
+    property int hostWorkAreaTop: 0
+    property int hostWorkAreaRight: 0
     property bool english: false
     property string fileInfoText: ""
     property string exifText: ""
@@ -21,10 +25,11 @@ Window {
     signal copyExifRequested()
 
     readonly property int gap: 12
+    readonly property int preferredWidth: 440
 
     objectName: "infoWindow"
     title: english ? "File and EXIF information" : "ファイル情報 / EXIF情報"
-    width: 440
+    width: preferredWidth
     height: 260
     minimumWidth: 320
     minimumHeight: 200
@@ -32,13 +37,15 @@ Window {
     // ツールウィンドウにして、本体の操作中も前面に残しつつタスクバーへ出さない。
     flags: Qt.Tool | Qt.WindowTitleHint | Qt.WindowSystemMenuHint | Qt.WindowCloseButtonHint
 
+    // 配置の入力は本体側の値だけにする。自分自身のScreenや実際のwidthを参照すると、
+    // DPIの異なるモニター間で「配置→画面が変わる→再配置」を無限に繰り返してハングする。
     x: {
         if (!host) return 0
         const right = host.x + host.width + gap
-        if (right + width <= Screen.virtualX + Screen.desktopAvailableWidth) return right
-        return Math.max(Screen.virtualX, host.x - width - gap)
+        if (right + preferredWidth <= hostWorkAreaRight) return right
+        return Math.max(hostWorkAreaLeft, host.x - preferredWidth - gap)
     }
-    y: host ? Math.max(Screen.virtualY, host.y + 40) : 0
+    y: host ? Math.max(hostWorkAreaTop, host.y + 40) : 0
 
     ColumnLayout {
         anchors.fill: parent

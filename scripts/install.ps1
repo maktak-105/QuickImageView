@@ -7,7 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$exeName = 'QuickImageViewQt.exe'
+$exeName = 'QuickImageView.exe'
 if ([string]::IsNullOrWhiteSpace($SourceExe)) {
     $SourceExe = Join-Path $PSScriptRoot ('..\dist\' + $exeName)
 }
@@ -33,7 +33,7 @@ New-Item -ItemType Directory -Force -Path $target | Out-Null
 $installedExe = Join-Path $target $exeName
 $installedIcon = Join-Path $target 'QuickImageView.ico'
 
-# Remove leftovers from earlier installs (for example the pre-4.0 Win32 executable).
+# Remove leftovers from earlier installs (for example the pre-release QuickImageViewQt.exe).
 $staleItems = Get-ChildItem -LiteralPath $target -Force | Where-Object {
     $name = $_.Name
     -not ($deployedFiles | Where-Object { $_.Name -eq $name }) -and $name -ne 'QuickImageView.ico'

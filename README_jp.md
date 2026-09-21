@@ -6,10 +6,10 @@ Qt 6（Qt Quick / QML）とC++17で作ったWindows向けの軽量画像ビュ�
 
 ## 配布版を使う
 
-[GitHub Releases](https://github.com/maktak-105/QuickImageView/releases)から`QuickImageViewQt-v4.0.0-win64.zip`と`SHA256SUMS.txt`を取得します。ZIPの中身をすべて同じフォルダーへ展開し、`QuickImageViewQt.exe`を実行してください。実行ファイル、Qt DLL、`platforms`・`imageformats`・`qml`フォルダーは同じ場所に置く必要があります。ZIPは署名なしで、インストーラーはありません。
+[GitHub Releases](https://github.com/maktak-105/QuickImageView/releases)から`QuickImageView-binary.zip`と`SHA256SUMS.txt`を取得します。ZIPの中身をすべて同じフォルダーへ展開し、`QuickImageView.exe`を実行してください。実行ファイル、Qt DLL、`platforms`・`imageformats`・`qml`フォルダーは同じ場所に置く必要があります。ZIPは署名なしで、インストーラーはありません。
 
 ```powershell
-Get-FileHash .\QuickImageViewQt-v4.0.0-win64.zip -Algorithm SHA256
+Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 ```
 
 結果を`SHA256SUMS.txt`と照合してください。
@@ -45,12 +45,12 @@ Get-FileHash .\QuickImageViewQt-v4.0.0-win64.zip -Algorithm SHA256
 .\scripts\build.bat
 ```
 
-CMakeの構成、`dist/`への`QuickImageViewQt.exe`のビルド、CTest、実行ファイル横へのQtランタイム配置までを行います。Qtが既定の場所にない場合は`QT_ROOT`と`QT_MINGW_BIN`を設定してください。詳細は[docs/environment_jp.md](docs/environment_jp.md)を参照してください。
+CMakeの構成、`dist/`への`QuickImageView.exe`のビルド、CTest、実行ファイル横へのQtランタイム配置までを行います。Qtが既定の場所にない場合は`QT_ROOT`と`QT_MINGW_BIN`を設定してください。詳細は[docs/environment_jp.md](docs/environment_jp.md)を参照してください。
 
 ## 実行
 
 ```powershell
-.\dist\QuickImageViewQt.exe C:\path\to\image.png
+.\dist\QuickImageView.exe C:\path\to\image.png
 ```
 
 ## 現在のユーザーへインストール
@@ -68,7 +68,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ## 配布パッケージを作る
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -ArchivePath .\build\QuickImageViewQt-v4.0.0-win64.zip
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -ArchivePath .\build\QuickImageView-binary.zip
 ```
 
 詳細は[docs/distribution_jp.md](docs/distribution_jp.md)を参照してください。

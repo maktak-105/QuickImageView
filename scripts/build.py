@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from deploy_qt import QT_BINARY, deploy, require_file
+from deploy import QT_BINARY, deploy, require_file
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,7 +37,7 @@ run([
 ], environment)
 run([
     "cmake", "--build", str(BUILD), "--target",
-    "QuickImageViewQt", "qiv_controller_tests", "qiv_qml_tests", "--parallel", "2",
+    "QuickImageView", "qiv_controller_tests", "qiv_qml_tests", "--parallel", "2",
 ], environment)
 run(["ctest", "--test-dir", str(BUILD), "--output-on-failure", "--timeout", "10"], environment)
 

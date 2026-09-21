@@ -26,4 +26,4 @@ QuickImageView/
 
 ルートの`README.md`と`README_jp.md`が正式な説明書です。`HISTORY.md`と`HISTORY_jp.md`が日英の履歴です。`src/app/help/help.md`と`help_jp.md`はアプリ内ヘルプのビルド入力で、ビルド時にEXEへ埋め込みます。`docs/distribution/`の文書はZIPへ同梱します。
 
-`scripts/`にはアプリ全体のビルド（`build.bat`、`build_qt.py`）、Qtランタイム配置（`deploy_qt.py`）、インストール・アンインストール、ZIP作成処理を置きます。CMake中間生成物とZIPステージングは`build/intermediate/`へ、完成したバイナリは`dist/`直下へ出力します。
+`scripts/`にはアプリ全体のビルド（`build.bat`、`build.py`）、Qtランタイム配置（`deploy.py`）、インストール・アンインストール、ZIP作成処理を置きます。CMake中間生成物とZIPステージングは`build/intermediate/`へ、完成したバイナリは`dist/`直下へ出力します。

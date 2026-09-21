@@ -2,9 +2,9 @@
 
 [日本語版 distribution_jp.md](distribution_jp.md)
 
-QuickImageView is distributed as an unsigned ZIP on GitHub Releases. There is no installer. Each release attaches `QuickImageViewQt-<tag>-win64.zip` and a CI-generated `SHA256SUMS.txt`.
+QuickImageView is distributed as an unsigned ZIP on GitHub Releases. There is no installer. Each release attaches `QuickImageView-binary.zip` and a CI-generated `SHA256SUMS.txt`.
 
-The ZIP contains `QuickImageViewQt.exe`, the deployed Qt DLLs and plugins (`platforms`, `imageformats`, `qml`), the bilingual README and history, the MIT License, the Japanese license notice, the third-party notices, and the libwebp COPYING/PATENTS files. The bilingual help is embedded in the executable.
+The ZIP contains `QuickImageView.exe`, the deployed Qt DLLs and plugins (`platforms`, `imageformats`, `qml`), the bilingual README and history, the MIT License, the Japanese license notice, the third-party notices, and the libwebp COPYING/PATENTS files. The bilingual help is embedded in the executable.
 
 ## Build
 
@@ -17,7 +17,7 @@ See [environment.md](environment.md) for the toolchain.
 ## Package
 
 ```powershell
-.\scripts\package.ps1 -OutputDirectory .\build\intermediate\package -ArchivePath .\build\QuickImageViewQt-v4.0.0-win64.zip
+.\scripts\package.ps1 -OutputDirectory .\build\intermediate\package -ArchivePath .\build\QuickImageView-binary.zip
 ```
 
 `package.ps1` collects the executable and the Qt runtime from `dist/` and the distribution documents from `docs/distribution/`. Run `build.bat` first so that `dist/` holds the deployed runtime.

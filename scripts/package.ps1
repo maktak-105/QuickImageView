@@ -11,12 +11,12 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $output = [IO.Path]::GetFullPath($OutputDirectory)
 $distDir = Join-Path $root 'dist'
-$exe = Join-Path $distDir 'QuickImageViewQt.exe'
+$exe = Join-Path $distDir 'QuickImageView.exe'
 if (-not (Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Build output not found: $exe" }
 
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 $qtRuntime = Get-ChildItem -LiteralPath $distDir -Force | Where-Object {
-    $_.Name -eq 'QuickImageViewQt.exe' -or
+    $_.Name -eq 'QuickImageView.exe' -or
     $_.Name -like 'Qt6*.dll' -or
     $_.Name -like 'libgcc*' -or
     $_.Name -like 'libstdc++*' -or

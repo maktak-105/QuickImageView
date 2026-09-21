@@ -23,6 +23,11 @@ ApplicationWindow {
     readonly property color accentColor: "#00c9e8"
     readonly property color accentDarkColor: "#0086b9"
 
+    // 本体が載っている画面の作業領域。情報ウィンドウの配置基準として渡す。
+    readonly property int workAreaLeft: Screen.virtualX
+    readonly property int workAreaTop: Screen.virtualY
+    readonly property int workAreaRight: Screen.virtualX + Screen.desktopAvailableWidth
+
     // 表示倍率と平行移動。画像そのものではなく表示状態なのでQML側で保持する。
     property real zoom: 1.0
     property real panX: 0
@@ -800,6 +805,9 @@ ApplicationWindow {
     InfoWindow {
         id: infoWindow
         host: window
+        hostWorkAreaLeft: window.workAreaLeft
+        hostWorkAreaTop: window.workAreaTop
+        hostWorkAreaRight: window.workAreaRight
         visible: true
         english: appController.english
         fileInfoText: appController.fileInfoText

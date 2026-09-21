@@ -32,27 +32,27 @@ jobs:
       - name: Configure
         run: cmake -S . -B build/intermediate/ci -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
       - name: Build
-        run: cmake --build build/intermediate/ci --config Release --target QuickImageViewQt qiv_controller_tests qiv_qml_tests
+        run: cmake --build build/intermediate/ci --config Release --target QuickImageView qiv_controller_tests qiv_qml_tests
       - name: Test
         run: ctest --test-dir build/intermediate/ci -C Release --output-on-failure
       - name: Deploy Qt runtime
         shell: pwsh
         run: |
           $env:PYTHONIOENCODING = "utf-8"
-          python .\scripts\deploy_qt.py
+          python .\scripts\deploy.py
           if ($LASTEXITCODE -ne 0) { throw "Qt deploy failed" }
       - name: Assemble package
         shell: pwsh
         run: |
-          $zip = Join-Path $env:GITHUB_WORKSPACE "QuickImageViewQt-$env:RELEASE_TAG-win64.zip"
-          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\intermediate\package-qt -ArchivePath $zip
+          $zip = Join-Path $env:GITHUB_WORKSPACE "QuickImageView-binary.zip"
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\intermediate\package -ArchivePath $zip
           $required = @(
-            ".\build\intermediate\package-qt\QuickImageViewQt.exe",
-            ".\build\intermediate\package-qt\Qt6Core.dll",
-            ".\build\intermediate\package-qt\platforms\qwindows.dll",
-            ".\build\intermediate\package-qt\readme.txt",
-            ".\build\intermediate\package-qt\readme_jp.txt",
-            ".\build\intermediate\package-qt\LICENSE.txt"
+            ".\build\intermediate\package\QuickImageView.exe",
+            ".\build\intermediate\package\Qt6Core.dll",
+            ".\build\intermediate\package\platforms\qwindows.dll",
+            ".\build\intermediate\package\readme.txt",
+            ".\build\intermediate\package\readme_jp.txt",
+            ".\build\intermediate\package\LICENSE.txt"
           )
           foreach ($file in $required) {
             if (!(Test-Path -LiteralPath $file)) { throw "Missing distribution file: $file" }
@@ -60,7 +60,7 @@ jobs:
       - name: Generate SHA-256 checksums
         shell: pwsh
         run: |
-          $zipName = "QuickImageViewQt-$env:RELEASE_TAG-win64.zip"
+          $zipName = "QuickImageView-binary.zip"
           $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $zipName).Hash.ToUpper()
           "$hash  $zipName" | Set-Content -Path SHA256SUMS.txt -Encoding utf8NoBOM
       - name: Upload release asset
@@ -69,13 +69,13 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: ${{ env.RELEASE_TAG }}
           files: |
-            QuickImageViewQt-${{ env.RELEASE_TAG }}-win64.zip
+            QuickImageView-binary.zip
             SHA256SUMS.txt
           overwrite_files: true
           generate_release_notes: true
           body: |
             QuickImageView (Qt Quick) ${{ env.RELEASE_TAG }}
 
-            Download `QuickImageViewQt-${{ env.RELEASE_TAG }}-win64.zip`, extract every file into the same folder, and run `QuickImageViewQt.exe`. Verify the download against `SHA256SUMS.txt`.
+            Download `QuickImageView-binary.zip`, extract every file into the same folder, and run `QuickImageView.exe`. Verify the download against `SHA256SUMS.txt`.
 
             Keep the executable, Qt DLLs, `platforms`, `imageformats`, and `qml` together.

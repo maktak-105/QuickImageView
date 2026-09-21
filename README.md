@@ -6,10 +6,10 @@ Version: **v4.0.0**
 
 ## Download
 
-Download `QuickImageViewQt-v4.0.0-win64.zip` and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/maktak-105/QuickImageView/releases). Extract every file into the same folder and run `QuickImageViewQt.exe`. Keep the executable, the Qt DLLs, and the `platforms`, `imageformats`, and `qml` folders together. The ZIP is unsigned and there is no installer.
+Download `QuickImageView-binary.zip` and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/maktak-105/QuickImageView/releases). Extract every file into the same folder and run `QuickImageView.exe`. Keep the executable, the Qt DLLs, and the `platforms`, `imageformats`, and `qml` folders together. The ZIP is unsigned and there is no installer.
 
 ```powershell
-Get-FileHash .\QuickImageViewQt-v4.0.0-win64.zip -Algorithm SHA256
+Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 ```
 
 Compare the result with `SHA256SUMS.txt`.
@@ -45,12 +45,12 @@ Requirements: Windows 10 or 11 (64-bit), CMake 3.20 or later, Qt 6.10 with the M
 .\scripts\build.bat
 ```
 
-The script configures CMake, builds `QuickImageViewQt.exe` into `dist/`, runs CTest, and deploys the Qt runtime next to the executable. Set `QT_ROOT` and `QT_MINGW_BIN` when Qt is not in the default location. See [docs/environment.md](docs/environment.md).
+The script configures CMake, builds `QuickImageView.exe` into `dist/`, runs CTest, and deploys the Qt runtime next to the executable. Set `QT_ROOT` and `QT_MINGW_BIN` when Qt is not in the default location. See [docs/environment.md](docs/environment.md).
 
 ## Run
 
 ```powershell
-.\dist\QuickImageViewQt.exe C:\path\to\image.png
+.\dist\QuickImageView.exe C:\path\to\image.png
 ```
 
 ## Install for the current user
@@ -68,7 +68,7 @@ pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
 ## Create a distribution package
 
 ```powershell
-pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -ArchivePath .\build\QuickImageViewQt-v4.0.0-win64.zip
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -ArchivePath .\build\QuickImageView-binary.zip
 ```
 
 See [docs/distribution.md](docs/distribution.md).

@@ -10,7 +10,7 @@ QuickImageView - 配布パッケージ v4.0.0
 使い方
 ------
 起動と画像を開く:
-- ZIPの中身をすべて同じフォルダーへ展開し、QuickImageViewQt.exeを実行します。
+- ZIPの中身をすべて同じフォルダーへ展開し、QuickImageView.exeを実行します。
   実行ファイル、Qt DLL、platforms・imageformats・qmlフォルダーは同じ場所に置きます。
 - 「ファイル > 画像を開く」またはCtrl+Oを使います。画像をウィンドウへドラッグして
   開くことも、コマンドラインで画像パスを渡すこともできます。
@@ -51,19 +51,19 @@ EXIFと保存:
 
 配布ファイル
 ------------
-- QuickImageViewQt.exeとQtランタイム（Qt6*.dll、platforms、imageformats、qmlなど）
+- QuickImageView.exeとQtランタイム（Qt6*.dll、platforms、imageformats、qmlなど）
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt
 - third_party_licenses.md / third_party_licenses_jp.md
 - libwebp-COPYING / libwebp-PATENTS
-- ヘルプはQuickImageViewQt.exeへ英語・日本語で埋め込まれています。
+- ヘルプはQuickImageView.exeへ英語・日本語で埋め込まれています。
 
 SHA-256
 -------
 GitHub Releasesには、CIが生成したZIPのチェックサムSHA256SUMS.txtを添付します。
 https://github.com/maktak-105/QuickImageView/releases
-ZIPの確認: Get-FileHash .\QuickImageViewQt-v4.0.0-win64.zip -Algorithm SHA256
+ZIPの確認: Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 
 ライセンス
 ----------

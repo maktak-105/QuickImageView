@@ -1,4 +1,4 @@
-"""Collect the Qt runtime next to QuickImageViewQt.exe with windeployqt."""
+"""Collect the Qt runtime next to QuickImageView.exe with windeployqt."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 QT_DIST = ROOT / "dist"
-QT_BINARY = QT_DIST / "QuickImageViewQt.exe"
+QT_BINARY = QT_DIST / "QuickImageView.exe"
 
 UNUSED_QML_STYLES = (
     "Fusion",

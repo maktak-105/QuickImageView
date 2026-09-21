@@ -12,7 +12,7 @@ Usage
 -----
 Starting and opening images:
 - Extract every file of the ZIP into the same folder and run
-  QuickImageViewQt.exe. Keep the executable, the Qt DLLs, and the platforms,
+  QuickImageView.exe. Keep the executable, the Qt DLLs, and the platforms,
   imageformats, and qml folders together.
 - Use File > Open image or Ctrl+O, drag an image onto the window, or pass an
   image path on the command line.
@@ -55,21 +55,21 @@ Language, theme, and Windows integration:
 
 Distribution files
 ------------------
-- QuickImageViewQt.exe and the Qt runtime (Qt6*.dll, platforms, imageformats,
+- QuickImageView.exe and the Qt runtime (Qt6*.dll, platforms, imageformats,
   qml, and related files)
 - readme.txt / readme_jp.txt
 - history.txt / history_jp.txt
 - LICENSE.txt / LICENSE_jp.txt
 - third_party_licenses.md / third_party_licenses_jp.md
 - libwebp-COPYING / libwebp-PATENTS
-- Help is embedded in QuickImageViewQt.exe in English and Japanese.
+- Help is embedded in QuickImageView.exe in English and Japanese.
 
 SHA-256
 -------
 GitHub Releases includes a CI-generated SHA256SUMS.txt for the ZIP:
 https://github.com/maktak-105/QuickImageView/releases
 Verify the ZIP with PowerShell:
-Get-FileHash .\QuickImageViewQt-v4.0.0-win64.zip -Algorithm SHA256
+Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 
 License
 -------
