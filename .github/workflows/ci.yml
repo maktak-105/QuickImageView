@@ -2,18 +2,35 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, qt]
   pull_request:
-    branches: [main]
+    branches: [main, qt]
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.10.3
+          arch: win64_msvc2022_64
+          modules: qtimageformats qtshadertools
       - name: Configure
-        run: cmake -S . -B build/intermediate/native
+        run: cmake -S . -B build/intermediate/ci -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DQUICKIMAGEVIEW_BUILD_QT=ON
       - name: Build
-        run: cmake --build build/intermediate/native --config Release
+        run: cmake --build build/intermediate/ci --config Release --target QuickImageView QuickImageViewQt qiv_controller_tests qiv_qml_tests
       - name: Test
-        run: ctest --test-dir build/intermediate/native -C Release --output-on-failure
+        run: ctest --test-dir build/intermediate/ci -C Release --output-on-failure
+      - name: Install Cppcheck
+        run: choco install cppcheck --no-progress --yes
+      - name: Static analysis
+        run: cppcheck --error-exitcode=1 --std=c++17 --enable=warning,style,performance,portability --suppress=missingIncludeSystem --suppress=unknownMacro src/app/qt_main.cpp src/app/qt_app_controller.cpp src/app/image_engine.cpp src/app/quick_image_provider.cpp
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: build/intermediate/ci/Testing
+          if-no-files-found: ignore

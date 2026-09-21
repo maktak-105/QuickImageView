@@ -6,6 +6,7 @@
 - CMake 3.20以上
 - MinGW-w64 C++17ツールチェーン
 - 任意のテスト・補助スクリプト用Python 3.13
+- Qt Quick版は Qt 6.10.3 MinGW（`C:\Users\makta\tools\Qt\6.10.3\mingw_64`）と MinGW 13.1.0（`C:\Users\makta\tools\Qt\Tools\mingw1310_64`）。必要なら `QT_ROOT` / `QT_MINGW_BIN` で上書きする。
 
 ビルドとテスト:
 
@@ -14,4 +15,10 @@
 ctest --test-dir build/intermediate/native --output-on-failure
 ```
 
-MinGW runtimeは静的リンクしています。実行ファイルは`dist/QuickImageView.exe`へ出力されます。
+Qt Quick:
+
+```powershell
+.\scripts\build.bat qt
+```
+
+MinGW runtimeは静的リンクしています。Win32実行ファイルは`dist/QuickImageView.exe`、Qt実行ファイルは`dist/binary/QuickImageViewQt.exe`へ出力されます。

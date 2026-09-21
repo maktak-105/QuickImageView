@@ -1,0 +1,2 @@
+# Optional local provisioning tool for the Qt 6 MinGW development kit.
+aqtinstall==3.3.0

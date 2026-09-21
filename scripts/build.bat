@@ -1,2 +1,7 @@
 @echo off
+if /I "%~1"=="qt" (
+  shift
+  python "%~dp0build_qt.py" %*
+  exit /b
+)
 python "%~dp0build.py" %*

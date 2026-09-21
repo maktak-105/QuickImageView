@@ -10,47 +10,72 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
 jobs:
   package:
-    runs-on: windows-latest
-    permissions:
-      contents: write
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
+      - name: Install Qt 6
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: 6.10.3
+          arch: win64_msvc2022_64
+          modules: qtimageformats qtshadertools
       - name: Configure
-        run: cmake -S . -B build/intermediate/native
+        run: cmake -S . -B build/intermediate/ci -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR" -DQUICKIMAGEVIEW_BUILD_QT=ON
       - name: Build
-        run: cmake --build build/intermediate/native --config Release
+        run: cmake --build build/intermediate/ci --config Release --target QuickImageView QuickImageViewQt qiv_controller_tests qiv_qml_tests
       - name: Test
-        run: ctest --test-dir build/intermediate/native -C Release --output-on-failure
-      - name: Install WiX Toolset v3
+        run: ctest --test-dir build/intermediate/ci -C Release --output-on-failure
+      - name: Deploy Qt runtime
         shell: pwsh
-        run: choco install wixtoolset --version=3.14.1.20250415 --yes --no-progress
+        run: |
+          $env:PYTHONIOENCODING = "utf-8"
+          python .\scripts\deploy_qt.py
+          if ($LASTEXITCODE -ne 0) { throw "Qt deploy failed" }
       - name: Assemble package
         shell: pwsh
         run: |
-          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\intermediate\package
-          Compress-Archive -Path .\build\intermediate\package\* -DestinationPath QuickImageView-binary.zip -Force
-      - name: Build MSI installer
-        shell: pwsh
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\installer\build-msi.ps1
+          $zip = Join-Path $env:GITHUB_WORKSPACE "QuickImageViewQt-$env:RELEASE_TAG-win64.zip"
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -Qt -OutputDirectory .\build\intermediate\package-qt -ArchivePath $zip
+          $required = @(
+            ".\build\intermediate\package-qt\QuickImageViewQt.exe",
+            ".\build\intermediate\package-qt\Qt6Core.dll",
+            ".\build\intermediate\package-qt\platforms\qwindows.dll",
+            ".\build\intermediate\package-qt\readme.txt",
+            ".\build\intermediate\package-qt\readme_jp.txt",
+            ".\build\intermediate\package-qt\LICENSE.txt"
+          )
+          foreach ($file in $required) {
+            if (!(Test-Path -LiteralPath $file)) { throw "Missing distribution file: $file" }
+          }
       - name: Generate SHA-256 checksums
         shell: pwsh
         run: |
-          $lines = @()
-          foreach ($path in @('QuickImageView-binary.zip', 'dist/QuickImageView-3.1.3-x64.msi', 'dist/QuickImageView.exe')) {
-            $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToUpper()
-            $lines += "$hash  $(Split-Path -Leaf $path)"
-          }
-          $lines | Set-Content -Path SHA256SUMS.txt -Encoding utf8NoBOM
+          $zipName = "QuickImageViewQt-$env:RELEASE_TAG-win64.zip"
+          $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $zipName).Hash.ToUpper()
+          "$hash  $zipName" | Set-Content -Path SHA256SUMS.txt -Encoding utf8NoBOM
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-          name: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
           files: |
-            QuickImageView-binary.zip
-            dist/QuickImageView-3.1.3-x64.msi
+            QuickImageViewQt-${{ env.RELEASE_TAG }}-win64.zip
             SHA256SUMS.txt
+          overwrite_files: true
+          generate_release_notes: true
+          body: |
+            QuickImageView (Qt Quick) ${{ env.RELEASE_TAG }}
+
+            Download `QuickImageViewQt-${{ env.RELEASE_TAG }}-win64.zip`, extract every file into the same folder, and run `QuickImageViewQt.exe`. Verify the download against `SHA256SUMS.txt`.
+
+            Keep the executable, Qt DLLs, `platforms`, `imageformats`, and `qml` together. This ZIP does not include an MSI installer.
