@@ -27,5 +27,11 @@ public:
     static bool convertFile(const QString& sourcePath, const QString& destinationPath,
                             QString* errorMessage);
     static QImage resize(const QImage& image, int width, int height);
+
+private:
+    static bool saveWithoutCleanup(const QImage& image, const QString& filePath, const SaveOptions& options,
+                                   QString* errorMessage);
+
+public:
     static QImage convertColor(const QImage& image, int mode);
 };

@@ -14,6 +14,12 @@
 #include <QTemporaryDir>
 
 
+// WIC error codes for "no such encoder": WINCODEC_ERR_COMPONENTNOTFOUND and REGDB_E_CLASSNOTREG.
+static bool heifEncoderIsMissing(const QString& error) {
+    return error.contains(QStringLiteral("0x88982f50"), Qt::CaseInsensitive) ||
+           error.contains(QStringLiteral("0x80040154"), Qt::CaseInsensitive);
+}
+
 class QtAppControllerTest final : public QObject {
     Q_OBJECT
 
@@ -30,6 +36,7 @@ private slots:
     void windowSizeIsSavedAndReadBackAtTheNextStart();
     void windowSizeIsKeptInsideTheAllowedRange();
     void savesTiffWithoutQtImagePlugin();
+    void aFailedSaveLeavesNoEmptyFileBehind();
     void everySaveTypeOfTheFileDialogIsWritable();
     void savesHeicWithQualityWhenWicHasAnEncoder();
     void saveAppendsTheSelectedExtensionAndReloadsTheFile();
@@ -257,10 +264,41 @@ void QtAppControllerTest::everySaveTypeOfTheFileDialogIsWritable() {
             const QString filePath = directory.filePath(QStringLiteral("x_") + suffix + QLatin1Char('.') + suffix);
             QString error;
             const bool saved = ImageEngine::save(fixture, filePath, ImageEngine::SaveOptions{}, &error);
-            if (!saved && type.name.startsWith(QLatin1String("HEIC"))) continue;  // needs a Windows HEIF encoder
+            // HEIC/HEIF needs a Windows HEIF encoder; only "the component is missing" excuses a failure.
+            if (!saved && type.name.startsWith(QLatin1String("HEIC")) && heifEncoderIsMissing(error)) continue;
             QVERIFY2(saved, qPrintable(type.name + " (" + suffix + "): " + error));
         }
     }
+}
+
+void QtAppControllerTest::aFailedSaveLeavesNoEmptyFileBehind() {
+    QTemporaryDir directory;
+    QVERIFY(directory.isValid());
+    QImage fixture(4, 4, QImage::Format_ARGB32);
+    fixture.fill(Qt::red);
+
+    // GIF cannot be written: the failure must not leave an empty file that blocks the next attempt.
+    const QString failing = directory.filePath(QStringLiteral("failing.gif"));
+    QString error;
+    QVERIFY(!ImageEngine::save(fixture, failing, ImageEngine::SaveOptions{}, &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(!QFileInfo::exists(failing));
+
+    // An existing file is refused up front and left exactly as it was (the encoders would empty it first).
+    const QString existing = directory.filePath(QStringLiteral("existing.gif"));
+    QFile file(existing);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("keep me");
+    file.close();
+    QVERIFY(!ImageEngine::save(fixture, existing, ImageEngine::SaveOptions{}, &error));
+    QVERIFY(QFileInfo::exists(existing));
+    QCOMPARE(QFileInfo(existing).size(), qint64(7));
+
+    // The command-line conversion goes through the same path.
+    const QString source = directory.filePath(QStringLiteral("source.png"));
+    QVERIFY(fixture.save(source, "PNG"));
+    QVERIFY(!ImageEngine::convertFile(source, directory.filePath(QStringLiteral("converted.gif")), &error));
+    QVERIFY(!QFileInfo::exists(directory.filePath(QStringLiteral("converted.gif"))));
 }
 
 void QtAppControllerTest::savesHeicWithQualityWhenWicHasAnEncoder() {
@@ -282,12 +320,16 @@ void QtAppControllerTest::savesHeicWithQualityWhenWicHasAnEncoder() {
 
     QString error;
     if (!ImageEngine::save(noise, lowPath, low, &error)) {
-        QSKIP(qPrintable(QStringLiteral("No HEIF encoder is available: ") + error));
+        if (heifEncoderIsMissing(error)) QSKIP(qPrintable(QStringLiteral("No HEIF encoder on this PC: ") + error));
+        QFAIL(qPrintable(QStringLiteral("HEIC saving failed although an encoder may exist: ") + error));
     }
     QVERIFY2(ImageEngine::save(noise, highPath, high, &error), qPrintable(error));
     QVERIFY(QFileInfo(lowPath).size() > 0);
     QVERIFY2(QFileInfo(lowPath).size() < QFileInfo(highPath).size(),
              "a higher quality should produce a larger file");
+    // What was written is a real HEIC file: decode it again when this PC has a HEIF decoder.
+    const QImage decoded = ImageEngine::load(highPath, &error);
+    if (!decoded.isNull()) QCOMPARE(decoded.size(), noise.size());
 }
 
 void QtAppControllerTest::saveAppendsTheSelectedExtensionAndReloadsTheFile() {

@@ -31,8 +31,9 @@ QString metadataString(IWICMetadataQueryReader* reader, const wchar_t* query) {
 }
 
 // Writes the image with a WIC encoder. tiffCompression < 0 and imageQuality < 0 mean "not set".
-bool saveWithWic(const QImage& image, const QString& filePath, const GUID& containerFormat,
-                 int tiffCompression, float imageQuality, QString* errorMessage) {
+// Returns S_OK on success, otherwise the failing HRESULT.
+HRESULT saveWithWic(const QImage& image, const QString& filePath, const GUID& containerFormat,
+                    int tiffCompression, float imageQuality) {
     IWICImagingFactory* factory = nullptr;
     IWICStream* stream = nullptr;
     IWICBitmapEncoder* encoder = nullptr;
@@ -67,30 +68,40 @@ bool saveWithWic(const QImage& image, const QString& filePath, const GUID& conta
     }
     if (SUCCEEDED(result)) result = frame->Initialize(properties);
     if (SUCCEEDED(result)) result = frame->SetSize(static_cast<UINT>(image.width()), static_cast<UINT>(image.height()));
+    // The encoder answers with the pixel format it wants (the HEIF encoder wants 32bppBGR, not BGRA).
     GUID pixelFormat = GUID_WICPixelFormat32bppBGRA;
     if (SUCCEEDED(result)) result = frame->SetPixelFormat(&pixelFormat);
-    if (SUCCEEDED(result) && !IsEqualGUID(pixelFormat, GUID_WICPixelFormat32bppBGRA)) {
-        result = WINCODEC_ERR_UNSUPPORTEDPIXELFORMAT;
-    }
     const QImage source = image.convertToFormat(QImage::Format_ARGB32);
-    if (SUCCEEDED(result)) result = frame->WritePixels(static_cast<UINT>(source.height()),
-                                                        static_cast<UINT>(source.bytesPerLine()),
-                                                        static_cast<UINT>(source.sizeInBytes()),
-                                                        const_cast<BYTE*>(source.constBits()));
+    IWICBitmap* bitmap = nullptr;
+    IWICFormatConverter* converter = nullptr;
+    if (SUCCEEDED(result)) {
+        result = factory->CreateBitmapFromMemory(static_cast<UINT>(source.width()), static_cast<UINT>(source.height()),
+                                                 GUID_WICPixelFormat32bppBGRA, static_cast<UINT>(source.bytesPerLine()),
+                                                 static_cast<UINT>(source.sizeInBytes()),
+                                                 const_cast<BYTE*>(source.constBits()), &bitmap);
+    }
+    if (SUCCEEDED(result)) result = factory->CreateFormatConverter(&converter);
+    // Convert to whatever the encoder asked for; a plain copy when it accepted BGRA.
+    if (SUCCEEDED(result)) {
+        result = converter->Initialize(bitmap, pixelFormat, WICBitmapDitherTypeNone, nullptr, 0.0,
+                                       WICBitmapPaletteTypeCustom);
+    }
+    if (SUCCEEDED(result)) result = frame->WriteSource(converter, nullptr);
     if (SUCCEEDED(result)) result = frame->Commit();
     if (SUCCEEDED(result)) result = encoder->Commit();
+    if (converter) converter->Release();
+    if (bitmap) bitmap->Release();
     if (properties) properties->Release();
     if (frame) frame->Release();
     if (encoder) encoder->Release();
     if (stream) stream->Release();
     if (factory) factory->Release();
-    if (FAILED(result) && errorMessage) *errorMessage = hresultMessage(result);
-    return SUCCEEDED(result);
+    return result;
 }
 
-bool saveHeifWithWic(const QImage& image, const QString& filePath, int quality, QString* errorMessage) {
+HRESULT saveHeifWithWic(const QImage& image, const QString& filePath, int quality) {
     return saveWithWic(image, filePath, GUID_ContainerFormatHeif, -1,
-                       static_cast<float>(qBound(0, quality, 100)) / 100.0f, errorMessage);
+                       static_cast<float>(qBound(0, quality, 100)) / 100.0f);
 }
 
 } // namespace
@@ -208,6 +219,21 @@ bool ImageEngine::save(const QImage& image, const QString& filePath, QString* er
 
 bool ImageEngine::save(const QImage& image, const QString& filePath, const SaveOptions& options,
                        QString* errorMessage) {
+    const bool existedBefore = QFileInfo::exists(filePath);
+    if (existedBefore) {
+        // Never overwrite: the encoders open (and empty) the file before they write, so refuse up front.
+        if (errorMessage) *errorMessage = QStringLiteral("Overwriting an existing file is not allowed.");
+        return false;
+    }
+    const bool saved = saveWithoutCleanup(image, filePath, options, errorMessage);
+    // An encoder creates the file before it writes anything. A failed save must not leave an empty file behind
+    // (it would block the next attempt as "already exists").
+    if (!saved) QFile::remove(filePath);
+    return saved;
+}
+
+bool ImageEngine::saveWithoutCleanup(const QImage& image, const QString& filePath, const SaveOptions& options,
+                                     QString* errorMessage) {
     if (errorMessage) errorMessage->clear();
     if (image.isNull()) {
         if (errorMessage) *errorMessage = QStringLiteral("The image is empty.");
@@ -219,7 +245,9 @@ bool ImageEngine::save(const QImage& image, const QString& filePath, const SaveO
         // Qt's own TIFF support is a plugin (qtiff) that not every Qt build ships, so TIFF is written
         // with WIC. WIC has no compression level: 0 = uncompressed, 1-9 = LZW.
         const int method = options.compression > 0 ? WICTiffCompressionLZW : WICTiffCompressionNone;
-        return saveWithWic(image, filePath, GUID_ContainerFormatTiff, method, -1.0f, errorMessage);
+        const HRESULT tiffResult = saveWithWic(image, filePath, GUID_ContainerFormatTiff, method, -1.0f);
+        if (FAILED(tiffResult) && errorMessage) *errorMessage = hresultMessage(tiffResult);
+        return SUCCEEDED(tiffResult);
     }
     QImageWriter writer(filePath);
     if (suffix == QStringLiteral("jpg") || suffix == QStringLiteral("jpeg") ||
@@ -232,11 +260,12 @@ bool ImageEngine::save(const QImage& image, const QString& filePath, const SaveO
     }
     if (!writer.write(image)) {
         if (suffix == QStringLiteral("heic") || suffix == QStringLiteral("heif")) {
-            QString wicError;
-            if (saveHeifWithWic(image, filePath, options.quality, &wicError)) return true;
+            const HRESULT heifResult = saveHeifWithWic(image, filePath, options.quality);
+            if (SUCCEEDED(heifResult)) return true;
             if (errorMessage) {
-                *errorMessage = QStringLiteral("HEIC/HEIF saving needs a Windows HEIF encoder "
-                                               "(HEIF Image Extensions and HEVC Video Extensions). %1").arg(wicError);
+                *errorMessage = QStringLiteral("HEIC/HEIF could not be saved. Saving needs the Windows HEIF encoder "
+                                               "(HEIF Image Extensions and HEVC Video Extensions). %1")
+                                    .arg(hresultMessage(heifResult));
             }
             return false;
         }
