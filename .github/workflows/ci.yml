@@ -24,7 +24,12 @@ jobs:
       - name: Test
         run: ctest --test-dir build/intermediate/ci -C Release --output-on-failure
       - name: Install Cppcheck
-        run: choco install cppcheck --no-progress --yes
+        shell: pwsh
+        run: |
+          choco install cppcheck --no-progress --yes
+          # Chocolatey's PATH change does not reach later steps; add the install directories explicitly.
+          Add-Content -Path $env:GITHUB_PATH -Value 'C:\Program Files\Cppcheck'
+          Add-Content -Path $env:GITHUB_PATH -Value 'C:\Program Files (x86)\Cppcheck'
       - name: Static analysis
         run: cppcheck --error-exitcode=1 --std=c++17 --enable=warning,style,performance,portability --suppress=missingIncludeSystem --suppress=unknownMacro src/app/qt_main.cpp src/app/qt_app_controller.cpp src/app/image_engine.cpp src/app/quick_image_provider.cpp
       - name: Upload test logs
