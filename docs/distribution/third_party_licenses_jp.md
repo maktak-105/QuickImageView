@@ -19,3 +19,7 @@ WebPファイルの読み書きは、Qtのqtimageformatsモジュールに含ま
 バイナリ再配布時も、libwebpの著作権表示、ライセンス条件、免責事項を本書または配布ドキュメントに含めます。Googleまたは貢献者の名称を製品の推薦・承認を示す目的では使用しません。
 
 `PATENTS`に記載された特許ライセンスの条件も適用されます。Qtのバージョン更新時は、`libwebp-COPYING`、`libwebp-PATENTS`、本書の内容を再確認します。
+
+## Microsoft Visual C++ ランタイム
+
+配布ZIPには、Visual Studioの再頒布可能ファイルに含まれるVisual C++ランタイムDLL（`vcruntime140.dll`、`vcruntime140_1.dll`、`msvcp140.dll`、`msvcp140_1.dll`、`msvcp140_2.dll`）を、実行ファイルの横へアプリローカルで同梱します。これらはMicrosoftのソフトウェアで、Visual Studioの再頒布条件に従って再頒布しています。

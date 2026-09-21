@@ -46,17 +46,8 @@ jobs:
         run: |
           $zip = Join-Path $env:GITHUB_WORKSPACE "QuickImageView-binary.zip"
           pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\intermediate\package -ArchivePath $zip
-          $required = @(
-            ".\build\intermediate\package\QuickImageView.exe",
-            ".\build\intermediate\package\Qt6Core.dll",
-            ".\build\intermediate\package\platforms\qwindows.dll",
-            ".\build\intermediate\package\readme.txt",
-            ".\build\intermediate\package\readme_jp.txt",
-            ".\build\intermediate\package\LICENSE.txt"
-          )
-          foreach ($file in $required) {
-            if (!(Test-Path -LiteralPath $file)) { throw "Missing distribution file: $file" }
-          }
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_package.ps1 -PackageDirectory .\build\intermediate\package
+          if ($LASTEXITCODE -ne 0) { throw "Package verification failed" }
       - name: Generate SHA-256 checksums
         shell: pwsh
         run: |

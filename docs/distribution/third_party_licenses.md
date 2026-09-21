@@ -19,3 +19,7 @@ WebP files are read and written by `imageformats/qwebp.dll`, the WebP image-form
 Binary redistribution includes the libwebp copyright notice, license terms, and disclaimer in this document or the distribution documents. The names of Google or its contributors are not used to imply endorsement of the product.
 
 The patent license terms in `PATENTS` also apply. When the Qt version is updated, review `libwebp-COPYING`, `libwebp-PATENTS`, and this document again.
+
+## Microsoft Visual C++ runtime
+
+The release ZIP includes the Visual C++ runtime DLLs (`vcruntime140.dll`, `vcruntime140_1.dll`, `msvcp140.dll`, `msvcp140_1.dll`, `msvcp140_2.dll`) from the Visual Studio redistributable files, deployed app-local next to the executable. They are Microsoft's software and are redistributed under the Visual Studio redistribution terms.

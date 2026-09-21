@@ -21,7 +21,9 @@ UNUSED_QML_STYLES = (
     "FluentWinUI3",
     "Windows",
 )
+# The application never renders SVG, so the Svg module and its image plugin are not shipped.
 UNUSED_DLL_PREFIXES = (
+    "Qt6Svg",
     "Qt6QuickControls2Fusion",
     "Qt6QuickControls2Imagine",
     "Qt6QuickControls2Material",
@@ -52,6 +54,17 @@ UNUSED_QML_DIRS = (
 )
 
 
+# Runtime DLLs imported by the MSVC build of Qt. They are shipped app-local so the ZIP starts
+# without the Visual C++ Redistributable installed.
+MSVC_RUNTIME_DLLS = (
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+    "msvcp140.dll",
+    "msvcp140_1.dll",
+    "msvcp140_2.dll",
+)
+
+
 def require_file(path: Path, description: str) -> None:
     if not path.is_file():
         raise SystemExit(f"{description} was not found: {path}")
@@ -67,6 +80,44 @@ def find_windeployqt() -> Path:
     if found:
         return Path(found)
     raise SystemExit("windeployqt was not found. Set QT_ROOT or add Qt bin to PATH.")
+
+
+def find_msvc_redist_dir() -> Path | None:
+    """Return the x64 Microsoft.VC*.CRT directory of the newest Visual Studio, if any."""
+    bases: list[Path] = []
+    tools_redist = os.environ.get("VCToolsRedistDir")
+    if tools_redist:
+        bases.append(Path(tools_redist))
+    program_files = os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")
+    vswhere = Path(program_files) / "Microsoft Visual Studio" / "Installer" / "vswhere.exe"
+    if vswhere.is_file():
+        found = subprocess.run(
+            [str(vswhere), "-latest", "-products", "*", "-property", "installationPath"],
+            capture_output=True, text=True,
+        ).stdout.strip()
+        redist_root = Path(found) / "VC" / "Redist" / "MSVC" if found else None
+        if redist_root and redist_root.is_dir():
+            versions = [d for d in redist_root.iterdir() if d.is_dir() and d.name[:1].isdigit()]
+            bases.extend(sorted(versions, key=lambda d: d.name, reverse=True))
+    for base in bases:
+        for crt in sorted((base / "x64").glob("Microsoft.VC*.CRT"), reverse=True):
+            if (crt / MSVC_RUNTIME_DLLS[0]).is_file():
+                return crt
+    return None
+
+
+def bundle_msvc_runtime() -> None:
+    """Copy the Visual C++ runtime next to the executable when Qt was built with MSVC."""
+    if (QT_DIST / "libstdc++-6.dll").is_file():
+        return  # MinGW Qt: windeployqt already copied the MinGW runtime.
+    crt = find_msvc_redist_dir()
+    if crt is None:
+        raise SystemExit(
+            "The Visual C++ runtime DLLs were not found. Install Visual Studio or set VCToolsRedistDir."
+        )
+    for name in MSVC_RUNTIME_DLLS:
+        require_file(crt / name, "Visual C++ runtime DLL")
+        shutil.copy2(crt / name, QT_DIST / name)
 
 
 def deploy() -> None:
@@ -91,7 +142,8 @@ def deploy() -> None:
         "--no-opengl-sw",
         "--skip-plugin-types",
         "qmltooling,generic,networkinformation,tls,qmllint,qmlls,designer,help,sqldrivers,styles",
-        "--exclude-plugins", "qicns,qtga,qwbmp,qsvgicon",
+        "--exclude-plugins", "qicns,qtga,qwbmp,qsvgicon,qsvg",
+        "--no-svg",
         "--no-quickcontrols2imagine",
         "--no-quickcontrols2imaginestyleimpl",
         "--no-quickcontrols2material",
@@ -123,6 +175,8 @@ def deploy() -> None:
         leftover_dir = QT_DIST / relative
         if leftover_dir.exists():
             shutil.rmtree(leftover_dir)
+
+    bundle_msvc_runtime()
 
     icon_source = ROOT / "src" / "app" / "QuickImageView.ico"
     if icon_source.is_file():

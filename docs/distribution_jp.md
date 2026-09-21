@@ -4,7 +4,7 @@
 
 QuickImageViewは、署名なしZIPとしてGitHub Releasesで配布します。インストーラーはありません。各Releaseには`QuickImageView-binary.zip`と、CIが生成した`SHA256SUMS.txt`を添付します。
 
-ZIPには、`QuickImageView.exe`、配置済みのQt DLL・プラグイン（`platforms`、`imageformats`、`qml`）、日英README・履歴、MIT License、日本語ライセンス文書、第三者通知、libwebpのCOPYING・PATENTSを同梱します。日英ヘルプは実行ファイルに埋め込まれています。
+ZIPには、`QuickImageView.exe`、配置済みのQt DLL・プラグイン（`platforms`、`imageformats`、`qml`）、C++ランタイムDLL（リリース版はVisual C++ランタイム。再頒布可能パッケージの別途導入は不要）、日英README・履歴、MIT License、日本語ライセンス文書、第三者通知、libwebpのCOPYING・PATENTSを同梱します。日英ヘルプは実行ファイルに埋め込まれています。
 
 ## ビルド
 
@@ -20,7 +20,7 @@ ZIPには、`QuickImageView.exe`、配置済みのQt DLL・プラグイン（`pl
 .\scripts\package.ps1 -OutputDirectory .\build\intermediate\package -ArchivePath .\build\QuickImageView-binary.zip
 ```
 
-`package.ps1`は`dist/`から実行ファイルとQtランタイムを、`docs/distribution/`から配布文書を集めます。先に`build.bat`を実行し、`dist/`へQtランタイムを配置しておく必要があります。
+`package.ps1`は`dist/`から実行ファイルとQtランタイムを、`docs/distribution/`から配布文書を集めます。`verify_package.ps1`は作成したパッケージの必須ファイル、C++ランタイムDLL、不要モジュール（Svgなど）が入っていないことを検査し、CIとReleaseワークフローが実行します。先に`build.bat`を実行し、`dist/`へQtランタイムを配置しておく必要があります。
 
 ## リリース
 

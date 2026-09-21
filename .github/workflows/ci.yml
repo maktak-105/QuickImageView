@@ -23,6 +23,19 @@ jobs:
         run: cmake --build build/intermediate/ci --config Release --target QuickImageView qiv_controller_tests qiv_qml_tests
       - name: Test
         run: ctest --test-dir build/intermediate/ci -C Release --output-on-failure
+      - name: Deploy Qt runtime
+        shell: pwsh
+        run: |
+          $env:PYTHONIOENCODING = "utf-8"
+          python .\scripts\deploy.py
+          if ($LASTEXITCODE -ne 0) { throw "Qt deploy failed" }
+      - name: Verify package
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\package.ps1 -OutputDirectory .\build\intermediate\package
+          if ($LASTEXITCODE -ne 0) { throw "Packaging failed" }
+          pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\verify_package.ps1 -PackageDirectory .\build\intermediate\package
+          if ($LASTEXITCODE -ne 0) { throw "Package verification failed" }
       - name: Install Cppcheck
         shell: pwsh
         run: |
