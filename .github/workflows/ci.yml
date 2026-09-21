@@ -27,6 +27,14 @@ jobs:
           $env:QT_MINGW_BIN = Join-Path (Split-Path (Split-Path $env:QT_ROOT_DIR)) 'Tools\mingw1310_64\bin'
           python .\scripts\build.py
           if ($LASTEXITCODE -ne 0) { throw "Build failed" }
+      - name: Show test output
+        if: always()
+        shell: pwsh
+        run: |
+          Get-ChildItem build/intermediate/qt-mingw1310/Testing -Filter *.txt -ErrorAction SilentlyContinue | ForEach-Object {
+            Write-Output "=== $($_.Name) ==="
+            Get-Content $_.FullName
+          }
       - name: Verify package
         shell: pwsh
         run: |

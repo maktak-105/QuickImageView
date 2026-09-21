@@ -66,7 +66,9 @@ add_executable(qiv_controller_tests
 target_compile_definitions(qiv_controller_tests PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
 target_include_directories(qiv_controller_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app")
 target_link_libraries(qiv_controller_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test windowscodecs ole32 shell32 advapi32 uuid)
-add_test(NAME qiv_controller_tests COMMAND qiv_controller_tests)
+# QtTest's own output goes to a file next to CTest's logs (it is uploaded by CI and shown on failure).
+file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/Testing")
+add_test(NAME qiv_controller_tests COMMAND qiv_controller_tests -o "${CMAKE_BINARY_DIR}/Testing/qiv_controller_tests.txt,txt")
 
 # The QML tests use the real controller (as the global appController) with a temporary settings file.
 add_executable(qiv_qml_tests
@@ -86,7 +88,7 @@ target_compile_definitions(qiv_qml_tests PRIVATE
   QUICK_TEST_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/qml"
   QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}"
 )
-add_test(NAME qiv_qml_tests COMMAND qiv_qml_tests -platform offscreen)
+add_test(NAME qiv_qml_tests COMMAND qiv_qml_tests -platform offscreen -o "${CMAKE_BINARY_DIR}/Testing/qiv_qml_tests.txt,txt")
 set_tests_properties(qiv_qml_tests PROPERTIES
   ENVIRONMENT "QT_QPA_PLATFORM=offscreen;QT_QUICK_BACKEND=software"
 )
