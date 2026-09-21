@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(QuickImageView VERSION 4.1.0 LANGUAGES CXX)
+project(QuickImageView VERSION 4.2.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -12,6 +12,8 @@ qt_add_executable(QuickImageView WIN32
   src/app/qt_main.cpp
   src/app/qt_app_controller.cpp
   src/app/qt_app_controller.h
+  src/app/context_menu_entry.cpp
+  src/app/context_menu_entry.h
   src/app/image_engine.cpp
   src/app/image_engine.h
   src/app/quick_image_provider.cpp
@@ -57,6 +59,8 @@ add_executable(qiv_controller_tests
   tests/qt/tst_qt_app_controller.cpp
   src/app/qt_app_controller.cpp
   src/app/qt_app_controller.h
+  src/app/context_menu_entry.cpp
+  src/app/context_menu_entry.h
   src/app/image_engine.cpp
   src/app/image_engine.h
   src/app/quick_image_provider.cpp
@@ -64,7 +68,10 @@ add_executable(qiv_controller_tests
   src/app/native_file_dialog.cpp
   src/app/native_file_dialog.h
 )
-target_compile_definitions(qiv_controller_tests PRIVATE QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(qiv_controller_tests PRIVATE
+  QUICKIMAGEVIEW_VERSION="${PROJECT_VERSION}"
+  QIV_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
+)
 target_include_directories(qiv_controller_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/app")
 target_link_libraries(qiv_controller_tests PRIVATE Qt6::Core Qt6::Gui Qt6::Quick Qt6::Test windowscodecs ole32 shell32 advapi32 uuid)
 # QtTest's own output goes to a file next to CTest's logs (it is uploaded by CI and shown on failure).
@@ -76,6 +83,8 @@ add_executable(qiv_qml_tests
   tests/qml/qml_tests.cpp
   src/app/qt_app_controller.cpp
   src/app/qt_app_controller.h
+  src/app/context_menu_entry.cpp
+  src/app/context_menu_entry.h
   src/app/image_engine.cpp
   src/app/image_engine.h
   src/app/quick_image_provider.cpp

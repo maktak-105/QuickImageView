@@ -1,17 +1,24 @@
 #include "qt_app_controller.h"
+#include "context_menu_entry.h"
 #include "image_engine.h"
 #include "native_file_dialog.h"
 #include "quick_image_provider.h"
 
+#include <QDir>
 #include <QFile>
 #include <QFileInfo>
 #include <QClipboard>
 #include <QGuiApplication>
 #include <QImage>
+#include <QRegularExpression>
 #include <QSettings>
 #include <QSignalSpy>
 #include <QTest>
 #include <QTemporaryDir>
+
+#include <windows.h>
+
+#include <string>
 
 
 // HEIC/HEIF saving needs a Windows HEIF encoder that not every PC has (for example CI machines), so an
@@ -20,6 +27,70 @@
 static bool isPixelFormatRegression(const QString& error) {
     return error.contains(QStringLiteral("0x88982f80"), Qt::CaseInsensitive);
 }
+
+// The Explorer right-click entry is tested in a scratch registry tree (never the user's real entry).
+namespace {
+const wchar_t kScratchBase[] = L"Software\\maktak-105\\QuickImageViewTest";
+const wchar_t kScratchRoot[] = L"Software\\maktak-105\\QuickImageViewTest\\SystemFileAssociations";
+const QString kEntryText = QStringLiteral("QuickImageViewで開く");
+const QString kExe = QStringLiteral("C:/Tools/QIV/QuickImageView.exe");
+const QString kOtherExe = QStringLiteral("D:/Other/QuickImageView.exe");
+
+struct ScratchRegistry {
+    ScratchRegistry() { RegDeleteTreeW(HKEY_CURRENT_USER, kScratchBase); }
+    ~ScratchRegistry() { RegDeleteTreeW(HKEY_CURRENT_USER, kScratchBase); }
+};
+
+std::wstring entryKeyOf(const QString& association) {
+    return std::wstring(kScratchRoot) + L"\\" + association.toStdWString() + L"\\shell\\QuickImageView";
+}
+
+void scratchWrite(const std::wstring& subKey, const wchar_t* name, const QString& value) {
+    HKEY key = nullptr;
+    if (RegCreateKeyExW(HKEY_CURRENT_USER, subKey.c_str(), 0, nullptr, REG_OPTION_NON_VOLATILE, KEY_SET_VALUE, nullptr,
+                        &key, nullptr) != ERROR_SUCCESS) {
+        return;
+    }
+    const std::wstring wide = value.toStdWString();
+    RegSetValueExW(key, name, 0, REG_SZ, reinterpret_cast<const BYTE*>(wide.c_str()),
+                   static_cast<DWORD>((wide.length() + 1) * sizeof(wchar_t)));
+    RegCloseKey(key);
+}
+
+// A null string when the key or the value does not exist.
+QString scratchRead(const std::wstring& subKey, const wchar_t* name) {
+    HKEY key = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, subKey.c_str(), 0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS) return {};
+    wchar_t buffer[1024] = {};
+    DWORD size = sizeof(buffer) - sizeof(wchar_t);
+    QString result;
+    if (RegQueryValueExW(key, name, nullptr, nullptr, reinterpret_cast<BYTE*>(buffer), &size) == ERROR_SUCCESS) {
+        result = QString::fromWCharArray(buffer);
+        if (result.isNull()) result = QString(QLatin1String(""));
+    }
+    RegCloseKey(key);
+    return result;
+}
+
+bool scratchKeyExists(const std::wstring& subKey) {
+    HKEY key = nullptr;
+    if (RegOpenKeyExW(HKEY_CURRENT_USER, subKey.c_str(), 0, KEY_READ, &key) != ERROR_SUCCESS) return false;
+    RegCloseKey(key);
+    return true;
+}
+
+QString expectedCommand(const QString& exe) {
+    return QStringLiteral("\"%1\" \"%2\"").arg(QDir::toNativeSeparators(exe), QStringLiteral("%1"));
+}
+
+// An entry as versions 4.0 and 4.1 wrote it: image-wide, with an icon file that no longer exists.
+void writeOldImageWideEntry(const QString& exe) {
+    const std::wstring key = entryKeyOf(QStringLiteral("image"));
+    scratchWrite(key, nullptr, kEntryText);
+    scratchWrite(key, L"Icon", QStringLiteral("C:\\Tools\\QIV\\QuickImageView.ico"));
+    scratchWrite(key + L"\\command", nullptr, expectedCommand(exe));
+}
+}  // namespace
 
 class QtAppControllerTest final : public QObject {
     Q_OBJECT
@@ -54,13 +125,21 @@ private slots:
     void saveOptionsAreApplied();
     void undoAndRedoRestoreImageState();
     void contextMenuRegistrationCanBeQueried();
+    void contextMenuCoversEveryOpenableSuffix();
+    void contextMenuIconIsTheOneEmbeddedInTheExecutable();
+    void contextMenuRegistersEveryExtensionAndReplacesTheImageWideEntry();
+    void contextMenuUnregisterRemovesEverythingItCreated();
+    void contextMenuRepairMigratesAnOldEntry();
+    void contextMenuRepairLeavesOtherExecutablesAlone();
+    void contextMenuRepairDoesNothingWithoutAnEntry();
+    void installScriptsListTheSameExtensionsAsTheApplication();
 };
 
 void QtAppControllerTest::defaultsAreJapanese() {
     QtAppController controller;
     QVERIFY(!controller.english());
     QCOMPARE(controller.appName(), QStringLiteral("QuickImageView"));
-    QCOMPARE(controller.appVersion(), QStringLiteral("4.1.0"));
+    QCOMPARE(controller.appVersion(), QStringLiteral("4.2.0"));
     QVERIFY(!controller.hasImage());
     QVERIFY(controller.statusText().contains(QStringLiteral("画像")));
 }
@@ -648,6 +727,136 @@ void QtAppControllerTest::contextMenuRegistrationCanBeQueried() {
     // isContextMenuRegistered() returns a boolean representing the current registry state
     const bool isRegistered = controller.isContextMenuRegistered();
     QCOMPARE(controller.property("contextMenuRegistered").toBool(), isRegistered);
+}
+
+void QtAppControllerTest::contextMenuCoversEveryOpenableSuffix() {
+    const QStringList suffixes = ContextMenuEntry::suffixes();
+    // Every extension the Open dialog offers, and in particular the ones the shell did not show the entry for.
+    for (const QString& suffix : NativeFileDialog::openImageSuffixes()) {
+        QVERIFY2(suffixes.contains(suffix), qPrintable(suffix));
+    }
+    for (const QString& suffix : {QStringLiteral("heic"), QStringLiteral("heif"), QStringLiteral("webp"),
+                                  QStringLiteral("jpg"), QStringLiteral("png"), QStringLiteral("ico"),
+                                  QStringLiteral("jxr"), QStringLiteral("dds")}) {
+        QVERIFY2(suffixes.contains(suffix), qPrintable(suffix));
+    }
+    QStringList unique = suffixes;
+    QCOMPARE(unique.removeDuplicates(), 0);
+    for (const QString& suffix : suffixes) {
+        QVERIFY2(!suffix.startsWith(QLatin1Char('.')) && suffix == suffix.toLower(), qPrintable(suffix));
+    }
+}
+
+void QtAppControllerTest::contextMenuIconIsTheOneEmbeddedInTheExecutable() {
+    const QString icon = ContextMenuEntry::iconValue(QStringLiteral("C:/Program Files/QIV/QuickImageView.exe"));
+    QCOMPARE(icon, QStringLiteral("\"C:\\Program Files\\QIV\\QuickImageView.exe\",0"));
+    QCOMPARE(ContextMenuEntry::iconTarget(icon), QStringLiteral("C:\\Program Files\\QIV\\QuickImageView.exe"));
+    QCOMPARE(ContextMenuEntry::iconTarget(QStringLiteral("C:\\QIV\\QuickImageView.exe,0")),
+             QStringLiteral("C:\\QIV\\QuickImageView.exe"));
+    QCOMPARE(ContextMenuEntry::iconTarget(QStringLiteral("C:\\QIV\\x.dll, -12")), QStringLiteral("C:\\QIV\\x.dll"));
+    QCOMPARE(ContextMenuEntry::iconTarget(QStringLiteral("C:\\QIV\\QuickImageView.ico")),
+             QStringLiteral("C:\\QIV\\QuickImageView.ico"));
+}
+
+void QtAppControllerTest::contextMenuRegistersEveryExtensionAndReplacesTheImageWideEntry() {
+    ScratchRegistry scratch;
+    writeOldImageWideEntry(kExe);
+    QVERIFY(ContextMenuEntry::isRegistered(kScratchRoot));  // the old place counts as registered
+
+    QVERIFY(ContextMenuEntry::registerEntries(kExe, kEntryText, kScratchRoot));
+
+    for (const QString& suffix : ContextMenuEntry::suffixes()) {
+        const std::wstring key = entryKeyOf(QLatin1Char('.') + suffix);
+        QVERIFY2(scratchKeyExists(key + L"\\command"), qPrintable(suffix));
+        QCOMPARE(scratchRead(key, nullptr), kEntryText);
+        QCOMPARE(scratchRead(key, L"Icon"), ContextMenuEntry::iconValue(kExe));
+        QCOMPARE(scratchRead(key + L"\\command", nullptr), expectedCommand(kExe));
+    }
+    QVERIFY(scratchKeyExists(entryKeyOf(QStringLiteral(".heic")) + L"\\command"));
+    QVERIFY(!scratchKeyExists(entryKeyOf(QStringLiteral("image"))));
+    QVERIFY(ContextMenuEntry::isRegistered(kScratchRoot));
+}
+
+void QtAppControllerTest::contextMenuUnregisterRemovesEverythingItCreated() {
+    ScratchRegistry scratch;
+    writeOldImageWideEntry(kExe);
+    // A value that belongs to someone else must survive, together with the key that holds it.
+    scratchWrite(std::wstring(kScratchRoot) + L"\\.heic", L"PerceivedType", QStringLiteral("image"));
+    QVERIFY(ContextMenuEntry::registerEntries(kExe, kEntryText, kScratchRoot));
+
+    QVERIFY(ContextMenuEntry::unregisterEntries(kScratchRoot));
+
+    QVERIFY(!ContextMenuEntry::isRegistered(kScratchRoot));
+    for (const QString& suffix : ContextMenuEntry::suffixes()) {
+        QVERIFY2(!scratchKeyExists(entryKeyOf(QLatin1Char('.') + suffix)), qPrintable(suffix));
+    }
+    QVERIFY(!scratchKeyExists(entryKeyOf(QStringLiteral("image"))));
+    QCOMPARE(scratchRead(std::wstring(kScratchRoot) + L"\\.heic", L"PerceivedType"), QStringLiteral("image"));
+    QVERIFY(!scratchKeyExists(std::wstring(kScratchRoot) + L"\\.jpg"));  // the empty extension keys are gone
+}
+
+void QtAppControllerTest::contextMenuRepairMigratesAnOldEntry() {
+    ScratchRegistry scratch;
+    writeOldImageWideEntry(kExe);  // what this PC had: image-wide, and an icon file that is gone
+
+    QVERIFY(ContextMenuEntry::repair(kExe, kScratchRoot));
+
+    for (const QString& suffix : ContextMenuEntry::suffixes()) {
+        const std::wstring key = entryKeyOf(QLatin1Char('.') + suffix);
+        QCOMPARE(scratchRead(key, nullptr), kEntryText);  // the language of the old entry is kept
+        QCOMPARE(scratchRead(key, L"Icon"), ContextMenuEntry::iconValue(kExe));
+        QCOMPARE(scratchRead(key + L"\\command", nullptr), expectedCommand(kExe));
+    }
+    QVERIFY(!scratchKeyExists(entryKeyOf(QStringLiteral("image"))));
+    QVERIFY(!ContextMenuEntry::repair(kExe, kScratchRoot));  // nothing left to repair
+}
+
+void QtAppControllerTest::contextMenuRepairLeavesOtherExecutablesAlone() {
+    ScratchRegistry scratch;
+    // An old entry of another copy of the application: not ours to change.
+    writeOldImageWideEntry(kOtherExe);
+    QVERIFY(!ContextMenuEntry::repair(kExe, kScratchRoot));
+    QVERIFY(scratchKeyExists(entryKeyOf(QStringLiteral("image")) + L"\\command"));
+    QVERIFY(!scratchKeyExists(entryKeyOf(QStringLiteral(".heic"))));
+
+    // An entry of ours, next to a per-extension entry of the other copy: only ours is completed.
+    writeOldImageWideEntry(kExe);
+    const std::wstring otherHeic = entryKeyOf(QStringLiteral(".heic"));
+    scratchWrite(otherHeic, nullptr, kEntryText);
+    scratchWrite(otherHeic + L"\\command", nullptr, expectedCommand(kOtherExe));
+    QVERIFY(ContextMenuEntry::repair(kExe, kScratchRoot));
+    QCOMPARE(scratchRead(otherHeic + L"\\command", nullptr), expectedCommand(kOtherExe));
+    QCOMPARE(scratchRead(entryKeyOf(QStringLiteral(".webp")) + L"\\command", nullptr), expectedCommand(kExe));
+}
+
+void QtAppControllerTest::contextMenuRepairDoesNothingWithoutAnEntry() {
+    ScratchRegistry scratch;
+    QVERIFY(!ContextMenuEntry::repair(kExe, kScratchRoot));
+    QVERIFY(!ContextMenuEntry::isRegistered(kScratchRoot));
+    QVERIFY(!scratchKeyExists(std::wstring(kScratchRoot)));  // a user who never enabled it gets nothing
+}
+
+void QtAppControllerTest::installScriptsListTheSameExtensionsAsTheApplication() {
+    // scripts/install.ps1 and uninstall.ps1 register and remove the same per-extension entries as the application;
+    // their $suffixes lists must not drift from ContextMenuEntry::suffixes().
+    for (const QString& name : {QStringLiteral("install.ps1"), QStringLiteral("uninstall.ps1")}) {
+        QFile file(QStringLiteral(QIV_SOURCE_DIR "/scripts/") + name);
+        QVERIFY2(file.open(QIODevice::ReadOnly | QIODevice::Text), qPrintable(name));
+        const QString text = QString::fromUtf8(file.readAll());
+        const QRegularExpressionMatch match =
+            QRegularExpression(QStringLiteral("\\$suffixes\\s*=\\s*@\\(([^)]*)\\)")).match(text);
+        QVERIFY2(match.hasMatch(), qPrintable(name));
+        QStringList listed;
+        for (QString part : match.captured(1).split(QLatin1Char(','))) {
+            part = part.trimmed();
+            part.remove(QLatin1Char('\''));
+            listed.append(part);
+        }
+        QStringList expected = ContextMenuEntry::suffixes();
+        listed.sort();
+        expected.sort();
+        QCOMPARE(listed, expected);
+    }
 }
 
 QTEST_MAIN(QtAppControllerTest)

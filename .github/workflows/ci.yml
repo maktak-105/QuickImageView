@@ -50,7 +50,7 @@ jobs:
           Add-Content -Path $env:GITHUB_PATH -Value 'C:\Program Files\Cppcheck'
           Add-Content -Path $env:GITHUB_PATH -Value 'C:\Program Files (x86)\Cppcheck'
       - name: Static analysis
-        run: cppcheck --error-exitcode=1 --std=c++17 --enable=warning,style,performance,portability --suppress=missingIncludeSystem --suppress=unknownMacro src/app/qt_main.cpp src/app/qt_app_controller.cpp src/app/image_engine.cpp src/app/quick_image_provider.cpp src/app/window_theme.cpp src/app/native_file_dialog.cpp
+        run: cppcheck --error-exitcode=1 --std=c++17 --enable=warning,style,performance,portability --suppress=missingIncludeSystem --suppress=unknownMacro src/app/qt_main.cpp src/app/qt_app_controller.cpp src/app/image_engine.cpp src/app/quick_image_provider.cpp src/app/window_theme.cpp src/app/native_file_dialog.cpp src/app/context_menu_entry.cpp
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v4

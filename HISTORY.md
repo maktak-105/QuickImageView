@@ -1,5 +1,15 @@
 # QuickImageView Changelog
 
+## v4.2.0 — 2026-09-21
+
+- Fixed HEIC/HEIF saving, which always failed in v4.1.0. The image is now converted to the pixel format the Windows HEIF encoder requires, and the error message includes the WIC error code.
+- A failed save no longer leaves an empty or partial file behind, and an existing file is never touched (a leftover empty file used to block the next save as "already exists").
+- The Save as file picker now opens in the folder of the image on screen, every time. After a save, that is the folder of the saved file. When the image has no file, Windows chooses the folder.
+- When a save is refused because the destination exists (or is the image's own file), a modal warning dialog now shows the reason, what to do, and the file path. The status text message is kept.
+- The Explorer right-click entry "Open with QuickImageView" now appears for every image type the application opens, including HEIC, HEIF, and WebP, which did not show it on some PCs. It is registered per file extension instead of once for all images.
+- Fixed the entry's icon, which showed a plain blank page when the separate `QuickImageView.ico` was gone (it is no longer shipped since v4.1.0). The entry now uses the icon embedded in `QuickImageView.exe`.
+- An entry registered by an earlier version is repaired automatically the next time QuickImageView starts (the missing extensions are added, the icon is rewritten, and the old image-wide entry is removed); no need to switch it off and on again. `scripts/install.ps1` and `uninstall.ps1` use the same per-extension entries.
+
 ## v4.1.0 — 2026-09-21
 
 - Fixed a hang when the window was moved between monitors with different display scaling (present in v4.0.0).

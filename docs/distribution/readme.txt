@@ -1,4 +1,4 @@
-QuickImageView - Distribution package v4.1.0
+QuickImageView - Distribution package v4.2.0
 
 This document describes the package contents and the documented behavior of
 this version.
@@ -36,10 +36,11 @@ EXIF and saving:
   copied.
 - File > Save as shows save options before the file picker. Quality (JPEG,
   WebP, and HEIC/HEIF, 0-100) and compression (PNG 0-9; TIFF 0 = none, 1-9 =
-  LZW) can be set.
+  LZW) can be set. The file picker opens in the folder of the displayed image.
 - If the file name has no extension, the extension of the selected file type
   is added. After saving, the saved file is loaded as the current image.
-- Existing files and the source image are not overwritten.
+- Existing files and the source image are not overwritten; a warning dialog
+  tells you when a save is refused for this reason.
 - Dropping an image onto a displayed image asks for confirmation first.
 
 Supported formats and codecs:
@@ -61,8 +62,8 @@ Language, theme, and Windows integration:
   switch language.
 - The menu order is File, Edit, Help. Help > Help opens the bundled help and
   Help > About opens the version dialog.
-- File > Settings adds or removes QuickImageView in the Explorer image context
-  menu (current user, HKCU). It also sets the window size in pixels (default
+- File > Settings adds or removes QuickImageView in the Explorer right-click menu
+  of every image type it opens, including HEIC, HEIF, and WebP (current user, HKCU). It also sets the window size in pixels (default
   720 x 480), which is used at the next start and applied to the current window.
 
 Distribution files

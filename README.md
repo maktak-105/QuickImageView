@@ -2,7 +2,7 @@
 
 QuickImageView is a lightweight Windows image viewer and editor built with Qt 6 (Qt Quick / QML) and C++17. It opens, edits, and converts images, and switches between Japanese and English.
 
-Version: **v4.1.0**
+Version: **v4.2.0**
 
 ## Download
 
@@ -26,9 +26,9 @@ Version 4 replaces the earlier Win32 implementation. The 3.x releases (up to v3.
 - Undo and redo with `Ctrl+Z` and `Ctrl+Y`
 - Copy the image or the selection with `Ctrl+C`; paste an image with `Ctrl+V`, move it, then commit or retry
 - Show file name, dimensions, format, file size, and EXIF make, model, and capture date in a floating window that can be copied
-- Save as another format with quality or compression options; the source image and existing files are never overwritten, a missing extension is added from the selected file type, and the saved file is reloaded as the current image
+- Save as another format with quality or compression options; the file picker opens in the image's folder, the source image and existing files are never overwritten (a warning dialog says so), a missing extension is added from the selected file type, and the saved file is reloaded as the current image
 - Convert an image from the command line with `--convert`
-- Add QuickImageView to the Explorer image context menu, and set the window size (default 720 x 480) in File > Settings
+- Add QuickImageView to the Explorer right-click menu of every image type it opens (including HEIC, HEIF, and WebP), and set the window size (default 720 x 480), in File > Settings
 - Switch between Japanese and English with the upper-right button
 - Dark theme (including the title bar), in-app Help, and an About dialog
 
@@ -68,7 +68,7 @@ No window is shown. The exit code is 0 when the image was converted and 2 on fai
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-The script copies the executable and the Qt runtime to `%LOCALAPPDATA%\QuickImageView` and registers the image context menu under the current user (HKCU). Pass `-NoRegisterContextMenu` to skip the registration. Remove it with:
+The script copies the executable and the Qt runtime to `%LOCALAPPDATA%\QuickImageView` and registers the right-click menu entry for every image type under the current user (HKCU). Pass `-NoRegisterContextMenu` to skip the registration. Remove it with:
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1

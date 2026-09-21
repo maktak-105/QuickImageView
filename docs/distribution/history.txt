@@ -1,4 +1,12 @@
 QuickImageView Changelog
+v4.2.0 (2026-09-21)
+- Fixed HEIC/HEIF saving, which always failed in v4.1.0.
+- A failed save no longer leaves an empty file behind, and an existing file is never touched.
+- Save as now opens the file picker in the folder of the displayed image.
+- A warning dialog now tells you when a save is refused because the file already exists.
+- The Explorer right-click entry "Open with QuickImageView" now appears for every image type the application opens, including HEIC, HEIF, and WebP (it did not show on some PCs).
+- Fixed the entry's icon, which showed a plain blank page. An entry from an earlier version is repaired automatically at the next start.
+
 v4.1.0 (2026-09-21)
 - Fixed a hang when moving the window between monitors with different display scaling.
 - Default window size 720 x 480; File > Settings sets the window size.

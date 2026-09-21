@@ -1,3 +1,4 @@
+#include "context_menu_entry.h"
 #include "image_engine.h"
 #include "qt_app_controller.h"
 #include "quick_image_provider.h"
@@ -14,6 +15,7 @@
 #include <QQmlContext>
 #include <QQuickStyle>
 #include <windows.h>
+#include <shlobj.h>
 
 namespace {
 QFile crashLog;
@@ -70,6 +72,12 @@ int main(int argc, char* argv[]) {
     }
 
     WindowTheme::installDarkTitleBar(&application);
+
+    // An Explorer right-click entry made by an older version (image-wide, or pointing to a removed .ico) is
+    // repaired here; an entry of another executable, or no entry, is left alone.
+    if (ContextMenuEntry::repair(QCoreApplication::applicationFilePath())) {
+        SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);
+    }
 
     QQmlApplicationEngine engine;
     auto* imageProvider = new QuickImageProvider;

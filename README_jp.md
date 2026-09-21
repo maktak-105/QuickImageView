@@ -2,7 +2,7 @@
 
 Qt 6（Qt Quick / QML）とC++17で作ったWindows向けの軽量画像ビューアー・画像編集アプリです。画像の表示、編集、別形式保存ができ、日本語と英語を切り替えられます。
 
-バージョン: **v4.1.0**
+バージョン: **v4.2.0**
 
 ## 配布版を使う
 
@@ -26,9 +26,9 @@ Get-FileHash .\QuickImageView-binary.zip -Algorithm SHA256
 - `Ctrl+Z`でUndo、`Ctrl+Y`でRedo
 - `Ctrl+C`で画像または選択範囲をコピー、`Ctrl+V`で貼り付け、移動してから確定またはやり直し
 - ファイル名、寸法、形式、ファイルサイズ、EXIFのメーカー・機種・撮影日時をフローティングウィンドウに表示し、コピーできる
-- 品質・圧縮オプションを指定して別形式で保存する。原本と既存ファイルは上書きせず、拡張子が無ければ選択した形式の拡張子を補い、保存したファイルを現在の画像として読み込み直す
+- 品質・圧縮オプションを指定して別形式で保存する。ファイル選択は画像のあるフォルダーで開き、原本と既存ファイルは上書きせず（警告ダイアログで知らせる）、拡張子が無ければ選択した形式の拡張子を補い、保存したファイルを現在の画像として読み込み直す
 - `--convert`でコマンドラインから画像を変換する
-- ファイル > 設定から、Explorerの画像右クリックメニューへの登録と、ウィンドウサイズ（既定は720×480）の指定ができる
+- ファイル > 設定から、開ける全ての画像（HEIC・HEIF・WebPを含む）のExplorer右クリックメニューへの登録と、ウィンドウサイズ（既定は720×480）の指定ができる
 - 右上のボタンで日本語とEnglishを切り替える
 - ダークテーマ（タイトルバーを含む）、アプリ内ヘルプ、バージョン情報
 
@@ -68,7 +68,7 @@ CMakeの構成、`dist/`への`QuickImageView.exe`のビルド、CTest、実行�
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-実行ファイルとQtランタイムを`%LOCALAPPDATA%\QuickImageView`へ配置し、現在のユーザー（HKCU）の画像右クリックメニューへ登録します。登録しない場合は`-NoRegisterContextMenu`を指定します。削除は次のとおりです。
+実行ファイルとQtランタイムを`%LOCALAPPDATA%\QuickImageView`へ配置し、現在のユーザー（HKCU）の、全ての画像の右クリックメニューへ登録します。登録しない場合は`-NoRegisterContextMenu`を指定します。削除は次のとおりです。
 
 ```powershell
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\uninstall.ps1
