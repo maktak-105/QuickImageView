@@ -6,6 +6,8 @@ Qt 6（Qt Quick / QML）とC++17で作ったWindows向けの軽量画像ビュ�
 
 ## 配布版を使う
 
+コード署名: [SignPath.io](https://signpath.io) による無償のコード署名を利用し、証明書は [SignPath Foundation](https://signpath.org) が発行します。現在申請中で、承認後に公開するリリースから署名されます。詳細は [コード署名ポリシー](docs/code_signing_policy.md)。
+
 [GitHub Releases](https://github.com/maktak-105/QuickImageView/releases)から`QuickImageView-binary.zip`と`SHA256SUMS.txt`を取得します。ZIPの中身をすべて同じフォルダーへ展開し、`QuickImageView.exe`を実行してください。実行ファイル、Qt DLL、`platforms`・`imageformats`・`qml`フォルダーは同じ場所に置く必要があります。ZIPは署名なしで、インストーラーはありません。
 
 ```powershell
