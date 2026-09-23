@@ -6,6 +6,8 @@ Version: **v4.2.0**
 
 ## Download
 
+Code signing: Free code signing provided by [SignPath.io](https://signpath.io), certificate by [SignPath Foundation](https://signpath.org). The application is under review; releases published after approval will be signed. See [Code signing policy](docs/code_signing_policy.md).
+
 Download `QuickImageView-binary.zip` and `SHA256SUMS.txt` from [GitHub Releases](https://github.com/maktak-105/QuickImageView/releases). Extract every file into the same folder and run `QuickImageView.exe`. Keep the executable, the Qt DLLs, and the `platforms`, `imageformats`, and `qml` folders together. The ZIP is unsigned and there is no installer.
 
 ```powershell
